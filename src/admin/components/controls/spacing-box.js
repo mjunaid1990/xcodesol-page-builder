@@ -8,6 +8,7 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import ControlBase from './control-base';
+import UnitSelect from './unit-select';
 
 export default function SpacingBoxControl( {
 	config = {},
@@ -100,21 +101,19 @@ export default function SpacingBoxControl( {
 			className="xsb-ctrl-spacing-box"
 		>
 			<div className="xsb-box-model-wrapper">
-				<div className="xsb-box-model-header-row">
-					<div className="xsb-unit-switcher" role="radiogroup" aria-label="Units">
-						{ units.map( ( u ) => (
-							<button
-								key={ u }
-								type="button"
-								role="radio"
-								aria-checked={ currentUnit === u }
-								className={ `xsb-unit-btn${ currentUnit === u ? ' is-active' : '' }` }
-								onClick={ () => handleUnitChange( u ) }
-							>
-								{ u }
-							</button>
-						) ) }
-					</div>
+				<div className="xsb-dims-row">
+					{ [ 'top', 'right', 'bottom', 'left' ].map( ( side ) => (
+						<input
+							key={ side }
+							type="number"
+							value={ sides[ side ] }
+							onChange={ ( e ) => handleSideChange( side, e.target.value ) }
+							className="xsb-number-input xsb-dims-input"
+							placeholder={ __( 'All', 'xcodesol-page-builder' ) }
+							aria-label={ `${ label } ${ side }` }
+							title={ side.charAt( 0 ).toUpperCase() + side.slice( 1 ) }
+						/>
+					) ) }
 					<button
 						type="button"
 						className={ `xsb-link-btn${ isLinked ? ' is-linked' : '' }` }
@@ -125,20 +124,13 @@ export default function SpacingBoxControl( {
 						<span className={ `dashicons ${ isLinked ? 'dashicons-admin-links' : 'dashicons-editor-unlink' }` } aria-hidden="true" />
 					</button>
 				</div>
-
-				<div className="xsb-box-model-grid">
-					{ [ 'top', 'right', 'bottom', 'left' ].map( ( side ) => (
-						<div key={ side } className="xsb-box-side-col">
-							<input
-								type="number"
-								value={ sides[ side ] }
-								onChange={ ( e ) => handleSideChange( side, e.target.value ) }
-								className="xsb-number-input xsb-box-side-input"
-								placeholder="0"
-							/>
-							<span className="xsb-box-side-label">{ side.toUpperCase() }</span>
-						</div>
-					) ) }
+				<div className="xsb-box-model-footer-row">
+					<span className="xsb-dims-hint">{ __( 'Top · Right · Bottom · Left', 'xcodesol-page-builder' ) }</span>
+					<UnitSelect
+						units={ units }
+						value={ currentUnit }
+						onChange={ handleUnitChange }
+					/>
 				</div>
 			</div>
 		</ControlBase>

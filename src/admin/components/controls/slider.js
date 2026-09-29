@@ -5,6 +5,7 @@
  */
 
 import ControlBase from './control-base';
+import UnitSelect from './unit-select';
 
 export default function SliderControl( {
 	config = {},
@@ -92,22 +93,11 @@ export default function SliderControl( {
 					onChange={ handleNumberChange }
 					className="xsb-slider-number-input"
 				/>
-				{ units && units.length > 1 && (
-					<div className="xsb-unit-switcher" role="radiogroup" aria-label="Units">
-						{ units.map( ( u ) => (
-							<button
-								key={ u }
-								type="button"
-								role="radio"
-								aria-checked={ currentUnit === u }
-								className={ `xsb-unit-btn${ currentUnit === u ? ' is-active' : '' }` }
-								onClick={ () => handleUnitChange( u ) }
-							>
-								{ u }
-							</button>
-						) ) }
-					</div>
-				) }
+				<UnitSelect
+					units={ units }
+					value={ currentUnit }
+					onChange={ handleUnitChange }
+				/>
 			</div>
 		</ControlBase>
 	);

@@ -8,6 +8,7 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import ControlBase from './control-base';
+import UnitSelect from './unit-select';
 
 export default function GapControl( {
 	config = {},
@@ -81,20 +82,11 @@ export default function GapControl( {
 		>
 			<div className="xsb-gap-control-box">
 				<div className="xsb-box-model-header-row">
-					<div className="xsb-unit-switcher" role="radiogroup" aria-label="Units">
-						{ units.map( ( u ) => (
-							<button
-								key={ u }
-								type="button"
-								role="radio"
-								aria-checked={ currentUnit === u }
-								className={ `xsb-unit-btn${ currentUnit === u ? ' is-active' : '' }` }
-								onClick={ () => update( rowVal, colVal, u ) }
-							>
-								{ u }
-							</button>
-						) ) }
-					</div>
+					<UnitSelect
+						units={ units }
+						value={ currentUnit }
+						onChange={ ( u ) => update( rowVal, colVal, u ) }
+					/>
 					<button
 						type="button"
 						className={ `xsb-link-btn${ isLinked ? ' is-linked' : '' }` }

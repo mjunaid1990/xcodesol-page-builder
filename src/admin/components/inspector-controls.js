@@ -30,7 +30,7 @@
 
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { renderControl, hasControl } from './controls/index';
+import { renderControl, hasControl, UnitSelect } from './controls/index';
 import { deviceKey, deviceLayer } from '../styles/responsive';
 import {
 	IconAlignLeft,
@@ -453,20 +453,11 @@ export function SliderScrubberControl( {
 							<span>{ activeDevice }</span>
 						</button>
 					) }
-					{ units.length > 1 && (
-						<div className="xsb-unit-switcher">
-							{ units.map( ( u ) => (
-								<button
-									key={ u }
-									type="button"
-									className={ `xsb-unit-btn${ currentUnit === u ? ' is-active' : '' }` }
-									onClick={ () => handleUnitChange( u ) }
-								>
-									{ u }
-								</button>
-							) ) }
-						</div>
-					) }
+					<UnitSelect
+						units={ units }
+						value={ currentUnit }
+						onChange={ handleUnitChange }
+					/>
 				</div>
 			</div>
 			<div className="xsb-slider-input-row" style={ { display: 'flex', alignItems: 'center', gap: '8px' } }>
@@ -590,20 +581,11 @@ export function NumberScrubberControl( {
 							<span>{ activeDevice }</span>
 						</button>
 					) }
-					{ units.length > 1 && (
-						<div className="xsb-unit-switcher">
-							{ units.map( ( u ) => (
-								<button
-									key={ u }
-									type="button"
-									className={ `xsb-unit-btn${ currentUnit === u ? ' is-active' : '' }` }
-									onClick={ () => handleUnitChange( u ) }
-								>
-									{ u }
-								</button>
-							) ) }
-						</div>
-					) }
+					<UnitSelect
+						units={ units }
+						value={ currentUnit }
+						onChange={ handleUnitChange }
+					/>
 				</div>
 			</div>
 			<div className="xsb-number-input-wrap">
@@ -1047,20 +1029,11 @@ export function DimensionsControl( {
 							<span>{ activeDevice }</span>
 						</button>
 					) }
-					{ units.length > 1 && (
-						<div className="xsb-unit-switcher">
-							{ units.map( ( u ) => (
-								<button
-									key={ u }
-									type="button"
-									className={ `xsb-unit-btn${ current.unit === u ? ' is-active' : '' }` }
-									onClick={ () => handleUnitChange( u ) }
-								>
-									{ u }
-								</button>
-							) ) }
-						</div>
-					) }
+					<UnitSelect
+						units={ units }
+						value={ current.unit }
+						onChange={ handleUnitChange }
+					/>
 					<button
 						type="button"
 						className={ `xsb-link-toggle-btn${ isLinked ? ' is-linked' : '' }` }
@@ -1217,7 +1190,7 @@ export function BoxShadowGroup( {
 					<button
 						key={ p }
 						type="button"
-						className="xsb-unit-btn"
+						className="xsb-chip-btn"
 						style={ { textTransform: 'capitalize', fontSize: '10px' } }
 						onClick={ () => applyPreset( p ) }
 					>

@@ -7,6 +7,7 @@
 
 import { useRef } from '@wordpress/element';
 import ControlBase from './control-base';
+import UnitSelect from './unit-select';
 
 export default function NumberUnitControl( {
 	config = {},
@@ -129,22 +130,11 @@ export default function NumberUnitControl( {
 						placeholder={ placeholderValue }
 					/>
 				</div>
-				{ unitList && unitList.length > 1 && (
-					<div className="xsb-unit-switcher" role="radiogroup" aria-label="Units">
-						{ unitList.map( ( u ) => (
-							<button
-								key={ u }
-								type="button"
-								role="radio"
-								aria-checked={ currentUnit === u }
-								className={ `xsb-unit-btn${ currentUnit === u ? ' is-active' : '' }` }
-								onClick={ () => handleUnitChange( u ) }
-							>
-								{ u }
-							</button>
-						) ) }
-					</div>
-				) }
+				<UnitSelect
+					units={ unitList }
+					value={ currentUnit }
+					onChange={ handleUnitChange }
+				/>
 			</div>
 		</ControlBase>
 	);

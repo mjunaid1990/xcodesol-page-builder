@@ -14,6 +14,7 @@ import { lazy, Suspense } from '@wordpress/element';
 import './controls.css';
 
 export { default as ControlBase } from './control-base';
+export { default as UnitSelect } from './unit-select';
 
 // ---------------------------------------------------------------------------
 // Lazy control factories (one webpack chunk per file)
