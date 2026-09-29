@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+
+# Build artifacts that are generated / not part of the plugin source
+build/
+
+# WordPress / general
+.DS_Store
+*.log
+.phpunit.result.cache
