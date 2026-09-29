@@ -1,0 +1,870 @@
+/**
+ * Editor canvas affordances for the Container widget.
+ *
+ * Covers the mode-aware flow body (List / Row / Grid / Masonry / Scroll row),
+ * the column gutter drag handle, the grid track overlay and the drop guide /
+ * empty-cell cards. The visual container box itself is styled inline by the
+ * renderer; everything here is editor-only chrome.
+ *
+ * @package Xcodesol_Page_Builder
+ */
+
+/* ------------------------------------------------------------------ *
+ * Mode-aware flow body (non-column modes)
+ * ------------------------------------------------------------------ */
+
+.xsb-container-flow {
+	width: 100%;
+	box-sizing: border-box;
+	min-height: 44px;
+	position: relative;
+}
+
+.xsb-container-flow.is-over {
+	outline: 2px dashed var(--xsb-accent, #2563eb);
+	outline-offset: 2px;
+}
+
+.xsb-container-flow.is-guide {
+	outline: 1px dashed rgba(37, 99, 235, 0.45);
+	outline-offset: 2px;
+}
+
+/* Grid cells keep their intrinsic height while dragging around. */
+.xsb-container-flow--grid > .xsb-nested-block,
+.xsb-container-flow--list > .xsb-nested-block,
+.xsb-container-flow--row > .xsb-nested-block {
+	min-width: 0;
+}
+
+/* Masonry items never split across columns unless the child opts in. */
+.xsb-container-flow--masonry > .xsb-nested-block {
+	break-inside: avoid;
+}
+
+/* Scroll rows hide the native scrollbar when requested. */
+.xsb-container-flow--scroll-row {
+	scrollbar-width: thin;
+	-webkit-overflow-scrolling: touch;
+}
+
+.xsb-container-flow--scroll-row::-webkit-scrollbar {
+	height: 8px;
+}
+
+.xsb-container-flow--scroll-row::-webkit-scrollbar-thumb {
+	background: rgba(15, 23, 42, 0.2);
+	border-radius: 999px;
+}
+
+/* The "+ Add widget" placeholder is defined further down, next to the
+ * empty live-zone state, so both share one set of rules. */
+
+/* ------------------------------------------------------------------ *
+ * Insertion line
+ * ------------------------------------------------------------------ */
+
+.xsb-drop-guide-line {
+	position: relative;
+	height: 2px;
+	margin: 4px 0;
+	background: var(--xsb-accent, #2563eb);
+	border-radius: 999px;
+	box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+	pointer-events: none;
+}
+
+.xsb-drop-guide-line::before,
+.xsb-drop-guide-line::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	width: 6px;
+	height: 6px;
+	margin-top: -3px;
+	border-radius: 50%;
+	background: var(--xsb-accent, #2563eb);
+}
+
+.xsb-drop-guide-line::before {
+	left: -3px;
+}
+
+.xsb-drop-guide-line::after {
+	right: -3px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Column gutter resize handle
+ * ------------------------------------------------------------------ */
+
+.xsb-col-gutter-handle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -6px;
+	width: 12px;
+	cursor: col-resize;
+	z-index: 3;
+	border-radius: 4px;
+	background: transparent;
+	transition: background 0.12s ease;
+}
+
+.xsb-col-gutter-handle::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 2px;
+	height: 28px;
+	border-radius: 999px;
+	background: rgba(37, 99, 235, 0.25);
+	transition: background 0.12s ease;
+}
+
+.xsb-col-gutter-handle:hover,
+.xsb-col-gutter-handle:active {
+	background: rgba(37, 99, 235, 0.12);
+}
+
+.xsb-col-gutter-handle:hover::after,
+.xsb-col-gutter-handle:active::after {
+	background: var(--xsb-accent, #2563eb);
+}
+
+/* ------------------------------------------------------------------ *
+ * Grid track overlay + labels
+ * ------------------------------------------------------------------ */
+
+.xsb-grid-track-overlay {
+	z-index: 2;
+}
+
+.xsb-grid-track-cell {
+	border: 1px dashed rgba(37, 99, 235, 0.35);
+	border-radius: 4px;
+	min-height: 24px;
+	position: relative;
+}
+
+.xsb-grid-track-label {
+	position: absolute;
+	top: 0;
+	left: 0;
+	padding: 0 4px;
+	font-size: 9.5px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: #ffffff;
+	background: rgba(37, 99, 235, 0.75);
+	border-bottom-right-radius: 4px;
+	border-top-left-radius: 3px;
+	line-height: 14px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Nested container preview (containers inside a container column)
+ * ------------------------------------------------------------------ */
+
+.xsb-live-block--nested-container {
+	min-height: 44px;
+}
+
+.xsb-nested-container-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 40px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--xsb-muted, #94a3b8);
+	border: 1px dashed var(--xsb-line, #cbd5e1);
+	border-radius: 6px;
+}
+
+.xsb-nested-container-item {
+	min-width: 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * Canvas backdrop, device frames and the live preview surface
+ * ------------------------------------------------------------------ */
+
+/*
+ * The canvas IS the page: white surface, no side padding, full height.
+ * Sections are flush with the panel edges and their own layout settings
+ * decide how the inside splits up.
+ */
+.xsb-canvas {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 0;
+	padding: var(--xsb-space-6) var(--xsb-space-6) var(--xsb-space-12);
+	overflow: auto;
+	background: var(--xsb-bg-panel);
+}
+
+/* Guides toggle: opt-in ruled grid over the page surface. */
+.xsb-canvas.has-guides-overlay {
+	background-image: linear-gradient(var(--xsb-guide-soft) 1px, transparent 1px),
+		linear-gradient(90deg, var(--xsb-guide-soft) 1px, transparent 1px);
+	background-size: 24px 24px;
+}
+
+.xsb-preview {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--xsb-space-6);
+	width: 100%;
+	min-height: 100%;
+	padding-top: var(--xsb-space-8);
+	margin: 0 auto;
+	transition: max-width var(--xsb-dur-4) var(--xsb-ease);
+}
+
+.xsb-preview--device-tablet {
+	max-width: 834px;
+}
+
+.xsb-preview--device-mobile {
+	max-width: 390px;
+}
+
+.xsb-preview-frame-wrap {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-height: 100%;
+}
+
+.xsb-device-mockup {
+	width: 100%;
+}
+
+/* Only the narrow breakpoints get device chrome. */
+.xsb-preview--device-mobile .xsb-device-mockup {
+	position: relative;
+	padding: var(--xsb-space-8) var(--xsb-space-3) var(--xsb-space-9);
+	border: 1px solid var(--xsb-border-strong);
+	border-radius: 38px;
+	background: var(--xsb-bg-panel);
+	box-shadow: var(--xsb-shadow-xl);
+}
+
+.xsb-preview--device-tablet .xsb-device-mockup {
+	padding: var(--xsb-space-7);
+	border: 1px solid var(--xsb-border-strong);
+	border-radius: 26px;
+	background: var(--xsb-bg-panel);
+	box-shadow: var(--xsb-shadow-xl);
+}
+
+.xsb-device-mockup__notch {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 18px;
+}
+
+.xsb-device-mockup__notch span {
+	width: 92px;
+	height: 5px;
+	border-radius: var(--xsb-radius-full);
+	background: var(--xsb-border-strong);
+}
+
+/*
+ * The rendered template is seamless with the canvas: no frame, no radius and
+ * — crucially — no `overflow: hidden`, which used to clip the on-canvas
+ * toolbars of the first block and made their buttons unclickable.
+ */
+.xsb-preview--live .xsb-template-wrapper,
+.xsb-preview--live .xcopb-template-wrapper {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-width: 0;
+	background: transparent;
+	border-radius: 0;
+	box-shadow: none;
+	overflow: visible;
+}
+
+.xsb-preview--device-mobile .xsb-template-wrapper,
+.xsb-preview--device-mobile .xcopb-template-wrapper,
+.xsb-preview--device-tablet .xsb-template-wrapper,
+.xsb-preview--device-tablet .xcopb-template-wrapper {
+	border-radius: var(--xsb-radius-xl);
+}
+
+/* ------------------------------------------------------------------ *
+ * Live blocks, zones and canvas empty states
+ * ------------------------------------------------------------------ */
+
+.xsb-live-zone {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	gap: var(--xsb-space-4);
+	padding: var(--xsb-space-10) 0;
+}
+
+/* The zone caption is drop affordance, not chrome: it stays out of the way
+ * until a drag is in flight or the pointer is over the zone. */
+.xsb-live-zone-label {
+	display: flex;
+	align-items: center;
+	gap: var(--xsb-space-4);
+	color: var(--xsb-muted);
+	font-size: var(--xsb-text-2xs);
+	font-weight: var(--xsb-weight-semibold);
+	letter-spacing: var(--xsb-tracking-caps);
+	text-transform: uppercase;
+	opacity: 0;
+	transition: opacity var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-live-zone.is-active > .xsb-live-zone-label,
+.xsb-live-zone.is-over > .xsb-live-zone-label,
+.xsb-live-zone:focus-within > .xsb-live-zone-label {
+	opacity: 1;
+}
+
+.xsb-live-zone-label-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.xsb-live-block {
+	position: relative;
+	border: 1px solid transparent;
+	border-radius: var(--xsb-radius-lg);
+	transition: border-color var(--xsb-dur-2) var(--xsb-ease), box-shadow var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-live-block:hover {
+	border-color: var(--xsb-a-200);
+}
+
+.xsb-live-block.is-selected,
+.xsb-live-block[data-selected='true'] {
+	border-color: var(--xsb-accent);
+	box-shadow: 0 0 0 3px var(--xsb-guide-soft);
+}
+
+.xsb-live-block--gb-container {
+	padding: var(--xsb-space-2);
+}
+
+.xsb-live-block-order {
+	position: absolute;
+	top: -9px;
+	left: -9px;
+	z-index: var(--xsb-z-toolbar);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	border-radius: var(--xsb-radius-full);
+	background: var(--xsb-accent);
+	color: var(--xsb-accent-contrast);
+	font-size: var(--xsb-text-2xs);
+	font-weight: var(--xsb-weight-semibold);
+}
+
+/* ------------------------------------------------------------------ *
+ * "Drop widget here" hint
+ *
+ * Text only, no box: it marks where the next widget will land. While a
+ * drop target is empty it sits centered as its own line; once the target
+ * has children the compact variant sits under the last one.
+ * ------------------------------------------------------------------ */
+
+.xsb-drop-hint {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 96px;
+	padding: var(--xsb-space-4) var(--xsb-space-6);
+	border-radius: var(--xsb-radius-md);
+	color: var(--xsb-muted);
+	font-size: var(--xsb-text-sm);
+	font-weight: var(--xsb-weight-medium);
+	text-align: center;
+	cursor: pointer;
+	transition: color var(--xsb-dur-2) var(--xsb-ease), background var(--xsb-dur-2) var(--xsb-ease);
+}
+
+/* Sits under existing children, so it stays a slim line. */
+.xsb-drop-hint--end {
+	min-height: 30px;
+	padding: var(--xsb-space-2) var(--xsb-space-6);
+}
+
+.xsb-drop-hint:hover,
+.xsb-live-zone.is-over .xsb-drop-hint,
+.xsb-container-col.is-over .xsb-drop-hint {
+	background: var(--xsb-guide-soft);
+	color: var(--xsb-accent-soft-text);
+}
+
+/* Rich first-run empty state ------------------------------------------ */
+
+.xsb-live-empty,
+.xsb-live-empty--rich {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--xsb-space-8);
+	min-height: 260px;
+	padding: var(--xsb-space-12);
+	border: 1px dashed var(--xsb-border-strong);
+	border-radius: var(--xsb-radius-xl);
+	background: var(--xsb-bg-panel);
+	text-align: center;
+	transition: border-color var(--xsb-dur-2) var(--xsb-ease), background var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-live-empty.is-over,
+.xsb-live-empty--rich.is-over {
+	border-color: var(--xsb-guide);
+	background: var(--xsb-guide-soft);
+}
+
+.xsb-empty-illustration {
+	color: var(--xsb-a-300);
+}
+
+.xsb-empty-title {
+	color: var(--xsb-text);
+	font-size: var(--xsb-text-lg);
+	font-weight: var(--xsb-weight-semibold);
+}
+
+.xsb-empty-desc {
+	max-width: 46ch;
+	color: var(--xsb-muted);
+	font-size: var(--xsb-text-base);
+	line-height: var(--xsb-leading-normal);
+}
+
+.xsb-empty-starters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: var(--xsb-space-4);
+}
+
+.xsb-starter-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-3);
+	height: var(--xsb-hit);
+	padding: 0 var(--xsb-space-7);
+	border: 1px solid var(--xsb-border);
+	border-radius: var(--xsb-radius-full);
+	background: var(--xsb-bg-panel);
+	color: var(--xsb-text-sub);
+	font-size: var(--xsb-text-sm);
+	font-weight: var(--xsb-weight-medium);
+	cursor: pointer;
+	transition: border-color var(--xsb-dur-2) var(--xsb-ease), color var(--xsb-dur-2) var(--xsb-ease),
+		box-shadow var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-starter-pill:hover {
+	border-color: var(--xsb-a-300);
+	color: var(--xsb-accent-soft-text);
+	box-shadow: var(--xsb-shadow-sm);
+}
+
+.xsb-add-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-3);
+	height: var(--xsb-hit);
+	padding: 0 var(--xsb-space-7);
+	border: 1px dashed var(--xsb-border-strong);
+	border-radius: var(--xsb-radius-md);
+	background: transparent;
+	color: var(--xsb-text-sub);
+	font-size: var(--xsb-text-sm);
+	cursor: pointer;
+	transition: border-color var(--xsb-dur-2) var(--xsb-ease), background var(--xsb-dur-2) var(--xsb-ease),
+		color var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-add-btn:hover {
+	border-color: var(--xsb-accent);
+	background: var(--xsb-accent-soft);
+	color: var(--xsb-accent-soft-text);
+}
+
+/* ------------------------------------------------------------------ *
+ * On-canvas toolbars + breadcrumb
+ * ------------------------------------------------------------------ */
+
+/*
+ * Compact, icon-only action toolbar. Hidden until its block is active or
+ * hovered so a page full of widgets doesn't turn into a wall of black bars.
+ */
+.xsb-block-toolbar,
+.xsb-block-toolbar--container,
+.xsb-nested-toolbar {
+	position: absolute;
+	top: -22px;
+	left: 0;
+	z-index: var(--xsb-z-toolbar);
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-2);
+	height: 18px;
+	padding: 0 var(--xsb-space-2);
+	border-radius: var(--xsb-radius-xs);
+	background: var(--xsb-bg-inverse);
+	color: var(--xsb-text-inverse);
+	font-size: var(--xsb-text-2xs);
+	white-space: nowrap;
+	box-shadow: var(--xsb-shadow-sm);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--xsb-dur-1) var(--xsb-ease);
+}
+
+/* The active element keeps its toolbar; everything else appears on hover. */
+.xsb-live-block.is-selected > .xsb-block-toolbar,
+.xsb-live-block:hover > .xsb-block-toolbar,
+.xsb-nested-block.is-selected > .xsb-nested-toolbar,
+.xsb-nested-block:hover > .xsb-nested-toolbar,
+.xsb-block-toolbar:hover,
+.xsb-nested-toolbar:hover {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+/* Hovering a child must not also light up every ancestor's toolbar. */
+.xsb-live-block:hover:not(.is-selected):has(.xsb-live-block:hover) > .xsb-block-toolbar,
+.xsb-live-block:hover:not(.is-selected):has(.xsb-nested-block:hover) > .xsb-block-toolbar,
+.xsb-nested-block:hover:not(.is-selected):has(.xsb-nested-block:hover) > .xsb-nested-toolbar {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.xsb-block-toolbar-title,
+.xsb-nested-toolbar-title {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-3);
+	font-weight: var(--xsb-weight-semibold);
+}
+
+.xsb-block-toolbar-sub,
+.xsb-block-toolbar-badge,
+.xsb-nested-toolbar-badge {
+	padding: 1px var(--xsb-space-3);
+	border-radius: var(--xsb-radius-full);
+	background: rgba(255, 255, 255, 0.14);
+	color: inherit;
+	font-size: var(--xsb-text-2xs);
+}
+
+.xsb-block-toolbar-actions,
+.xsb-nested-toolbar-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-1);
+}
+
+.xsb-tb-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border: 0;
+	border-radius: var(--xsb-radius-sm);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	transition: background var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-tb-btn:hover {
+	background: rgba(255, 255, 255, 0.16);
+}
+
+.xsb-tb-btn--remove:hover {
+	background: var(--xsb-danger);
+}
+
+.xsb-toolbar-grip {
+	color: rgba(255, 255, 255, 0.55);
+	cursor: grab;
+}
+
+.xsb-breadcrumb {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-3);
+	color: var(--xsb-muted);
+	font-size: var(--xsb-text-xs);
+}
+
+.xsb-bc-item {
+	color: var(--xsb-muted);
+}
+
+.xsb-bc-item.is-active {
+	color: var(--xsb-text);
+	font-weight: var(--xsb-weight-medium);
+}
+
+.xsb-bc-sep {
+	color: var(--xsb-faint);
+}
+
+/* ------------------------------------------------------------------ *
+ * Padding handles (drag-to-resize container spacing)
+ * ------------------------------------------------------------------ */
+
+.xsb-pad-handle {
+	position: absolute;
+	border: 0;
+	background: transparent;
+	cursor: grab;
+}
+
+.xsb-pad-handle--top,
+.xsb-pad-handle--bottom {
+	left: 0;
+	right: 0;
+	height: 8px;
+}
+
+.xsb-pad-handle--top {
+	top: 0;
+	cursor: ns-resize;
+}
+
+.xsb-pad-handle--bottom {
+	bottom: 0;
+	cursor: ns-resize;
+}
+
+.xsb-pad-handle--left,
+.xsb-pad-handle--right {
+	top: 0;
+	bottom: 0;
+	width: 8px;
+	cursor: ew-resize;
+}
+
+.xsb-pad-handle--left {
+	left: 0;
+}
+
+.xsb-pad-handle--right {
+	right: 0;
+}
+
+.xsb-pad-handle-grip {
+	background: var(--xsb-guide);
+}
+
+.xsb-pad-handle-tooltip {
+	position: absolute;
+	z-index: var(--xsb-z-toolbar);
+	padding: 2px var(--xsb-space-4);
+	border-radius: var(--xsb-radius-sm);
+	background: var(--xsb-bg-inverse);
+	color: var(--xsb-text-inverse);
+	font-size: var(--xsb-text-2xs);
+	white-space: nowrap;
+	box-shadow: var(--xsb-shadow-md);
+}
+
+.xsb-hidden-device-notice {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-3);
+	margin: var(--xsb-space-4);
+	padding: var(--xsb-space-3) var(--xsb-space-5);
+	border-radius: var(--xsb-radius-md);
+	background: var(--xsb-warning-soft);
+	color: var(--xsb-warning);
+	font-size: var(--xsb-text-xs);
+}
+
+/* ------------------------------------------------------------------ *
+ * Toolbar safety
+ *
+ * Two failure modes made the toolbar buttons (duplicate / delete)
+ * unreachable when several containers were stacked:
+ *   1. a toolbar hanging above the first block was clipped by an
+ *      ancestor's overflow, and
+ *   2. a neighbouring block painted over the toolbar, swallowing clicks.
+ * `is-first` puts the toolbar inside the element, and raising the hovered /
+ * selected block lifts it (and its toolbar) above its siblings.
+ * ------------------------------------------------------------------ */
+
+.xsb-block-toolbar.is-first,
+.xsb-block-toolbar--container.is-first,
+.xsb-nested-toolbar.is-first {
+	top: var(--xsb-space-1);
+	left: var(--xsb-space-1);
+}
+
+.xsb-live-block:hover,
+.xsb-live-block.is-selected,
+.xsb-live-block:focus-within,
+.xsb-nested-block:hover,
+.xsb-nested-block.is-selected,
+.xsb-nested-block:focus-within {
+	z-index: calc(var(--xsb-z-toolbar) + 2);
+}
+
+/* An empty page fills the canvas, like a fresh Elementor document. */
+.xsb-preview--device-desktop .xsb-live-zone > .xsb-live-empty {
+	flex: 1 1 auto;
+	min-height: 420px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Toolbar contents: icons only, no block-type text, reduced footprint
+ * (roughly a fifth of the old width and 18px tall).
+ * ------------------------------------------------------------------ */
+
+.xsb-block-toolbar-title,
+.xsb-block-toolbar-sub,
+.xsb-nested-toolbar-title {
+	display: none;
+}
+
+.xsb-block-toolbar-badge,
+.xsb-nested-toolbar-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--xsb-space-1);
+	padding: 0;
+	background: transparent;
+	cursor: grab;
+}
+
+.xsb-block-toolbar-badge:active,
+.xsb-nested-toolbar-badge:active {
+	cursor: grabbing;
+}
+
+.xsb-block-toolbar-actions,
+.xsb-nested-toolbar-actions {
+	gap: 0;
+}
+
+.xsb-tb-btn {
+	width: 16px;
+	height: 16px;
+	border-radius: var(--xsb-radius-xs);
+}
+
+.xsb-block-toolbar svg,
+.xsb-nested-toolbar svg {
+	width: 11px;
+	height: 11px;
+}
+
+.xsb-tb-btn .dashicons {
+	width: 12px;
+	height: 12px;
+	font-size: 12px;
+	line-height: 1;
+}
+
+.xsb-toolbar-grip {
+	font-size: 9px;
+	line-height: 1;
+}
+
+/* ------------------------------------------------------------------ *
+ * "Add below" handle
+ *
+ * preview-canvas.js renders this in flow (which left a stray text button
+ * under the block). It is anchored to the middle of the block's bottom edge
+ * instead — half in, half out — and shows the + icon only.
+ * ------------------------------------------------------------------ */
+
+.xsb-container-quick-add-wrap {
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	z-index: calc(var(--xsb-z-toolbar) + 1);
+	line-height: 0;
+	transform: translate(-50%, 50%);
+}
+
+.xsb-container-quick-add-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid var(--xsb-accent);
+	border-radius: var(--xsb-radius-full);
+	background: var(--xsb-accent);
+	color: var(--xsb-accent-contrast);
+	cursor: pointer;
+	box-shadow: var(--xsb-shadow-md);
+	transition: background var(--xsb-dur-2) var(--xsb-ease), transform var(--xsb-dur-2) var(--xsb-ease);
+}
+
+/* Icon only — the visible label stays for screen readers. */
+.xsb-container-quick-add-btn > span {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	clip-path: inset(50%);
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.xsb-container-quick-add-btn svg {
+	width: 12px;
+	height: 12px;
+}
+
+.xsb-container-quick-add-btn:hover {
+	background: var(--xsb-accent-hover);
+	transform: scale(1.12);
+}
+
+.xsb-container-quick-add-btn:active {
+	transform: scale(1);
+}
+
+/* ------------------------------------------------------------------ *
+ * Canvas chrome that stays out of the way
+ *
+ * Every widget body in preview-canvas.js renders a name caption chip
+ * (`xsb-bp-label-chip` — "Heading", "Product Price", "Add to Cart"…) and
+ * each block renders its 1/2/3 index bubble. Both are editor noise: the
+ * widget should just occupy its own space. Hiding the chip is safe because
+ * every placeholder still renders its mock content next to it; selection is
+ * communicated by the outline and the compact toolbar instead.
+ * ------------------------------------------------------------------ */
+
+.xsb-bp-label-chip,
+.xsb-live-block-order {
+	display: none;
+}

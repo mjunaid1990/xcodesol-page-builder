@@ -1,0 +1,2808 @@
+/**
+ * Xcodesol Page Builder - Public Styles.
+ */
+
+/* ==========================================================================
+   Full Width Page Builder Layout (Elementor Style)
+   ========================================================================== */
+
+body.xcopb-template-full-width,
+body.xcopb-canvas,
+body.page-template-xcopb_full_width,
+body.page-template-xcopb_canvas {
+	overflow-x: hidden;
+}
+
+body.xcopb-template-full-width .site,
+body.xcopb-template-full-width .site-content,
+body.xcopb-template-full-width #content,
+body.xcopb-template-full-width #primary,
+body.xcopb-template-full-width .content-area,
+body.xcopb-template-full-width .site-main,
+body.xcopb-template-full-width .entry-content,
+body.xcopb-template-full-width .entry-header,
+body.xcopb-template-full-width .post-inner,
+body.xcopb-template-full-width .singular .entry-header,
+body.xcopb-template-full-width .ast-container,
+body.xcopb-template-full-width .grid-container,
+body.xcopb-template-full-width .wp-site-blocks,
+body.xcopb-template-full-width .wp-block-post-content {
+	max-width: 100% !important;
+	width: 100% !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+	float: none !important;
+	border: none !important;
+	box-shadow: none !important;
+}
+
+/* Page builder canvas root */
+body.xcopb-canvas {
+	margin: 0 !important;
+	padding: 0 !important;
+	background: #ffffff;
+}
+
+.xcopb-canvas-wrapper {
+	width: 100%;
+	min-height: 100vh;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+/* Full-width content wrapper */
+.xcopb-full-width,
+.xcopb-template-wrapper,
+.xsb-template-wrapper,
+.xcopb-main,
+.xcopb-full-width-content {
+	width: 100%;
+	max-width: 100%;
+	margin-left: 0;
+	margin-right: 0;
+	box-sizing: border-box;
+}
+
+/* Stretched section / container (Elementor-style) */
+.xcopb-stretched-section,
+.xcopb-section-stretched {
+	position: relative;
+	width: 100vw;
+	left: 50%;
+	right: 50%;
+	margin-left: -50vw;
+	margin-right: -50vw;
+	box-sizing: border-box;
+}
+
+/* Structure Blank, Hero & Landing Full Width */
+.xcopb-structure-page-blank,
+.xcopb-structure-page-hero,
+.xcopb-structure-page-landing,
+.xcopb-structure-section-single,
+.xcopb-structure-blank,
+.xcopb-structure-hero,
+.xcopb-structure-landing {
+	width: 100%;
+	max-width: 100%;
+}
+
+.xsb-template-wrapper,
+.xcopb-template-wrapper {
+	clear: both;
+	position: relative; /* positioning anchor for absolutely placed widgets */
+}
+
+.xsb-loop-item {
+	position: relative; /* top/left nudges + absolute/fixed widgets resolve here */
+}
+
+.xsb-card {
+	box-sizing: border-box;
+	position: relative; /* absolute/fixed child widgets resolve to the card */
+}
+
+.xsb-product-title {
+	margin: 0 0 10px;
+}
+
+.xsb-product-price {
+	margin: 0 0 15px;
+}
+
+.xsb-product-image-wrapper img {
+	max-width: 100%;
+	height: auto;
+}
+
+.xsb-product-excerpt {
+	margin: 15px 0;
+}
+
+.xsb-add-to-cart {
+	margin: 15px 0;
+}
+
+/* Product Rating */
+.xsb-product-rating {
+	margin: 0 0 14px;
+	clear: both;
+}
+
+.xsb-product-rating .woocommerce-product-rating {
+	display: inline-flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+	line-height: 1;
+}
+
+.xsb-product-rating .star-rating {
+	margin: 0;
+	color: #f59e0b;
+	font-size: 14px;
+	display: inline-block;
+}
+
+.xsb-product-rating .woocommerce-review-link {
+	font-size: 13px;
+	color: #64748b;
+	text-decoration: none;
+	transition: color .15s ease;
+}
+
+.xsb-product-rating .woocommerce-review-link:hover {
+	color: #2563eb;
+	text-decoration: underline;
+}
+
+/* Product Meta */
+.xsb-product-meta {
+	margin: 16px 0;
+	font-size: 13px;
+	color: #64748b;
+	line-height: 1.6;
+}
+
+.xsb-product-meta .product_meta {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.xsb-product-meta .sku_wrapper,
+.xsb-product-meta .posted_in,
+.xsb-product-meta .tagged_as {
+	display: block;
+}
+
+.xsb-product-meta strong,
+.xsb-product-meta .sku_wrapper > span:first-child {
+	font-weight: 600;
+	color: #334155;
+}
+
+.xsb-product-meta a {
+	color: #2563eb;
+	text-decoration: none;
+	transition: color .15s ease;
+}
+
+.xsb-product-meta a:hover {
+	color: #1d4ed8;
+	text-decoration: underline;
+}
+
+/* Product Tabs */
+.xsb-product-tabs {
+	margin: 28px 0;
+	clear: both;
+}
+
+.xsb-product-tabs .woocommerce-tabs {
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	background: #ffffff;
+	overflow: hidden;
+}
+
+.xsb-product-tabs ul.tabs.wc-tabs {
+	list-style: none;
+	margin: 0;
+	padding: 0 16px;
+	display: flex;
+	gap: 4px;
+	background: #f8fafc;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.xsb-product-tabs ul.tabs.wc-tabs::before,
+.xsb-product-tabs ul.tabs.wc-tabs::after {
+	content: none;
+}
+
+.xsb-product-tabs ul.tabs.wc-tabs li {
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+	display: inline-block;
+}
+
+.xsb-product-tabs ul.tabs.wc-tabs li a {
+	display: block;
+	padding: 13px 18px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #64748b;
+	text-decoration: none;
+	border-bottom: 2px solid transparent;
+	transition: all .15s ease;
+}
+
+.xsb-product-tabs ul.tabs.wc-tabs li a:hover {
+	color: #0f172a;
+}
+
+.xsb-product-tabs ul.tabs.wc-tabs li.active a {
+	color: #2563eb;
+	border-bottom-color: #2563eb;
+	background: #ffffff;
+}
+
+.xsb-product-tabs .woocommerce-Tabs-panel {
+	padding: 24px;
+	font-size: 15px;
+	line-height: 1.7;
+	color: #334155;
+	box-sizing: border-box;
+}
+
+.xsb-product-tabs .woocommerce-Tabs-panel h2:first-child {
+	font-size: 18px;
+	font-weight: 600;
+	color: #0f172a;
+	margin: 0 0 14px;
+}
+
+.xsb-product-tabs .shop_attributes {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0 0 16px;
+}
+
+.xsb-product-tabs .shop_attributes th,
+.xsb-product-tabs .shop_attributes td {
+	padding: 10px 14px;
+	border: 1px solid #e2e8f0;
+	font-size: 14px;
+	text-align: left;
+}
+
+.xsb-product-tabs .shop_attributes th {
+	width: 180px;
+	background: #f8fafc;
+	font-weight: 600;
+	color: #1e293b;
+}
+
+.xsb-product-tabs .shop_attributes td p {
+	margin: 0;
+}
+
+.xsb-product-tabs #reviews ol.commentlist {
+	list-style: none;
+	margin: 0 0 20px;
+	padding: 0;
+}
+
+.xsb-product-tabs #reviews .comment_container {
+	display: flex;
+	gap: 14px;
+	padding: 14px 0;
+	border-bottom: 1px solid #f1f5f9;
+}
+
+.xsb-product-tabs #reviews img.avatar {
+	border-radius: 50%;
+	width: 44px;
+	height: 44px;
+	flex-shrink: 0;
+}
+
+.xsb-product-tabs #reviews .comment-text {
+	flex: 1;
+	font-size: 14px;
+}
+
+.xsb-product-tabs #reviews .comment-text .meta {
+	font-size: 13px;
+	color: #64748b;
+	margin-bottom: 6px;
+}
+
+.xsb-product-tabs #review_form_wrapper {
+	margin-top: 20px;
+	padding-top: 20px;
+	border-top: 1px solid #e2e8f0;
+}
+
+.xsb-product-tabs #respond .comment-reply-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #0f172a;
+	margin-bottom: 12px;
+	display: block;
+}
+
+.xsb-product-tabs #respond textarea,
+.xsb-product-tabs #respond input[type="text"],
+.xsb-product-tabs #respond input[type="email"] {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	font-size: 14px;
+	box-sizing: border-box;
+}
+
+.xsb-product-tabs #respond input#submit {
+	display: inline-block;
+	padding: 9px 18px;
+	background: #2563eb;
+	color: #ffffff;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background .15s ease;
+}
+
+.xsb-product-tabs #respond input#submit:hover {
+	background: #1d4ed8;
+}
+
+.xsb-archive-title,
+.xsb-archive-description {
+	margin-bottom: 18px;
+}
+
+.xsb-template-wrapper .woocommerce-ordering {
+	margin-bottom: 20px;
+}
+
+.xsb-ordering-radio {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.xsb-ordering-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.4;
+	cursor: pointer;
+}
+
+.xsb-ordering-option input[type='radio'] {
+	margin: 0;
+	accent-color: #2563eb;
+}
+
+.xsb-loop-item {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.xsb-loop-item .onsale {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 1;
+}
+
+.xsb-loop-item-image img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.xsb-loop-item-excerpt {
+	margin: 0;
+}
+
+/* Product loop: a real CSS grid. Grid items ignore WooCommerce's legacy
+   float, and we zero WC's percentage margins so they can't push items onto
+   the next row (flex + gap + WC margin previously wrapped at 2 per row on
+   desktop). --xsb-cols is set per ul.products.columns-N below. */
+.xsb-template-wrapper ul.products {
+	list-style: none;
+	margin: 0 0 1em;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(var(--xsb-cols, 3), minmax(0, 1fr));
+	gap: 20px;
+	width: 100%;
+}
+
+/* Ensure WooCommerce's pseudo elements don't break the grid layout. */
+.xsb-template-wrapper ul.products::before,
+.xsb-template-wrapper ul.products::after {
+	content: none;
+}
+
+/* Neutralize WooCommerce's legacy per-column widths (e.g.
+   `ul.products.columns-3 li.product { width: 30.75% }` from
+   woocommerce-layout.css) and its float/margins: these are grid items now
+   and must always fill their track. !important keeps themes from sneaking
+   a fixed percentage width back in. */
+.xsb-template-wrapper ul.products li.product,
+.xsb-template-wrapper ul.products li.xsb-loop-item {
+	box-sizing: border-box;
+	width: 100% !important;
+	max-width: 100% !important;
+	float: none !important;
+	margin: 0 !important;
+}
+
+.xsb-template-wrapper ul.products.columns-1 { --xsb-cols: 1; }
+.xsb-template-wrapper ul.products.columns-2 { --xsb-cols: 2; }
+.xsb-template-wrapper ul.products.columns-3 { --xsb-cols: 3; }
+.xsb-template-wrapper ul.products.columns-4 { --xsb-cols: 4; }
+.xsb-template-wrapper ul.products.columns-5 { --xsb-cols: 5; }
+.xsb-template-wrapper ul.products.columns-6 { --xsb-cols: 6; }
+
+.xsb-loop-item-image-wrapper img {
+	max-width: 100%;
+	height: auto;
+}
+
+.xsb-loop-item-price {
+	margin: 6px 0;
+}
+
+.xsb-loop-item-add-to-cart {
+	margin: 10px 0;
+}
+
+/* ---------- General blocks ---------- */
+.xsb-banner {
+	position: relative;
+	overflow: hidden;
+	border-radius: 12px;
+	box-sizing: border-box;
+}
+
+.xsb-banner-title {
+	margin: 0 0 8px;
+	font-size: 26px;
+	line-height: 1.2;
+}
+
+.xsb-banner-subtitle {
+	margin: 0 0 18px;
+	opacity: .9;
+	font-size: 15px;
+}
+
+.xsb-banner-btn {
+	display: inline-block;
+	padding: 10px 22px;
+	border: 2px solid currentColor;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: background .15s, color .15s;
+}
+
+a.xsb-banner-btn:hover {
+	background: #fff;
+	color: #171c26 !important;
+}
+
+/* Banner entrance animations */
+@keyframes xsb-fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes xsb-slide-up {
+	from { opacity: 0; transform: translateY(24px); }
+	to { opacity: 1; transform: none; }
+}
+
+@keyframes xsb-slide-down {
+	from { opacity: 0; transform: translateY(-24px); }
+	to { opacity: 1; transform: none; }
+}
+
+@keyframes xsb-zoom-in {
+	from { opacity: 0; transform: scale(0.92); }
+	to { opacity: 1; transform: none; }
+}
+
+.xsb-anim-fade-in   { animation-name: xsb-fade-in;   animation-fill-mode: both; }
+.xsb-anim-slide-up  { animation-name: xsb-slide-up;  animation-fill-mode: both; }
+.xsb-anim-slide-down{ animation-name: xsb-slide-down; animation-fill-mode: both; }
+.xsb-anim-zoom-in   { animation-name: xsb-zoom-in;   animation-fill-mode: both; }
+
+.xsb-divider {
+	display: block;
+}
+
+.xsb-breadcrumb {
+	margin-bottom: 18px;
+}
+
+.xsb-text-block {
+	margin: 0 0 16px;
+}
+
+.xsb-container {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.xsb-container-col {
+	box-sizing: border-box;
+	min-width: 0;
+	position: relative; /* absolute/fixed child widgets resolve to the column */
+}
+
+@media (max-width: 768px) {
+	.xsb-template-wrapper ul.products.columns-2,
+	.xsb-template-wrapper ul.products.columns-3,
+	.xsb-template-wrapper ul.products.columns-4,
+	.xsb-template-wrapper ul.products.columns-5,
+	.xsb-template-wrapper ul.products.columns-6 {
+		--xsb-cols: 2;
+	}
+
+	.xsb-product-tabs ul.tabs.wc-tabs {
+		flex-wrap: wrap;
+		padding: 0 8px;
+	}
+
+	.xsb-product-tabs ul.tabs.wc-tabs li a {
+		padding: 10px 14px;
+		font-size: 13px;
+	}
+
+	.xsb-product-tabs .woocommerce-Tabs-panel {
+		padding: 18px 16px;
+	}
+
+	.xsb-product-tabs .shop_attributes th {
+		width: 130px;
+	}
+}
+
+@media (max-width: 600px) {
+	/* Auto-stack container columns on mobile so multi-col content reflows naturally */
+	.xsb-container > .xsb-container-col {
+		grid-column: 1 / -1 !important;
+	}
+
+	.xsb-product-tabs ul.tabs.wc-tabs {
+		flex-direction: column;
+		gap: 0;
+		padding: 0;
+	}
+
+	.xsb-product-tabs ul.tabs.wc-tabs li {
+		width: 100%;
+	}
+
+	.xsb-product-tabs ul.tabs.wc-tabs li a {
+		width: 100%;
+		box-sizing: border-box;
+		border-bottom: 1px solid #e2e8f0;
+		border-left: 3px solid transparent;
+		padding: 11px 16px;
+	}
+
+	.xsb-product-tabs ul.tabs.wc-tabs li.active a {
+		border-bottom-color: #e2e8f0;
+		border-left-color: #2563eb;
+		background: #ffffff;
+	}
+
+	.xsb-product-tabs .shop_attributes,
+	.xsb-product-tabs .shop_attributes tbody,
+	.xsb-product-tabs .shop_attributes tr,
+	.xsb-product-tabs .shop_attributes th,
+	.xsb-product-tabs .shop_attributes td {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.xsb-product-tabs .shop_attributes th {
+		border-bottom: none;
+		background: #f1f5f9;
+		padding: 8px 12px;
+	}
+
+	.xsb-product-tabs .shop_attributes td {
+		padding: 8px 12px 14px;
+	}
+}
+
+@media (max-width: 480px) {
+	.xsb-template-wrapper ul.products {
+		--xsb-cols: 1;
+	}
+}
+
+@media (max-width: 767px) {
+	.xsb-disable-on-mobile {
+		display: none;
+	}
+}
+
+/* ---------- Template structure layouts ---------- */
+
+/* Centered: single column, max-width constrained */
+.xsb-structure-sp-centered.xsb-template-wrapper,
+.xsb-structure-sp-minimal.xsb-template-wrapper {
+	max-width: 720px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+.xsb-structure-sp-centered .xsb-product-image-wrapper {
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.xsb-structure-sp-centered .xsb-product-title,
+.xsb-structure-sp-centered .xsb-product-price,
+.xsb-structure-sp-centered .xsb-product-excerpt,
+.xsb-structure-sp-centered .xsb-add-to-cart {
+	text-align: center;
+}
+
+.xsb-structure-sp-centered .xsb-product-image-wrapper img {
+	margin: 0 auto;
+}
+
+/* Split: two-column layout */
+.xsb-structure-sp-split.xsb-template-wrapper {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 40px;
+	align-items: start;
+	padding: 20px;
+}
+
+.xsb-structure-sp-split .xsb-product-image-wrapper {
+	position: sticky;
+	top: 20px;
+}
+
+.xsb-structure-sp-split .xsb-product-title {
+	margin-top: 0;
+}
+
+/* Hero: full-width image, content centered below */
+.xsb-structure-sp-hero.xsb-template-wrapper {
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+.xsb-structure-sp-hero .xsb-product-image-wrapper {
+	width: 100%;
+	margin-bottom: 32px;
+}
+
+.xsb-structure-sp-hero .xsb-product-image-wrapper img {
+	width: 100%;
+	height: auto;
+	object-fit: cover;
+}
+
+.xsb-structure-sp-hero .xsb-product-title,
+.xsb-structure-sp-hero .xsb-product-price,
+.xsb-structure-sp-hero .xsb-product-excerpt,
+.xsb-structure-sp-hero .xsb-add-to-cart {
+	max-width: 720px;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+
+.xsb-structure-sp-hero .xsb-product-title {
+	margin-top: 0;
+}
+
+/* Minimal: compact, minimal padding */
+.xsb-structure-sp-minimal .xsb-product-image-wrapper {
+	margin-bottom: 16px;
+}
+
+.xsb-structure-sp-minimal .xsb-product-title {
+	font-size: 1.1em;
+	margin-bottom: 8px;
+}
+
+.xsb-structure-sp-minimal .xsb-product-price {
+	margin-bottom: 12px;
+}
+
+/* Archive structures: contained, centered content with breathing room on
+   both sides so templates never run edge-to-edge inside the theme. */
+.xsb-template-wrapper.xsb-structure-ar-banner,
+.xsb-template-wrapper.xsb-structure-ar-described,
+.xsb-template-wrapper.xsb-structure-ar-standard,
+.xsb-template-wrapper.xsb-structure-ar-minimal {
+	max-width: 1200px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 20px;
+	padding-right: 20px;
+	box-sizing: border-box;
+}
+
+/* Archive banner: contained rounded hero card with a soft drop shadow
+   instead of a full-bleed strip. */
+.xsb-structure-ar-banner .xsb-banner {
+	width: 100%;
+	margin: 24px 0 40px;
+	border-radius: 20px;
+	box-shadow: 0 18px 40px -18px rgba(30, 58, 138, 0.45);
+}
+
+/* Archive minimal: clean grid */
+.xsb-structure-ar-minimal.xsb-template-wrapper {
+	padding-top: 20px;
+	padding-bottom: 20px;
+}
+
+/* Responsive for split layout */
+@media (max-width: 768px) {
+	.xsb-structure-sp-split.xsb-template-wrapper {
+		grid-template-columns: 1fr;
+		gap: 24px;
+	}
+
+	.xsb-structure-sp-split .xsb-product-image-wrapper {
+		position: static;
+	}
+}
+
+/* ----------------- WooCommerce content blocks ------------------ */
+
+/* Product categories: card grid */
+.xsb-woo-cats {
+	list-style: none;
+	margin: 0 0 24px;
+	padding: 0;
+}
+
+.xsb-woo-cats--grid {
+	display: grid;
+	gap: 20px;
+}
+
+.xsb-woo-cat-link {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 10px;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 18px 14px;
+	text-decoration: none;
+	background: #fff;
+	border: 1px solid #e6e9f0;
+	border-radius: 12px;
+	transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.xsb-woo-cat-link:hover {
+	border-color: #2563eb;
+	box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+	transform: translateY(-2px);
+}
+
+.xsb-woo-cat-img {
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	border-radius: 8px;
+	background: #f1f5f9;
+}
+
+.xsb-woo-cat-img--placeholder {
+	display: block;
+	background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+}
+
+.xsb-woo-cat-name {
+	font-weight: 600;
+	color: inherit;
+}
+
+.xsb-woo-cat-count {
+	font-size: 12px;
+	color: #64748b;
+}
+
+/* Product categories: simple list (sidebar) — hoverable rows with a count
+   pill, so the sidebar looks like a real filter widget. */
+.xsb-woo-cats--list {
+	margin-bottom: 0;
+}
+
+.xsb-woo-cats--list .xsb-woo-cat {
+	padding: 2px 0;
+	border-bottom: 1px solid #eef1f6;
+}
+
+.xsb-woo-cats--list .xsb-woo-cat:last-child {
+	border-bottom: 0;
+}
+
+.xsb-woo-cats--list .xsb-woo-cat a {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 9px 10px;
+	border-radius: 8px;
+	text-decoration: none;
+	font-weight: 500;
+	transition: background-color .15s ease, color .15s ease;
+}
+
+.xsb-woo-cats--list .xsb-woo-cat a:hover {
+	background: #eef2ff;
+}
+
+.xsb-woo-cats--list .xsb-woo-cat .xsb-woo-cat-count {
+	float: none;
+	flex: none;
+	min-width: 26px;
+	text-align: center;
+	background: #eef2ff;
+	color: #2563eb;
+	border-radius: 999px;
+	padding: 2px 8px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+/* Sidebar columns in archive templates: keep the widget card in view while
+   the product grid scrolls. */
+.xsb-structure-ar-described .xsb-container > .xsb-container-col:first-child {
+	position: sticky;
+	top: 24px;
+	--xsb-sidebar-pad: 24px; /* matches the shipped sidebar preset column padding */
+}
+
+/* Sidebar widgets stretch to the full card width instead of shrink-wrapping:
+   the column uses align-items:flex-start, so flex children would otherwise
+   collapse to their content width (the categories list, divider and sort
+   box must all span the whole card). */
+.xsb-structure-ar-described .xsb-container > .xsb-container-col:first-child > * {
+	align-self: stretch;
+	width: 100%;
+}
+
+/* Sidebar categories: rows are full-bleed so they fill the whole card width;
+   only the card's own padding stays around them. */
+.xsb-structure-ar-described .xsb-container > .xsb-container-col:first-child .xsb-woo-cats--list {
+	margin-left: calc(-1 * var(--xsb-sidebar-pad, 24px));
+	margin-right: calc(-1 * var(--xsb-sidebar-pad, 24px));
+}
+
+.xsb-structure-ar-described .xsb-container > .xsb-container-col:first-child .xsb-woo-cats--list .xsb-woo-cat {
+	padding: 0;
+}
+
+.xsb-structure-ar-described .xsb-container > .xsb-container-col:first-child .xsb-woo-cats--list .xsb-woo-cat a {
+	padding: 11px 24px;
+	border-radius: 0;
+}
+
+/* The sort dropdown inside a sidebar column stretches full width so it
+   reads as part of the filter card. */
+.xsb-container-col .xsb-ordering-wrap .woocommerce-ordering select.orderby {
+	width: 100%;
+}
+
+@media (max-width: 768px) {
+	.xsb-structure-ar-described .xsb-container > .xsb-container-col:first-child {
+		position: static;
+	}
+
+	/* Stack the sidebar above the product grid on small screens instead of
+	   squeezing it into a sliver of the 12-column grid. */
+	.xsb-structure-ar-described .xsb-container {
+		grid-template-columns: 1fr;
+	}
+
+	.xsb-structure-ar-described .xsb-container > .xsb-container-col {
+		grid-column: 1 / -1 !important;
+	}
+}
+
+@media (max-width: 768px) {
+	.xsb-woo-cats--grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+	}
+}
+
+@media (max-width: 480px) {
+	.xsb-woo-cats--grid {
+		grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+	}
+}
+
+/* Product tags */
+.xsb-woo-tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 24px;
+}
+
+.xsb-woo-tags--list {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.xsb-woo-tag {
+	display: inline-flex;
+	align-items: center;
+	padding: 5px 14px;
+	border-radius: 999px;
+	background: #f1f5f9;
+	color: #334155;
+	font-size: 14px;
+	line-height: 1.6;
+	text-decoration: none;
+	transition: background .15s ease, color .15s ease;
+}
+
+.xsb-woo-tag:hover {
+	background: #2563eb;
+	color: #fff;
+}
+
+/* Product attributes */
+.xsb-woo-attributes {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin: 0 0 24px;
+}
+
+.xsb-woo-attr-name {
+	font-weight: 600;
+	margin-right: 4px;
+}
+
+.xsb-woo-attr-term {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	border: 1px solid #e6e9f0;
+	border-radius: 999px;
+	background: #fff;
+	color: #334155;
+	font-size: 13px;
+	text-decoration: none;
+}
+
+.xsb-woo-attr-term:hover {
+	border-color: #2563eb;
+	color: #2563eb;
+}
+
+/* Product search */
+.xsb-woo-search {
+	display: flex;
+	gap: 8px;
+	max-width: 520px;
+	margin: 0 0 24px;
+}
+
+.xsb-woo-search .xsb-woo-search-input {
+	flex: 1;
+	min-width: 0;
+	padding: 11px 14px;
+	border: 1px solid #d5dae2;
+	border-radius: 8px;
+	background: #fff;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.xsb-woo-search .xsb-woo-search-input:focus {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.xsb-woo-search .xsb-woo-search-button {
+	padding: 11px 22px;
+	border: 0;
+	border-radius: 8px;
+	background: #2563eb;
+	color: #fff;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* ----------------- WordPress widget blocks --------------------- */
+
+.xsb-shortcode,
+.xsb-html,
+.xsb-text-widget {
+	margin: 0 0 24px;
+}
+
+.xsb-text-widget-title {
+	font-size: 1.1em;
+	font-weight: 600;
+	margin: 0 0 8px;
+}
+
+.xsb-text-widget-content > :last-child {
+	margin-bottom: 0;
+}
+
+/* ----------------------------------------------------------------
+ * Per-widget style popover results
+ * ---------------------------------------------------------------- */
+
+/* Shared optional heading of the term blocks. */
+.xsb-woo-block-title {
+	margin: 0 0 14px;
+}
+
+/* Product categories: card visuals follow the category style panel. */
+.xsb-woo-cats--grid .xsb-woo-cat-link {
+	background: var(--xsb-it-bg, #ffffff);
+	border-width: var(--xsb-it-bdw, 1px);
+	border-style: var(--xsb-it-bds, solid);
+	border-color: var(--xsb-it-bdc, #e6e9f0);
+	border-radius: var(--xsb-it-r, 12px);
+	padding: var(--xsb-it-pad, 18px 14px);
+	box-shadow: var(--xsb-it-sh, none);
+}
+
+.xsb-woo-cats--grid .xsb-woo-cat-link:hover {
+	border-color: #2563eb;
+	box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+	transform: translateY(-2px);
+}
+
+.xsb-woo-cats--grid .xsb-woo-cat-name,
+.xsb-woo-cats--list .xsb-woo-cat a {
+	color: var(--xsb-it-color, currentColor);
+	font-size: var(--xsb-it-fs, inherit);
+	font-weight: var(--xsb-it-fw, 600);
+	font-family: var(--xsb-it-ff, inherit);
+}
+
+.xsb-woo-cat-count {
+	color: var(--xsb-it-count, #64748b);
+}
+
+/* Product tags: chip style from the style panel. */
+.xsb-woo-tags .xsb-woo-tag {
+	background: var(--xsb-it-bg, #f1f5f9);
+	border: var(--xsb-it-bdw, 0) var(--xsb-it-bds, solid) var(--xsb-it-bdc, transparent);
+	border-radius: var(--xsb-it-r, 999px);
+	padding: var(--xsb-it-pad, 5px 14px);
+	color: var(--xsb-it-color, #334155);
+	font-size: var(--xsb-it-fs, 14px);
+	font-weight: var(--xsb-it-fw, inherit);
+	font-family: var(--xsb-it-ff, inherit);
+}
+
+.xsb-woo-tags .xsb-woo-tag:hover {
+	background: #2563eb;
+	color: #ffffff;
+}
+
+/* Attribute label + term chips. */
+.xsb-woo-attributes .xsb-woo-attr-term {
+	background: var(--xsb-it-bg, #ffffff);
+	border: var(--xsb-it-bdw, 1px) var(--xsb-it-bds, solid) var(--xsb-it-bdc, #e6e9f0);
+	border-radius: var(--xsb-it-r, 999px);
+	padding: var(--xsb-it-pad, 4px 12px);
+	color: var(--xsb-it-color, #334155);
+	font-size: var(--xsb-it-fs, 13px);
+	font-weight: var(--xsb-it-fw, inherit);
+	font-family: var(--xsb-it-ff, inherit);
+}
+
+.xsb-woo-attributes .xsb-woo-attr-term:hover {
+	border-color: #2563eb;
+	color: #2563eb;
+}
+
+.xsb-woo-attributes .xsb-woo-attr-name {
+	color: var(--xsb-it-color, currentColor);
+	font-size: var(--xsb-it-fs, inherit);
+	font-weight: var(--xsb-it-fw, 600);
+	font-family: var(--xsb-it-ff, inherit);
+}
+
+/* Product search: input + button follow the search style panel. */
+.xsb-woo-search .xsb-woo-search-input {
+	background: var(--xsb-sf-bg, #ffffff);
+	border: var(--xsb-sf-bdw, 1px) solid var(--xsb-sf-bdc, #d5dae2);
+	border-radius: var(--xsb-sf-r, 8px);
+	height: var(--xsb-sf-h, auto);
+	font-size: var(--xsb-sf-fs, 14px);
+	font-family: var(--xsb-sf-ff, inherit);
+	color: var(--xsb-sf-fg, inherit);
+}
+
+.xsb-woo-search .xsb-woo-search-button {
+	background: var(--xsb-btn-bg, #2563eb);
+	color: var(--xsb-btn-fg, #ffffff);
+	border: var(--xsb-btn-bdw, 0) solid var(--xsb-btn-bd, transparent);
+	border-radius: var(--xsb-btn-r, 8px);
+	padding: var(--xsb-btn-py, 11px) var(--xsb-btn-px, 22px);
+	font-size: var(--xsb-btn-fs, inherit);
+	font-weight: var(--xsb-btn-fw, 600);
+}
+
+/* Add to cart: button look, applied only once the user styled it. */
+.xsb-woo-search .xsb-woo-search-button:hover {
+	background: var(--xsb-btn-hover-bg, var(--xsb-btn-bg, #1d4ed8));
+	color: var(--xsb-btn-hover-fg, var(--xsb-btn-fg, #ffffff));
+}
+
+.xsb-add-to-cart.xsb-atc-styled .single_add_to_cart_button:hover,
+.xsb-add-to-cart.xsb-atc-styled .button:hover {
+	background-color: var(--xsb-btn-hover-bg, var(--xsb-btn-bg, #1d4ed8));
+	color: var(--xsb-btn-hover-fg, var(--xsb-btn-fg, #ffffff));
+}
+
+.xsb-loop ul.products {
+	gap: var(--xsb-loop-gap, 20px);
+}
+
+/* Archive pagination numbers — modern pill buttons. WooCommerce renders the
+   numbers as a joined bordered box; we neutralise that and re-style each page
+   as its own soft pill, with a filled current-page chip and circular prev/next
+   arrows. The style panel's color/size vars override the defaults below. */
+.xsb-pagination nav.woocommerce-pagination {
+	margin: 0;
+}
+
+.xsb-pagination nav.woocommerce-pagination ul {
+	border: 0;
+	border-right: 0;
+	margin: 0;
+	padding: 0;
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+}
+
+.xsb-pagination nav.woocommerce-pagination ul li {
+	border: 0;
+	float: none;
+	display: inline-flex;
+	overflow: visible;
+	padding: 0;
+	margin: 0;
+}
+
+/* Each page number is a soft pill button. */
+.xsb-pagination .page-numbers li .page-numbers {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 38px;
+	height: 38px;
+	padding: 0 12px;
+	box-sizing: border-box;
+	line-height: 1;
+	border: 1px solid #e6e9f0;
+	border-radius: 10px;
+	background: #ffffff;
+	color: #2563eb;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: border-color .15s ease, background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.xsb-pagination .page-numbers li .page-numbers:hover,
+.xsb-pagination .page-numbers li .page-numbers:focus {
+	background: #eef2ff;
+	border-color: #93c5fd;
+	color: #1d4ed8;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+}
+
+/* Active page: filled chip, slightly lifted with a soft glow. */
+.xsb-pagination .page-numbers li .page-numbers.current {
+	background: #2563eb;
+	border-color: #2563eb;
+	color: #ffffff;
+	box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+	cursor: default;
+	transform: translateY(-1px);
+}
+
+/* Prev/next arrows become circular icon buttons. */
+.xsb-pagination .page-numbers li .page-numbers.prev,
+.xsb-pagination .page-numbers li .page-numbers.next {
+	min-width: 38px;
+	padding: 0;
+	border-radius: 50%;
+	font-size: 15px;
+	font-weight: 700;
+}
+
+/* Styled variant: honour the style-panel colors instead of the defaults. */
+.xsb-pagination.xsb-pagination--styled nav.woocommerce-pagination ul {
+	gap: var(--xsb-pg-gap, 8px);
+}
+
+.xsb-pagination.xsb-pagination--styled .page-numbers li .page-numbers {
+	color: var(--xsb-pg-link, var(--xsb-pg-fg, #2563eb));
+	font-size: var(--xsb-pg-fs, 14px);
+	font-weight: var(--xsb-pg-fw, 600);
+}
+
+.xsb-pagination.xsb-pagination--styled .page-numbers li .page-numbers.current {
+	background: var(--xsb-pg-abbg, #2563eb);
+	border-color: var(--xsb-pg-abbg, #2563eb);
+	color: var(--xsb-pg-abfg, #ffffff);
+	border-radius: var(--xsb-pg-abr, 10px);
+}
+
+.xsb-pagination.xsb-pagination--styled a.page-numbers:hover {
+	color: var(--xsb-pg-hover, #1d4ed8);
+	border-color: var(--xsb-pg-link, #2563eb);
+}
+
+/* Archive ordering (dropdown + radio). */	.xsb-ordering-wrap .woocommerce-ordering select.orderby,
+.xsb-ordering-wrap .xsb-ordering select {
+	background: var(--xsb-order-field-bg, #ffffff);
+	border: var(--xsb-order-field-bdw, 1px) solid var(--xsb-order-field-bd, #d5dae2);
+	border-radius: var(--xsb-order-field-r, 6px);
+	box-shadow: var(--xsb-order-field-shadow, none);
+	padding: var(--xsb-order-field-py, 8px) var(--xsb-order-field-px, 12px);
+	color: var(--xsb-order-fg, inherit);
+	font-size: var(--xsb-order-fs, inherit);
+	font-weight: var(--xsb-order-fw, inherit);
+	font-family: var(--xsb-order-ff, inherit);
+}
+
+.xsb-ordering-wrap .xsb-ordering-radio {
+	gap: var(--xsb-order-gap, 8px);
+}
+
+.xsb-ordering-wrap .xsb-ordering-option span {
+	color: var(--xsb-order-fg, inherit);
+	font-size: var(--xsb-order-fs, inherit);
+	font-weight: var(--xsb-order-fw, inherit);
+	font-family: var(--xsb-order-ff, inherit);
+}
+
+/* Breadcrumb text + link colours. */
+.xsb-breadcrumb {
+	color: var(--xsb-bc-fg, inherit);
+	font-size: var(--xsb-bc-fs, inherit);
+	font-weight: var(--xsb-bc-fw, inherit);
+}
+
+.xsb-breadcrumb a {
+	color: var(--xsb-bc-link, currentColor);
+}
+
+/* Result count / simple text blocks emit their own inline styles. */
+.xsb-result-count .woocommerce-result-count {
+	margin: 0;
+}
+
+/* Classic text widget: title/content typography from the style panel. */
+.xsb-text-widget-title {
+	color: var(--xsb-twt-title-fg, inherit);
+	font-size: var(--xsb-twt-title-fs, 1.1em);
+	font-weight: var(--xsb-twt-title-fw, 600);
+}
+
+.xsb-text-widget-content {
+	color: var(--xsb-twt-content-fg, inherit);
+	font-size: var(--xsb-twt-content-fs, inherit);
+	font-weight: var(--xsb-twt-content-fw, inherit);
+	line-height: var(--xsb-twt-content-lh, inherit);
+	text-align: var(--xsb-twt-align, inherit);
+}
+
+/* Archive product-loop cards: applied only once the user styled the card.
+   This is also the fallback look when no Product Card template exists, so
+   it mirrors the cd-* card chrome: image band on top, padded content, and
+   a full-width CTA pinned to the bottom. */
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled {
+	background-color: var(--xsb-card-bg, #ffffff);
+	border: var(--xsb-card-bdw, 1px) var(--xsb-card-bds, solid) var(--xsb-card-bdc, #eef1f6);
+	border-radius: var(--xsb-card-r, 14px);
+	padding: 0;
+	overflow: hidden;
+	box-shadow: var(--xsb-card-sh, 0 2px 8px rgba(0, 0, 0, 0.04));
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .28s cubic-bezier(0.16, 1, 0.3, 1), border-color .25s ease;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled:hover {
+	transform: translateY(-5px);
+	box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .xsb-loop-item-image {
+	display: block;
+	aspect-ratio: 1 / 1;
+	max-height: 320px;
+	overflow: hidden;
+	position: relative;
+	background: #f8fafc;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .xsb-loop-item-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform .45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled:hover .xsb-loop-item-image img {
+	transform: scale(1.06);
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .woocommerce-loop-product__title {
+	color: var(--xsb-card-title-fg, #0f172a);
+	font-size: var(--xsb-card-title-fs, 16px);
+	font-weight: var(--xsb-card-title-fw, 600);
+	line-height: 1.35;
+	text-align: center;
+	padding: 16px 16px 0;
+	margin: 0 0 4px;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .woocommerce-loop-product__title a {
+	color: inherit;
+	text-decoration: none;
+	transition: color .15s ease;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .woocommerce-loop-product__title a:hover {
+	color: var(--xsb-btn-bg, #2563eb);
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .star-rating {
+	margin: 6px auto 2px;
+	color: #f59e0b;
+	font-size: 13px;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .xsb-loop-item-price,
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .price {
+	color: var(--xsb-card-price-fg, #16a34a);
+	font-size: var(--xsb-card-price-fs, 17px);
+	font-weight: var(--xsb-card-price-fw, 700);
+	text-align: center;
+	margin: 4px 0 10px;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .price del {
+	opacity: 0.55;
+	margin-right: 6px;
+	font-size: 0.9em;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .price ins {
+	text-decoration: none;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .xsb-loop-item-excerpt {
+	color: #64748b;
+	font-size: 13px;
+	line-height: 1.5;
+	text-align: center;
+	padding: 0 16px 10px;
+	margin: 0;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .button {
+	background-color: var(--xsb-btn-bg, #2563eb);
+	color: var(--xsb-btn-fg, #ffffff);
+	border: var(--xsb-btn-bdw, 0) solid var(--xsb-btn-bd, transparent);
+	border-radius: var(--xsb-btn-r, 8px);
+	padding: var(--xsb-btn-py, 12px) var(--xsb-btn-px, 16px);
+	font-size: var(--xsb-btn-fs, 14px);
+	font-weight: var(--xsb-btn-fw, 600);
+	font-family: var(--xsb-btn-ff, inherit);
+	width: calc(100% - 32px);
+	box-sizing: border-box;
+	text-align: center;
+	margin: auto 16px 16px;
+	transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+	text-decoration: none;
+	display: inline-block;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .button:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.2);
+}
+
+/* Modern pill sale badge over image with glow */
+.xsb-template-wrapper ul.products li.product.xsb-loop-item--styled .onsale {
+	position: absolute;
+	top: 12px;
+	left: 12px;
+	margin: 0;
+	line-height: 1;
+	background: #ef4444;
+	color: #ffffff;
+	border-radius: 999px;
+	padding: 5px 12px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+	z-index: 2;
+}
+
+
+/* ---------- Product Card templates (xsb/cd-*) ---------- */
+.xsb-card {
+	box-sizing: border-box;
+}
+
+.xsb-card .xsb-card-image-link {
+	display: block;
+}
+
+.xsb-card .xsb-card-image-link img {
+	display: block;
+	width: 100%;
+	height: auto;
+	/* No cap and no aspect-ratio: the photo renders at its natural ratio
+	   and fills the card space completely, never cropped. */
+	object-fit: cover;
+}
+
+.xsb-card .xsb-card-title {
+	margin: 0;
+}
+
+.xsb-card .xsb-card-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.xsb-card .xsb-card-title a:hover {
+	text-decoration: underline;
+}
+
+.xsb-card .xsb-card-price {
+	margin: 4px 0;
+}
+
+.xsb-card .xsb-card-price del {
+	opacity: 0.55;
+	margin-right: 4px;
+}
+
+.xsb-card .xsb-card-price ins {
+	text-decoration: none;
+}
+
+.xsb-card .xsb-card-rating {
+	display: inline-flex;
+	line-height: 1;
+}
+
+.xsb-card .xsb-card-excerpt {
+	margin: 0;
+}
+
+.xsb-card .xsb-card-badge {
+	display: inline-block;
+	box-sizing: border-box;
+}
+
+.xsb-card .xsb-card-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.xsb-card .xsb-card-chip {
+	display: inline-block;
+	box-sizing: border-box;
+	text-decoration: none;
+}
+
+.xsb-card .xsb-card-stock--instock { color: #15803d; }
+.xsb-card .xsb-card-stock--outofstock { color: #b91c1c; }
+.xsb-card .xsb-card-stock--onbackorder { color: #b45309; }
+
+.xsb-card .xsb-card-sku {
+	font-size: 0.85em;
+	opacity: 0.8;
+}
+
+/* Card add-to-cart button (class only appears once the user styled it). */
+.xsb-card-add-to-cart.xsb-atc-styled .button,
+.xsb-card-add-to-cart.xsb-atc-styled .add_to_cart_button {
+	background-color: var(--xsb-btn-bg, #2563eb);
+	color: var(--xsb-btn-fg, #ffffff);
+	border: var(--xsb-btn-bdw, 0) solid var(--xsb-btn-bd, transparent);
+	border-radius: var(--xsb-btn-r, 8px);
+	padding: var(--xsb-btn-py, 12px) var(--xsb-btn-px, 24px);
+	font-size: var(--xsb-btn-fs, inherit);
+	font-weight: var(--xsb-btn-fw, 600);
+	font-family: var(--xsb-btn-ff, inherit);
+	display: inline-block;
+	line-height: 1.4;
+}
+
+/* ---------- Default card chrome ----------
+ * Polished product-card look applied to every card template until the user
+ * styles individual blocks (per-block inline styles always win over these
+ * defaults). Legacy loop cards that opted into styling (--styled) keep their
+ * own background/border/shadow via the higher-specificity rules above. */
+.xsb-template-wrapper ul.products > li.xsb-card,
+.xsb-template-wrapper ul.products li.product.xsb-card {
+	background-color: var(--xsb-card-bg, #ffffff);
+	border: var(--xsb-card-bdw, 1px) var(--xsb-card-bds, solid) var(--xsb-card-bdc, #fed7aa);
+	border-radius: var(--xsb-card-r, 18px);
+	box-shadow: var(--xsb-card-sh, 0 4px 16px rgba(0, 0, 0, 0.05));
+	padding: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	text-align: left;
+	transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .28s cubic-bezier(0.16, 1, 0.3, 1), border-color .25s ease;
+}
+
+.xsb-template-wrapper ul.products > li.xsb-card:hover,
+.xsb-template-wrapper ul.products li.product.xsb-card:hover {
+	transform: translateY(-5px);
+	box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Image container with dedicated height and background */
+.xsb-card .xsb-card-image {
+	width: 100%;
+	position: relative;
+	margin: 0 0 4px;
+}
+
+.xsb-card .xsb-card-image-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 220px;
+	background: #f8fafc;
+	overflow: hidden;
+	position: relative;
+	border-radius: inherit inherit 0 0;
+}
+
+.xsb-card .xsb-card-image-link img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform .45s cubic-bezier(0.16, 1, 0.3, 1);
+	display: block;
+}
+
+.xsb-card .xsb-card-image-link img.xsb-card-image-img--placeholder {
+	width: 55%;
+	height: 55%;
+	object-fit: contain;
+	opacity: 0.45;
+}
+
+.xsb-template-wrapper ul.products li.product.xsb-card:hover .xsb-card-image-link img {
+	transform: scale(1.06);
+}
+
+/* Title */
+.xsb-card .xsb-card-title {
+	padding: 0 18px;
+	margin: 2px 0 4px;
+	font-size: 17px;
+	font-weight: 700;
+	line-height: 1.35;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.xsb-card .xsb-card-title a {
+	color: inherit !important;
+	text-decoration: none !important;
+	transition: color 0.15s ease;
+}
+
+.xsb-card .xsb-card-title a:hover {
+	color: var(--xsb-btn-bg, #991b1b) !important;
+}
+
+/* Categories & tags */
+.xsb-card .xsb-card-categories,
+.xsb-card .xsb-card-tags {
+	padding: 14px 18px 0;
+	margin-bottom: 4px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.xsb-card .xsb-card-chip {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: opacity 0.15s ease;
+}
+
+.xsb-card .xsb-card-chip:hover {
+	opacity: 0.85;
+}
+
+/* Rating */
+.xsb-card .xsb-card-rating {
+	padding: 0 18px;
+	margin: 0 0 6px;
+	display: flex;
+	align-items: center;
+}
+
+.xsb-card .xsb-card-rating .star-rating {
+	color: #f59e0b !important;
+	font-size: 14px !important;
+	letter-spacing: 2px;
+	display: inline-block;
+	margin: 0;
+}
+
+/* Excerpt */
+.xsb-card .xsb-card-excerpt {
+	padding: 0 18px;
+	margin: 0 0 8px;
+	color: #78716c;
+	font-size: 12.5px;
+	line-height: 1.45;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+/* Price */
+.xsb-card .xsb-card-price {
+	padding: 0 18px;
+	margin: 0 0 12px;
+	font-size: 19px;
+	font-weight: 800;
+	color: #dc2626;
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.xsb-card .xsb-card-price del {
+	font-size: 0.85em;
+	opacity: 0.55;
+	margin-right: 2px;
+	font-weight: 500;
+}
+
+.xsb-card .xsb-card-price ins {
+	text-decoration: none;
+}
+
+/* Stock & SKU */
+.xsb-card .xsb-card-stock,
+.xsb-card .xsb-card-sku {
+	padding: 0 18px 6px;
+}
+
+/* Add to cart / Action button */
+.xsb-card .xsb-card-add-to-cart {
+	margin-top: auto;
+	padding: 0 18px 18px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.xsb-card .xsb-card-add-to-cart .button,
+.xsb-card .xsb-card-add-to-cart .add_to_cart_button {
+	width: 100% !important;
+	display: block !important;
+	text-align: center !important;
+	box-sizing: border-box !important;
+	border-radius: var(--xsb-btn-r, 999px) !important;
+	background-color: var(--xsb-btn-bg, #dc2626) !important;
+	color: var(--xsb-btn-fg, #ffffff) !important;
+	border: var(--xsb-btn-bdw, 0) solid var(--xsb-btn-bd, transparent) !important;
+	padding: 12px 18px !important;
+	font-size: 13px !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.3px !important;
+	text-decoration: none !important;
+	transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease !important;
+	white-space: normal;
+}
+
+.xsb-card .xsb-card-add-to-cart .button:hover,
+.xsb-card .xsb-card-add-to-cart .add_to_cart_button:hover {
+	transform: translateY(-2px) !important;
+	box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.22) !important;
+	opacity: 0.95 !important;
+}
+
+/* ---------- Cart / checkout content boxes (xsb/cc-*) ---------- */
+.xsb-cc-box {
+	box-sizing: border-box;
+}
+
+/* Keep cart / checkout content off the screen edges with a minimum gutter
+   on every viewport (the container itself caps the content width). */
+.xsb-template-wrapper.xsb-structure-ct-standard,
+.xsb-template-wrapper.xsb-structure-ck-standard {
+	padding-left: 24px;
+	padding-right: 24px;
+}
+
+/* Page title + breadcrumb live in the same contained column as the cards,
+   so they align with the container's left edge instead of spanning the
+   full viewport. */
+.xsb-template-wrapper.xsb-structure-ct-standard > .xsb-text-block,
+.xsb-template-wrapper.xsb-structure-ct-standard > .xsb-breadcrumb,
+.xsb-template-wrapper.xsb-structure-ck-standard > .xsb-text-block,
+.xsb-template-wrapper.xsb-structure-ck-standard > .xsb-breadcrumb {
+	max-width: 1180px;
+	margin-left: auto;
+	margin-right: auto;
+	box-sizing: border-box;
+}
+
+/* Split widgets inside container columns: stretch to fill the column so
+   the totals panel doesn't shrink-wrap next to the items table. */
+.xsb-cc-box--items,
+.xsb-cc-box--totals {
+	width: 100%;
+}
+
+.xsb-cc-box .woocommerce,
+.xsb-cc-box .woocommerce-cart-form {
+	width: 100%;
+}
+
+.xsb-cc-box .shop_table {
+	width: 100%;
+}
+
+/* Cart: two-column layout inside the card — items table left, totals
+   panel right. The renderer splits WooCommerce's own DOM into semantic
+   columns (.xsb-cc-cols), so we never depend on WooCommerce's floats or
+   its internal wrapper classes. Stacks to one column on smaller screens.
+   The split widgets rely on the same grid via the template container, so
+   this rule only styles the classic single-box layout. */
+.xsb-cc-cols {
+	display: grid;
+	grid-template-columns: minmax(0, 1.72fr) minmax(0, 1fr);
+	gap: 28px;
+	align-items: start;
+}
+
+@media ( max-width: 900px ) {
+	.xsb-cc-cols {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.xsb-cc-box--cart .woocommerce-cart-form,
+.xsb-cc-box--cart .cart-collaterals,
+.xsb-cc-box--cart .cart-collaterals .cart_totals {
+	float: none;
+	width: auto;
+	max-width: none;
+}
+
+.xsb-cc-box--cart .cart-collaterals {
+	margin: 0;
+}
+
+/* Cart table: light row separators, uppercase header labels. */
+.xsb-cc-box table.shop_table {
+	border: 0;
+	margin: 0;
+}
+
+.xsb-cc-box table.shop_table thead th {
+	border: 0;
+	border-bottom: 1px solid #eef1f6;
+	padding: 0 8px 10px 0;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #94a3b8;
+}
+
+.xsb-cc-box table.shop_table tbody tr {
+	border: 0;
+}
+
+.xsb-cc-box table.shop_table tbody td {
+	border: 0;
+	border-bottom: 1px solid #eef1f6;
+	padding: 16px 8px 16px 0;
+	vertical-align: middle;
+}
+
+.xsb-cc-box table.shop_table tbody tr:last-child td {
+	border-bottom: 0;
+}
+
+/* Product thumbnail: small rounded photo. (The extra chain beats
+   WooCommerce's `.woocommerce-cart table.cart img { width: 32px }`.) */
+.xsb-cc-box table.shop_table .product-thumbnail img {
+	width: 64px;
+	height: 64px;
+	max-width: 64px;
+	object-fit: cover;
+	border-radius: 10px;
+	border: 1px solid #eef1f6;
+	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+/* Product name. */
+.xsb-cc-box .product-name a {
+	color: #171c26;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.xsb-cc-box .product-name a:hover {
+	color: #2563eb;
+}
+
+/* Remove link: subtle chip, red on hover. WooCommerce colours it with
+   `!important`, so the override must too. */
+.xsb-cc-box table.shop_table a.remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	color: #94a3b8 !important;
+	background: transparent;
+	font-size: 18px;
+	line-height: 1;
+	text-decoration: none;
+	transition: background-color .15s ease, color .15s ease;
+}
+
+.xsb-cc-box table.shop_table a.remove:hover {
+	background: #fef2f2;
+	color: #dc2626 !important;
+}
+
+/* Quantity stepper: bordered chip with a centred number. */
+.xsb-cc-box .quantity {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	background: #fff;
+	overflow: hidden;
+}
+
+.xsb-cc-box .quantity input.qty {
+	width: 40px;
+	padding: 7px 0;
+	border: 0;
+	background: transparent;
+	text-align: center;
+	font-weight: 600;
+	color: #334155;
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
+/* +/− stepper buttons injected by xsb-cart-qty.js. */
+.xsb-cc-box .quantity .xsb-qty-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 32px;
+	height: 34px;
+	border: 0;
+	background: transparent;
+	color: #64748b;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+	transition: background-color .15s ease, color .15s ease;
+}
+
+.xsb-cc-box .quantity .xsb-qty-btn:hover {
+	background: #f1f5f9;
+	color: #0f172a;
+}
+
+.xsb-cc-box .quantity .xsb-qty-minus {
+	border-right: 1px solid #e2e8f0;
+}
+
+.xsb-cc-box .quantity .xsb-qty-plus {
+	border-left: 1px solid #e2e8f0;
+}
+
+.xsb-cc-box .quantity .qty::-webkit-outer-spin-button,
+.xsb-cc-box .quantity .qty::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+/* Totals panel: soft card with dashed row separators. */
+.xsb-cc-box .cart-collaterals .cart_totals {
+	border: 1px solid #eef1f6;
+	border-radius: 14px;
+	background: #f8fafc;
+	padding: 24px;
+	box-shadow: 0 10px 30px -18px rgba(15, 23, 42, 0.25);
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals h2 {
+	margin: 0 0 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #eef1f6;
+	font-size: 16px;
+	font-weight: 700;
+	color: #171c26;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table {
+	border: 0;
+	margin: 0 0 18px;
+	background: transparent;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table tr {
+	border: 0;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table th,
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table td {
+	border: 0;
+	border-bottom: 1px dashed #e6e9f0;
+	padding: 12px 0;
+	font-size: 14px;
+	vertical-align: top;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table tr:last-child th,
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table tr:last-child td {
+	border-bottom: 0;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals table.shop_table th {
+	font-weight: 500;
+	color: #64748b;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals .order-total th,
+.xsb-cc-box .cart-collaterals .cart_totals .order-total td {
+	font-weight: 700;
+	color: #171c26;
+}
+
+.xsb-cc-box .cart-collaterals .cart_totals .order-total td .amount {
+	font-size: 20px;
+	color: #16a34a;
+}
+
+/* Proceed to checkout: full-width blue button. (The extra class/element
+   chain beats WooCommerce's `.woocommerce a.button.alt` background.) */
+.xsb-cc-box .wc-proceed-to-checkout {
+	padding: 0;
+}
+
+.xsb-cc-box .wc-proceed-to-checkout a.checkout-button.button {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 14px 20px;
+	background: #2563eb;
+	color: #ffffff;
+	border: 0;
+	border-radius: 10px;
+	font-size: 15px;
+	font-weight: 600;
+	text-align: center;
+	text-decoration: none;
+	box-shadow: 0 6px 16px -8px rgba(37, 99, 235, 0.5);
+	transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.xsb-cc-box .wc-proceed-to-checkout a.checkout-button.button:hover {
+	background: #1d4ed8;
+	color: #ffffff;
+	transform: translateY(-1px);
+	box-shadow: 0 10px 20px -8px rgba(37, 99, 235, 0.55);
+}
+
+/* Coupon row. */
+.xsb-cc-box .coupon {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.xsb-cc-box table.cart td.actions .coupon .input-text {
+	width: auto;
+	min-width: 180px;
+	flex: 1;
+	padding: 10px 12px;
+	border: 1px solid #d5dae2;
+	border-radius: 8px;
+	background: #fff;
+	font-size: 14px;
+}
+
+.xsb-cc-box .coupon button.button {
+	background: #f1f5f9;
+	color: #334155;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 10px 18px;
+	font-weight: 600;
+	transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.xsb-cc-box .coupon button.button:hover {
+	background: #2563eb;
+	border-color: #2563eb;
+	color: #fff;
+}
+
+/* Actions row: coupon input + “Apply coupon” on one line (left), with
+   “Update cart” pinned to the far right of the card. */
+.xsb-cc-box table.shop_table td.actions {
+	padding: 18px 0 0;
+}
+
+.xsb-cc-box table.shop_table td.actions::after {
+	content: "";
+	display: table;
+	clear: both;
+}
+
+.xsb-cc-box table.shop_table td.actions .coupon {
+	float: left;
+	margin-bottom: 0;
+}
+
+.xsb-cc-box .coupon {
+	flex-wrap: nowrap;
+}
+
+.xsb-cc-box .coupon button.button {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.xsb-cc-box table.shop_table td.actions button.button[name="update_cart"] {
+	float: right;
+	background: #0f172a;
+	border: 1px solid #0f172a;
+	color: #ffffff;
+	border-radius: 8px;
+	padding: 10px 20px;
+	font-weight: 600;
+	box-shadow: 0 4px 10px -6px rgba(15, 23, 42, 0.4);
+	transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.xsb-cc-box table.shop_table td.actions button.button[name="update_cart"]:hover {
+	background: #1e293b;
+	border-color: #1e293b;
+	color: #ffffff;
+	transform: translateY(-1px);
+}
+
+/* Empty cart. */
+.xsb-cc-box .cart-empty {
+	text-align: center;
+	padding: 20px 0;
+	color: #64748b;
+}
+
+.xsb-cc-box .return-to-shop .button {
+	display: inline-block;
+	padding: 12px 24px;
+	background: #2563eb;
+	color: #fff;
+	border-radius: 8px;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+/* Checkout: rounded form fields + clean order review inside the card. */
+.xsb-cc-box form.woocommerce-checkout .form-row input.input-text,
+.xsb-cc-box form.woocommerce-checkout .form-row select,
+.xsb-cc-box form.woocommerce-checkout .form-row textarea,
+.xsb-cc-box .woocommerce form .form-row input.input-text,
+.xsb-cc-box .woocommerce form .form-row select,
+.xsb-cc-box .woocommerce form .form-row textarea {
+	padding: 11px 12px;
+	border: 1px solid #d5dae2;
+	border-radius: 8px;
+	background: #fff;
+	line-height: 1.5;
+}
+
+.xsb-cc-box form.woocommerce-checkout .form-row select,
+.xsb-cc-box .woocommerce form .form-row select {
+	/* WooCommerce hides the native arrow (appearance:none + its own chevron
+	   image); restore the native control so the dropdown stays usable. */
+	appearance: auto;
+	-webkit-appearance: auto;
+	background-image: none;
+	padding-right: 12px;
+}
+
+.xsb-cc-box form.woocommerce-checkout .form-row input.input-text:focus,
+.xsb-cc-box form.woocommerce-checkout .form-row select:focus,
+.xsb-cc-box form.woocommerce-checkout .form-row textarea:focus {
+	border-color: #2563eb;
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+	outline: none;
+}
+
+.xsb-cc-box #order_review table.shop_table {
+	border: 1px solid #eef1f6;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.xsb-cc-box #order_review table.shop_table thead th {
+	background: #f8fafc;
+	padding: 12px 16px;
+}
+
+.xsb-cc-box #order_review table.shop_table td,
+.xsb-cc-box #order_review table.shop_table th {
+	padding: 12px 16px;
+	border-bottom: 1px solid #eef1f6;
+}
+
+.xsb-cc-box #order_review .place-order .button {
+	background: #2563eb;
+	color: #fff;
+	border: 0;
+	border-radius: 10px;
+	padding: 14px 24px;
+	font-size: 15px;
+	font-weight: 600;
+	width: 100%;
+	text-align: center;
+}
+
+.xsb-cc-box #order_review .place-order .button:hover {
+	background: #1d4ed8;
+}
+
+/* ---------- Split checkout widgets (xsb/cc-checkout-*) ----------
+   The checkout renderer wraps the whole template in one form.checkout, so
+   the form is an ANCESTOR of the section boxes (unlike the classic block,
+   where it is a descendant). Scope the field styling at the wrapper level. */
+.xsb-checkout-form {
+	width: 100%;
+}
+
+.xsb-checkout-form .xsb-cc-box--checkout {
+	width: 100%;
+}
+
+.xsb-checkout-form .form-row input.input-text,
+.xsb-checkout-form .form-row select,
+.xsb-checkout-form .form-row textarea {
+	padding: 11px 12px;
+	border: 1px solid #d5dae2;
+	border-radius: 8px;
+	background: #fff;
+	line-height: 1.5;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.xsb-checkout-form .form-row select {
+	appearance: auto;
+	-webkit-appearance: auto;
+	background-image: none;
+	padding-right: 12px;
+}
+
+.xsb-checkout-form .form-row input.input-text:focus,
+.xsb-checkout-form .form-row select:focus,
+.xsb-checkout-form .form-row textarea:focus {
+	border-color: #2563eb;
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+	outline: none;
+}
+
+.xsb-checkout-form .form-row label {
+	font-size: 13px;
+	font-weight: 600;
+	color: #334155;
+	margin-bottom: 6px;
+	display: block;
+}
+.xsb-checkout-form .form-row {
+	margin: 0 0 16px;
+	padding: 0;
+}
+
+.xsb-checkout-form .form-row-first,
+.xsb-checkout-form .form-row-last {
+	width: 48.5%;
+	float: left;
+}
+
+.xsb-checkout-form .form-row-last {
+	float: right;
+}
+
+.xsb-checkout-form .form-row-wide {
+	clear: both;
+}
+
+/* select2 dropdowns (Country / Region, State / County) rendered by
+   WooCommerce's selectWoo: match the rest of the form inputs — same height,
+   border, radius, focus ring. Flexbox centers the value/arrow vertically
+   regardless of select2's own line-height rules. */
+.xsb-checkout-form .select2-container .select2-selection--single {
+	display: flex !important;
+	align-items: center !important;
+	height: 44px;
+	border: 1px solid #d5dae2;
+	border-radius: 8px;
+	background: #fff;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+.xsb-checkout-form .select2-container--default .select2-selection--single .select2-selection__rendered {
+	flex: 1 1 auto;
+	float: none !important;
+	line-height: 1.4 !important;
+	padding: 0 14px !important;
+	color: #171c26;
+	font-size: 15px;
+}
+
+.xsb-checkout-form .select2-container--default .select2-selection--single .select2-selection__placeholder {
+	color: #94a3b8;
+}
+
+.xsb-checkout-form .select2-container--default .select2-selection--single .select2-selection__arrow {
+	position: absolute;
+	top: 50% !important;
+	transform: translateY(-50%);
+	height: auto !important;
+	width: 28px;
+	right: 8px;
+}
+
+.xsb-checkout-form .select2-container--default .select2-selection--single .select2-selection__arrow b {
+	border-color: #64748b transparent transparent transparent;
+	border-width: 5px 4px 0 4px;
+	margin-left: -4px;
+	margin-top: -2px;
+}
+
+.xsb-checkout-form .select2-container--open .select2-selection--single,
+.xsb-checkout-form .select2-container--focus .select2-selection--single {
+	border-color: #2563eb;
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+	outline: none;
+}
+
+/* Full width inside the form row. */
+.xsb-checkout-form .select2-container {
+	display: block;
+	width: 100% !important;
+	max-width: none;
+}
+
+/* Dropdown panel: rounded, soft shadow, tidy options. */
+.xsb-checkout-form .select2-dropdown {
+	border: 1px solid #e6e9f0;
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(23, 28, 38, 0.1);
+	overflow: hidden;
+}
+
+.xsb-checkout-form .select2-dropdown .select2-search__field {
+	border: 1px solid #d5dae2;
+	border-radius: 6px;
+	padding: 9px 12px;
+	outline: none;
+}
+
+.xsb-checkout-form .select2-dropdown .select2-search__field:focus {
+	border-color: #2563eb;
+}
+
+.xsb-checkout-form .select2-results__option {
+	padding: 10px 14px;
+	font-size: 14px;
+	color: #171c26;
+}
+
+.xsb-checkout-form .select2-container--default .select2-results__option--highlighted[aria-selected],
+.xsb-checkout-form .select2-container--default .select2-results__option[aria-selected=true] {
+	background-color: #2563eb;
+	color: #fff;
+}
+
+.xsb-checkout-form ::after {
+	display: none;
+}
+
+.xsb-checkout-form .woocommerce-form__label-for-checkbox {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 15px;
+	font-weight: 600;
+	color: #171c26;
+	cursor: pointer;
+}
+
+/* Section headings inside each widget card. */
+.xsb-cc-box--checkout .xsb-checkout-section-title,
+.xsb-cc-box--checkout h3 {
+	margin: 0 0 18px;
+	font-size: 17px;
+	font-weight: 700;
+	color: #171c26;
+}
+
+/* Order review table inside the totals widget: no header row, products
+   listed as clean full-width rows (product thumb + name / total). */
+.xsb-cc-box--checkout table.shop_table {
+	border: 1px solid #eef1f6;
+	border-radius: 12px;
+	overflow: hidden;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.xsb-cc-box--checkout table.shop_table thead {
+	display: none;
+}
+
+.xsb-cc-box--checkout table.shop_table td,
+.xsb-cc-box--checkout table.shop_table th {
+	padding: 14px 16px;
+	border-bottom: 1px solid #eef1f6;
+	border-left: 0;
+	border-right: 0;
+	vertical-align: middle;
+}
+
+.xsb-cc-box--checkout table.shop_table tr:last-child td {
+	border-bottom: 0;
+}
+
+/* Product thumb (or Woo placeholder) + name side by side in the review
+   rows. The thumb is injected by XSB_Checkout_Enhancements. */
+.xsb-cc-box--checkout table.shop_table td.product-name {
+	font-weight: 500;
+	color: #171c26;
+}
+
+.xsb-cc-box--checkout table.shop_table td.product-name .xsb-review-thumb {
+	display: inline-flex;
+	vertical-align: middle;
+	margin-right: 12px;
+}
+
+.xsb-cc-box--checkout table.shop_table td.product-name .xsb-review-thumb img {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 8px;
+	display: block;
+}
+
+.xsb-cc-box--checkout table.shop_table td.product-name .xsb-review-name-text {
+	display: inline-block;
+	vertical-align: middle;
+	max-width: calc(100% - 60px);
+}
+
+.xsb-cc-box--checkout table.shop_table td.product-name .product-quantity {
+	color: #64748b;
+	font-weight: 500;
+}
+
+.xsb-cc-box--checkout table.shop_table td.product-total,
+.xsb-cc-box--checkout table.shop_table tfoot td,
+.xsb-cc-box--checkout table.shop_table tfoot th {
+	text-align: right;
+}
+
+/* Totals rows: label muted, value strong; final total emphasized. */
+.xsb-cc-box--checkout table.shop_table tfoot th {
+	font-weight: 500;
+	color: #64748b;
+}
+
+.xsb-cc-box--checkout table.shop_table tfoot td {
+	font-weight: 600;
+	color: #171c26;
+}
+
+.xsb-cc-box--checkout table.shop_table tr.order-total td,
+.xsb-cc-box--checkout table.shop_table tr.order-total th {
+	font-size: 16px;
+	font-weight: 700;
+	color: #171c26;
+	border-top: 1px solid #eef1f6;
+}
+
+/* Payment widget: clean box + full-width place-order button. */
+.xsb-cc-box--payment #payment {
+	background: transparent;
+	border-radius: 0;
+}
+
+.xsb-cc-box--payment .payment_methods {
+	list-style: none;
+	margin: 0 0 18px;
+	padding: 0;
+	border: 1px solid #eef1f6;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.xsb-cc-box--payment .payment_methods li {
+	border-bottom: 1px solid #eef1f6;
+	padding: 14px 16px;
+	margin: 0;
+	background: #fff;
+}
+
+.xsb-cc-box--payment .payment_methods li:last-child {
+	border-bottom: 0;
+}
+
+.xsb-cc-box--payment .payment_methods li label {
+	font-weight: 600;
+	color: #171c26;
+	cursor: pointer;
+}
+
+.xsb-cc-box--payment .payment_box {
+	background: #f8fafc;
+	border-radius: 8px;
+	padding: 12px 14px;
+	margin: 10px 0 0;
+	font-size: 14px;
+	color: #475569;
+}
+
+.xsb-cc-box--payment .place-order .button {
+	background: #2563eb;
+	color: #fff;
+	border: 0;
+	border-radius: 10px;
+	padding: 14px 24px;
+	font-size: 15px;
+	font-weight: 600;
+	width: 100%;
+	text-align: center;
+	cursor: pointer;
+}
+
+.xsb-cc-box--payment .place-order .button:hover {
+	background: #1d4ed8;
+}
+
+/* Notes textarea a touch taller. */
+.xsb-cc-box--notes textarea {
+	min-height: 90px;
+}
+
+/* "Ship to a different address?" renders as an h3 wrapping the checkbox
+   label — present it as a clean checkbox row, not a big heading. */
+.xsb-cc-box--shipping h3#ship-to-different-address {
+	margin: 0 0 18px;
+	padding: 12px 14px;
+	background: #f8fafc;
+	border: 1px solid #eef1f6;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+.xsb-cc-box--shipping h3#ship-to-different-address label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #171c26;
+	cursor: pointer;
+	margin: 0;
+}
+
+/* Checkbox accent to match the blue theme. */
+.xsb-checkout-form input[type="checkbox"] {
+	accent-color: #2563eb;
+	width: 16px;
+	height: 16px;
+}
+
+/* Optional widget title (user-set via the style panel): modest card title. */
+.xsb-cc-box--checkout .xsb-checkout-section-title {
+	margin: 0 0 16px;
+	font-size: 16px;
+	font-weight: 700;
+	color: #171c26;
+}
+
+/* Collapse the cart grid to a single column on small screens. */
+@media (max-width: 768px) {
+	.xsb-cc-box--cart .woocommerce {
+		grid-template-columns: 1fr;
+		gap: 20px;
+	}
+}
+
+/* Sticky Sidebar on Desktop for Cart Totals and Checkout Order Summary */
+@media (min-width: 992px) {
+	.xsb-cc-box--totals,
+	.xsb-cc-cols-side,
+	.xsb-template-wrapper.xsb-structure-ck-standard .xsb-container-col:last-child,
+	.xsb-template-wrapper.xsb-structure-ct-standard .xsb-container-col:last-child {
+		position: sticky;
+		top: 24px;
+		z-index: 10;
+		align-self: start;
+	}
+}
+
+/* Modernized notices on Cart & Checkout */
+.xsb-template-wrapper .woocommerce-notices-wrapper,
+.xsb-template-wrapper .woocommerce-NoticeGroup {
+	width: 100%;
+	margin-bottom: 24px;
+}
+
+.xsb-template-wrapper .woocommerce-error,
+.xsb-template-wrapper .woocommerce-info,
+.xsb-template-wrapper .woocommerce-message {
+	padding: 14px 18px 14px 44px !important;
+	border: 0 !important;
+	border-radius: 10px !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	line-height: 1.5 !important;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+	position: relative !important;
+}
+
+.xsb-template-wrapper .woocommerce-message {
+	background-color: #f0fdf4 !important;
+	color: #166534 !important;
+	border-left: 4px solid #16a34a !important;
+}
+
+.xsb-template-wrapper .woocommerce-error {
+	background-color: #fef2f2 !important;
+	color: #991b1b !important;
+	border-left: 4px solid #dc2626 !important;
+}
+
+.xsb-template-wrapper .woocommerce-info {
+	background-color: #eff6ff !important;
+	color: #1e40af !important;
+	border-left: 4px solid #2563eb !important;
+}
+
+/* Polished shipping calculator form */
+.xsb-cc-box .shipping-calculator-form {
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px dashed #e2e8f0;
+}
+
+.xsb-cc-box .shipping-calculator-form select,
+.xsb-cc-box .shipping-calculator-form input.input-text {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid #d5dae2;
+	border-radius: 6px;
+	font-size: 13px;
+	margin-bottom: 8px;
+}
+
+.xsb-cc-box .shipping-calculator-form button.button {
+	width: 100%;
+	padding: 9px;
+	font-size: 13px;
+	border-radius: 6px;
+	background: #334155;
+	color: #fff;
+	border: 0;
+	font-weight: 600;
+}
+
+/* ---------- Card template extras: overlay badges, image band/overlay, chips ---------- */
+
+/* Front-end edit controls are output only for users allowed to edit the
+   selected template. Kept in this enqueued stylesheet rather than markup. */
+.xsb-edit-builder { position: fixed; right: 24px; bottom: 24px; z-index: 99999; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.xsb-edit-builder__pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; color: #fff; background: #111827; border: 1px solid rgba(255,255,255,.14); border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.28); font: 500 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease, color .15s ease; }
+.xsb-edit-builder__pill:hover { color: #fff; background: #2563eb; transform: translateY(-2px); }
+.xsb-edit-builder__pill--card { background: #1d4ed8; }
+.xsb-edit-builder__pill--card:hover { background: #2563eb; }
+.xsb-edit-builder__pill svg { flex: 0 0 auto; }
+.xsb-edit-builder__label { white-space: nowrap; }
+@media (max-width: 600px) { .xsb-edit-builder { right: 14px; bottom: 14px; } .xsb-edit-builder__label, .xsb-edit-builder__pill--card { display: none; } }
+
+/* The card root anchors absolutely-placed overlays (badge corners). */
+.xsb-card {
+	position: relative;
+}
+
+/* Fixed-height cover band: crop the photo instead of keeping its ratio. */
+.xsb-card .xsb-card-image--band .xsb-card-image-link .xsb-card-image-img:not(.xsb-card-image-img--placeholder),
+.xsb-card .xsb-card-image--band .xsb-card-image-link img:not(.xsb-card-image-img--placeholder) {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* Badge overlay placement over the card (corners / middle sides). */
+.xsb-card-badge--overlay {
+	position: absolute;
+	z-index: 3;
+}
+
+.xsb-card-badge--top-left    { top: 12px; left: 12px; }
+.xsb-card-badge--top-center  { top: 12px; left: 50%; transform: translateX(-50%); }
+.xsb-card-badge--top-right   { top: 12px; right: 12px; }
+.xsb-card-badge--middle-left  { top: 50%; left: 12px; transform: translateY(-50%); }
+.xsb-card-badge--middle-right { top: 50%; right: 12px; transform: translateY(-50%); }
+.xsb-card-badge--bottom-left    { bottom: 12px; left: 12px; }
+.xsb-card-badge--bottom-center  { bottom: 12px; left: 50%; transform: translateX(-50%); }
+.xsb-card-badge--bottom-right   { bottom: 12px; right: 12px; }
+
+/* Ribbon: flag notched at its leading end. The notch points right; corner
+   placements on the right side flip it with the -rev modifier. */
+.xsb-card-badge--ribbon {
+	padding-right: 20px;
+	clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+}
+
+.xsb-card-badge--ribbon.xsb-card-badge--top-right,
+.xsb-card-badge--ribbon.xsb-card-badge--middle-right,
+.xsb-card-badge--ribbon.xsb-card-badge--bottom-right {
+	clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%);
+	padding-right: 0;
+	padding-left: 20px;
+}
+
+/* Card categories / tags chips: every chip follows the item style panel. */
+.xsb-card .xsb-card-categories .xsb-card-chip,
+.xsb-card .xsb-card-tags .xsb-card-chip {
+	background: var(--xsb-chip-bg, transparent);
+	padding: var(--xsb-chip-pad, 0);
+	border: var(--xsb-chip-bd, none);
+	border-radius: var(--xsb-chip-r, 0);
+	box-shadow: var(--xsb-chip-sh, none);
+	color: var(--xsb-chip-fg, inherit);
+	font-size: var(--xsb-chip-fs, inherit);
+	font-weight: var(--xsb-chip-fw, inherit);
+	font-family: var(--xsb-chip-ff, inherit);
+	line-height: 1.4;
+}
+
+/* Container Hover Animation Presets */
+.xsb-container.xsb-hover-grow {
+	transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+.xsb-container.xsb-hover-grow:hover {
+	transform: scale(1.04);
+}
+
+.xsb-container.xsb-hover-lift {
+	transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+.xsb-container.xsb-hover-lift:hover {
+	transform: translateY(-6px);
+	box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+}
+
+.xsb-container.xsb-hover-glow {
+	transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.xsb-container.xsb-hover-glow:hover {
+	box-shadow: 0 0 24px rgba(99, 102, 241, 0.45);
+}
+
+/* Responsive Visibility Classes */
+@media (min-width: 1025px) {
+	.xsb-hide-desktop {
+		display: none !important;
+	}
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+	.xsb-hide-tablet {
+		display: none !important;
+	}
+}
+@media (max-width: 768px) {
+	.xsb-hide-mobile {
+		display: none !important;
+	}
+}
+

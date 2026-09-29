@@ -1,0 +1,324 @@
+/**
+ * Design tokens for the Xcodesol Page Builder editor shell.
+ *
+ * This file is the single source of truth for colour, spacing, radius,
+ * elevation, typography and motion. Every other stylesheet in src/admin
+ * consumes these variables — never hard-code a hex value or a pixel gap in a
+ * component stylesheet.
+ *
+ * Themes are switched by the app (see src/admin/app.js) which sets
+ * `[data-theme="dark"]` on <html> and `xcopb-theme-dark` on <body>. The dark
+ * block below only re-points the *semantic* tokens, so components never need
+ * a dark-specific rule.
+ *
+ * The legacy aliases at the bottom (--xsb-accent, --xsb-surface, --xsb-text,
+ * --xsb-line, --xsb-muted…) are kept because controls.css, canvas.css and
+ * assets/admin/popover.css already reference those names.
+ *
+ * @package Xcodesol_Page_Builder
+ */
+
+:root {
+	/* ------------------------------------------------------------------ *
+	 * Palette — neutral ramp
+	 * ------------------------------------------------------------------ */
+
+	--xsb-n-0: #ffffff;
+	--xsb-n-25: #fcfcfd;
+	--xsb-n-50: #f8fafc;
+	--xsb-n-100: #f3f5f9;
+	--xsb-n-150: #eaedf3;
+	--xsb-n-200: #e3e7ee;
+	--xsb-n-300: #cbd2dd;
+	--xsb-n-400: #9aa4b4;
+	--xsb-n-500: #6b7686;
+	--xsb-n-600: #515c6c;
+	--xsb-n-700: #3b4553;
+	--xsb-n-800: #2a323d;
+	--xsb-n-850: #1f2630;
+	--xsb-n-900: #171c24;
+	--xsb-n-950: #0f1319;
+
+	/* ------------------------------------------------------------------ *
+	 * Palette — accent (soft indigo / violet)
+	 * ------------------------------------------------------------------ */
+
+	--xsb-a-50: #f2f2fe;
+	--xsb-a-100: #e6e6fd;
+	--xsb-a-200: #d3d2fb;
+	--xsb-a-300: #b6b4f8;
+	--xsb-a-400: #9490f3;
+	--xsb-a-500: #6f6ae8;
+	--xsb-a-600: #5b55dc;
+	--xsb-a-700: #4a44c4;
+	--xsb-a-800: #3d389e;
+
+	/* ------------------------------------------------------------------ *
+	 * Palette — semantic
+	 * ------------------------------------------------------------------ */
+
+	--xsb-success-50: #e9f9f2;
+	--xsb-success-500: #12a675;
+	--xsb-success-600: #0d8b61;
+	--xsb-warning-50: #fef4e6;
+	--xsb-warning-500: #dd8b12;
+	--xsb-warning-600: #b8720c;
+	--xsb-danger-50: #fdeceb;
+	--xsb-danger-500: #e2483d;
+	--xsb-danger-600: #c8372d;
+	--xsb-info-50: #eaf2fe;
+	--xsb-info-500: #2f6fe0;
+	--xsb-info-600: #2559bb;
+
+	/* ------------------------------------------------------------------ *
+	 * Semantic surface tokens (light)
+	 * ------------------------------------------------------------------ */
+
+	--xsb-bg-app: var(--xsb-n-100);
+	--xsb-bg-panel: var(--xsb-n-0);
+	--xsb-bg-subtle: var(--xsb-n-50);
+	--xsb-bg-sunken: var(--xsb-n-150);
+	--xsb-bg-canvas: var(--xsb-n-150);
+	--xsb-bg-hover: var(--xsb-n-100);
+	--xsb-bg-active: var(--xsb-a-50);
+	--xsb-bg-inverse: var(--xsb-n-900);
+	--xsb-bg-scrim: rgba(15, 19, 25, 0.44);
+
+	--xsb-border: var(--xsb-n-200);
+	--xsb-border-strong: var(--xsb-n-300);
+	--xsb-border-subtle: var(--xsb-n-150);
+	--xsb-border-focus: var(--xsb-a-500);
+
+	--xsb-text: var(--xsb-n-900);
+	--xsb-text-sub: var(--xsb-n-600);
+	--xsb-muted: var(--xsb-n-500);
+	--xsb-faint: var(--xsb-n-400);
+	--xsb-text-inverse: var(--xsb-n-0);
+	--xsb-text-on-accent: #ffffff;
+
+	--xsb-accent: var(--xsb-a-500);
+	--xsb-accent-hover: var(--xsb-a-600);
+	--xsb-accent-soft: var(--xsb-a-50);
+	--xsb-accent-soft-text: var(--xsb-a-700);
+	--xsb-accent-contrast: #ffffff;
+
+	--xsb-success: var(--xsb-success-500);
+	--xsb-success-soft: var(--xsb-success-50);
+	--xsb-warning: var(--xsb-warning-500);
+	--xsb-warning-soft: var(--xsb-warning-50);
+	--xsb-danger: var(--xsb-danger-500);
+	--xsb-danger-soft: var(--xsb-danger-50);
+	--xsb-info: var(--xsb-info-500);
+	--xsb-info-soft: var(--xsb-info-50);
+
+	/* Selection / guide colours used by the canvas. */
+	--xsb-guide: var(--xsb-a-500);
+	--xsb-guide-soft: rgba(111, 106, 232, 0.14);
+
+	/* ------------------------------------------------------------------ *
+	 * Spacing — 4px base scale
+	 * ------------------------------------------------------------------ */
+
+	--xsb-space-0: 0;
+	--xsb-space-1: 2px;
+	--xsb-space-2: 4px;
+	--xsb-space-3: 6px;
+	--xsb-space-4: 8px;
+	--xsb-space-5: 10px;
+	--xsb-space-6: 12px;
+	--xsb-space-7: 14px;
+	--xsb-space-8: 16px;
+	--xsb-space-9: 20px;
+	--xsb-space-10: 24px;
+	--xsb-space-11: 28px;
+	--xsb-space-12: 32px;
+	--xsb-space-13: 40px;
+	--xsb-space-14: 48px;
+
+	/* ------------------------------------------------------------------ *
+	 * Radius
+	 * ------------------------------------------------------------------ */
+
+	--xsb-radius-xs: 4px;
+	--xsb-radius-sm: 6px;
+	--xsb-radius-md: 8px;
+	--xsb-radius-lg: 10px;
+	--xsb-radius-xl: 12px;
+	--xsb-radius-2xl: 16px;
+	--xsb-radius-full: 999px;
+
+	/* ------------------------------------------------------------------ *
+	 * Elevation
+	 * ------------------------------------------------------------------ */
+
+	--xsb-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+	--xsb-shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+	--xsb-shadow-md: 0 4px 12px -2px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
+	--xsb-shadow-lg: 0 12px 28px -6px rgba(16, 24, 40, 0.14), 0 4px 10px -4px rgba(16, 24, 40, 0.08);
+	--xsb-shadow-xl: 0 24px 48px -12px rgba(16, 24, 40, 0.2);
+	--xsb-shadow-popover: 0 12px 32px -8px rgba(16, 24, 40, 0.18), 0 2px 8px -2px rgba(16, 24, 40, 0.08);
+	--xsb-ring: 0 0 0 3px rgba(111, 106, 232, 0.3);
+	--xsb-ring-danger: 0 0 0 3px rgba(226, 72, 61, 0.28);
+
+	/* ------------------------------------------------------------------ *
+	 * Typography
+	 * ------------------------------------------------------------------ */
+
+	--xsb-font: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+		'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+	--xsb-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+	--xsb-text-2xs: 10px;
+	--xsb-text-xs: 11px;
+	--xsb-text-sm: 12px;
+	--xsb-text-base: 13px;
+	--xsb-text-md: 14px;
+	--xsb-text-lg: 16px;
+	--xsb-text-xl: 18px;
+	--xsb-text-2xl: 22px;
+
+	--xsb-weight-normal: 400;
+	--xsb-weight-medium: 500;
+	--xsb-weight-semibold: 600;
+	--xsb-weight-bold: 700;
+
+	--xsb-leading-tight: 1.25;
+	--xsb-leading-snug: 1.4;
+	--xsb-leading-normal: 1.55;
+
+	--xsb-tracking-label: 0.01em;
+	--xsb-tracking-caps: 0.06em;
+
+	/* ------------------------------------------------------------------ *
+	 * Motion
+	 * ------------------------------------------------------------------ */
+
+	--xsb-ease: cubic-bezier(0.2, 0, 0, 1);
+	--xsb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--xsb-dur-1: 120ms;
+	--xsb-dur-2: 160ms;
+	--xsb-dur-3: 200ms;
+	--xsb-dur-4: 280ms;
+
+	/* ------------------------------------------------------------------ *
+	 * Layout metrics
+	 * ------------------------------------------------------------------ */
+
+	--xsb-topbar-h: 56px;
+	--xsb-statusbar-h: 34px;
+	--xsb-sidebar-w: 300px;
+	--xsb-inspector-w: 344px;
+	--xsb-hit-sm: 28px;
+	--xsb-hit: 34px;
+	--xsb-hit-lg: 40px;
+
+	/* ------------------------------------------------------------------ *
+	 * Z-index scale
+	 * ------------------------------------------------------------------ */
+
+	--xsb-z-canvas: 1;
+	--xsb-z-edge-toggle: 6;
+	--xsb-z-toolbar: 10;
+	--xsb-z-sticky: 20;
+	--xsb-z-topbar: 30;
+	--xsb-z-popover: 80;
+	--xsb-z-modal: 90;
+	--xsb-z-toast: 100;
+
+	/* ------------------------------------------------------------------ *
+	 * Legacy aliases — consumed by controls.css / canvas.css / popover.css
+	 * ------------------------------------------------------------------ */
+
+	--xsb-pop-ink: var(--xsb-text);
+	--xsb-pop-muted: var(--xsb-muted);
+	--xsb-pop-faint: var(--xsb-faint);
+	--xsb-pop-line: var(--xsb-border);
+	--xsb-pop-hover: var(--xsb-bg-hover);
+	--xsb-pop-subtle: var(--xsb-bg-subtle);
+	--xsb-pop-bg: var(--xsb-bg-panel);
+	--xsb-pop-border: var(--xsb-border);
+	--xsb-pop-radius: var(--xsb-radius-md);
+	--xsb-pop-focus: var(--xsb-a-200);
+	--xsb-pop-blue: var(--xsb-accent);
+	--xsb-pop-blue-soft: var(--xsb-accent-soft);
+	--xsb-pop-blue-text: var(--xsb-accent-soft-text);
+	--xsb-pop-danger: var(--xsb-danger);
+	--xsb-pop-danger-soft: var(--xsb-danger-soft);
+	--xsb-surface: var(--xsb-bg-panel);
+	--xsb-line: var(--xsb-border);
+}
+
+/* ---------------------------------------------------------------------- *
+ * Dark theme — re-points semantic tokens only
+ * ---------------------------------------------------------------------- */
+
+html[data-theme='dark'] {
+	--xsb-bg-app: #12161d;
+	--xsb-bg-panel: #171c24;
+	--xsb-bg-subtle: #1c222c;
+	--xsb-bg-sunken: #10141a;
+	--xsb-bg-canvas: #0f1319;
+	--xsb-bg-hover: #222937;
+	--xsb-bg-active: rgba(111, 106, 232, 0.18);
+	--xsb-bg-inverse: var(--xsb-n-50);
+	--xsb-bg-scrim: rgba(6, 8, 12, 0.62);
+
+	--xsb-border: #262e3a;
+	--xsb-border-strong: #333d4c;
+	--xsb-border-subtle: #202733;
+
+	--xsb-text: #e8ecf3;
+	--xsb-text-sub: #a8b2c1;
+	--xsb-muted: #8592a4;
+	--xsb-faint: #626e80;
+	--xsb-text-inverse: var(--xsb-n-950);
+
+	--xsb-accent: #8b87f0;
+	--xsb-accent-hover: #a09dfa;
+	--xsb-accent-soft: rgba(111, 106, 232, 0.16);
+	--xsb-accent-soft-text: #c3c1fb;
+	--xsb-accent-contrast: #14121f;
+
+	--xsb-success: #34c48f;
+	--xsb-success-soft: rgba(18, 166, 117, 0.16);
+	--xsb-warning: #e8a33c;
+	--xsb-warning-soft: rgba(221, 139, 18, 0.16);
+	--xsb-danger: #f0705f;
+	--xsb-danger-soft: rgba(226, 72, 61, 0.16);
+	--xsb-info: #6ba1f5;
+	--xsb-info-soft: rgba(47, 111, 224, 0.16);
+
+	--xsb-guide: #8b87f0;
+	--xsb-guide-soft: rgba(139, 135, 240, 0.16);
+
+	--xsb-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--xsb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+	--xsb-shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
+	--xsb-shadow-lg: 0 12px 28px -6px rgba(0, 0, 0, 0.55), 0 4px 10px -4px rgba(0, 0, 0, 0.4);
+	--xsb-shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+	--xsb-shadow-popover: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+	--xsb-ring: 0 0 0 3px rgba(139, 135, 240, 0.35);
+	--xsb-text-on-accent: #14121f;
+}
+
+/* ---------------------------------------------------------------------- *
+ * Motion preferences — collapse every transition/animation
+ * ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--xsb-dur-1: 1ms;
+		--xsb-dur-2: 1ms;
+		--xsb-dur-3: 1ms;
+		--xsb-dur-4: 1ms;
+	}
+
+	.xsb-app *,
+	.xsb-app *::before,
+	.xsb-app *::after {
+		animation-duration: 1ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 1ms !important;
+		scroll-behavior: auto !important;
+	}
+}

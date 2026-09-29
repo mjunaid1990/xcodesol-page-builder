@@ -4,6 +4,9 @@ node_modules/
 # Build artifacts that are generated / not part of the plugin source
 build/
 
+# Freebuff workspace metadata
+.freebuff/
+
 # WordPress / general
 .DS_Store
 *.log

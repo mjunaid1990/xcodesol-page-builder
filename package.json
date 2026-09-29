@@ -1,0 +1,29 @@
+{
+	"name": "xcodesol-page-builder",
+	"version": "1.0.0",
+	"description": "Xcodesol Page Builder - React admin editor.",
+	"main": "src/admin/index.js",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"start": "wp-scripts start",
+		"build": "wp-scripts build",
+		"check-engines": "wp-scripts check-engines",
+		"format": "wp-scripts format",
+		"lint:js": "wp-scripts lint-js src",
+		"packages-update": "wp-scripts packages-update"
+	},
+	"dependencies": {
+		"@dnd-kit/core": "^6.3.1",
+		"@dnd-kit/sortable": "^10.0.0",
+		"@dnd-kit/utilities": "^3.2.2",
+		"@wordpress/api-fetch": "^7.0.0",
+		"@wordpress/components": "^28.0.0",
+		"@wordpress/data": "^10.0.0",
+		"@wordpress/dom-ready": "^4.0.0",
+		"@wordpress/element": "^6.0.0",
+		"@wordpress/i18n": "^5.0.0"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.0.0"
+	}
+}

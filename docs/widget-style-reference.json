@@ -1,0 +1,1357 @@
+{
+  "version": 2,
+  "_comment": "Full styling spec per widget. Groups: layout|spacing|dimensions|typography|colors|background|border|radius|shadow|effects|visibility|advanced|responsive. Responsive + Visibility apply to EVERY element; Advanced on every element (collapsed). States only where interactive. Colors role extras live inside 'colors' (link/hover/active/disabled/icon/border/placeholder/overlay). Updated: CSS transform group (translate/scale/rotate/origin) added to the Effects category of every listed element.",
+  "widgets": {
+    "xcosb/ar-title": {
+      "label": "Archive Title",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Link hover color + underline when titled links; text-shadow; max text width.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/ar-description": {
+      "label": "Archive Description",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Text-shadow over image headers; max text width.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Gradient/box backgrounds; min-height."
+        }
+      ]
+    },
+    "xcosb/ar-result-count": {
+      "label": "Result Count",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Muted secondary tone; letter-spacing for eyebrow style.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/ar-ordering": {
+      "label": "Sort Products",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Push right/left; flex row with result count.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "input",
+          "label": "Select / Radio",
+          "groups": [
+            "dimensions",
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "focus",
+            "focusVisible"
+          ],
+          "notes": "Dropdown caret color; radio accent color in radio mode; per-option row hover; placeholder color; focus ring outline."
+        }
+      ]
+    },
+    "xcosb/ar-loop": {
+      "label": "Product Grid",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Grid",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "gap / row-gap / column-gap; min-height.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/ar-pagination": {
+      "label": "Pagination",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Center/left/right; prev-next separated.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "link",
+          "label": "Page button / link",
+          "groups": [
+            "layout",
+            "spacing",
+            "typography",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "active",
+            "focusVisible",
+            "disabled",
+            "selected"
+          ],
+          "notes": "Current-page fill; disabled ghost; prev/next arrow color; hover lift."
+        }
+      ]
+    },
+    "xcosb/sp-title": {
+      "label": "Product Title",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Line-height/letter-spacing; link hover color + underline.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/sp-price": {
+      "label": "Product Price",
+      "elements": [
+        {
+          "id": "price",
+          "label": "Price text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Sale price color/weight separate; secondary unit tone.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/sp-image": {
+      "label": "Product Image",
+      "elements": [
+        {
+          "id": "image",
+          "label": "Image",
+          "groups": [
+            "dimensions",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Aspect-ratio/crop fit; filters (grayscale/sepia/brightness/contrast); hover zoom + lift shadow.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Sale corner overlay; min-height."
+        }
+      ]
+    },
+    "xcosb/sp-add-to-cart": {
+      "label": "Add to Cart",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Flex row + gap; stretch/left/right.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "button",
+          "label": "Button",
+          "groups": [
+            "layout",
+            "spacing",
+            "typography",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "active",
+            "focusVisible",
+            "disabled",
+            "loading"
+          ],
+          "notes": "Letter-spacing + uppercase; full width; hover translateY lift; loading spinner accent; focus ring outline."
+        },
+        {
+          "id": "input",
+          "label": "Quantity input",
+          "groups": [
+            "dimensions",
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "focus",
+            "focusVisible"
+          ],
+          "notes": "Stepper arrows color; hover border; focus ring; disabled at zero stock."
+        }
+      ]
+    },
+    "xcosb/sp-excerpt": {
+      "label": "Product Excerpt",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Max text width; line-clamp; first-letter styling.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-image": {
+      "label": "Card Image",
+      "elements": [
+        {
+          "id": "image",
+          "label": "Image",
+          "groups": [
+            "dimensions",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Aspect-ratio/crop; filters; hover zoom + reveal.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-badge": {
+      "label": "Sale Badge",
+      "elements": [
+        {
+          "id": "badge",
+          "label": "Badge chip",
+          "groups": [
+            "spacing",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Ribbon fold shadow; gradient badge; pulse/float animation; padding presets."
+        },
+        {
+          "id": "text",
+          "label": "Badge text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Letter-spacing + uppercase; text-shadow over images.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-title": {
+      "label": "Card Title",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "2-line clamp; link hover color + underline.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-price": {
+      "label": "Card Price",
+      "elements": [
+        {
+          "id": "price",
+          "label": "Price text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Sale color/weight; old-price strikethrough tone.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-rating": {
+      "label": "Card Rating",
+      "elements": [
+        {
+          "id": "stars",
+          "label": "Stars",
+          "groups": [
+            "typography",
+            "colors",
+            "spacing",
+            "layout",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Typography sizes the star glyphs; filled/empty/hover star colors; count text tone."
+        }
+      ]
+    },
+    "xcosb/cd-excerpt": {
+      "label": "Card Excerpt",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Line-clamp; max text width.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-add-to-cart": {
+      "label": "Card Add to Cart",
+      "elements": [
+        {
+          "id": "button",
+          "label": "Button",
+          "groups": [
+            "layout",
+            "spacing",
+            "typography",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "active",
+            "focusVisible",
+            "disabled",
+            "loading"
+          ],
+          "notes": "Full width; letterspacing/uppercase; hover lift; loading spinner."
+        },
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-categories": {
+      "label": "Card Categories",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "List box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Flex wrap + gap."
+        },
+        {
+          "id": "chip",
+          "label": "Chip / link",
+          "groups": [
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "focusVisible"
+          ],
+          "notes": "Pill vs square; hover fill swap; separator color via colors.border.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-tags": {
+      "label": "Card Tags",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "List box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive"
+          ]
+        },
+        {
+          "id": "chip",
+          "label": "Chip / link",
+          "groups": [
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "focusVisible"
+          ],
+          "notes": "Same chip kit as categories.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-stock": {
+      "label": "Card Stock Status",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Status text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Per-status colors: in-stock green / low amber / out-of-stock red-disabled / on-backorder blue; status dot color.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cd-sku": {
+      "label": "Card SKU",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Text row",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "notes": "Prefix label muted vs value; letter spacing.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/gb-banner": {
+      "label": "Banner",
+      "elements": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Text-shadow over image/video; max text width; line-height/letter-spacing.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "paragraph",
+          "label": "Paragraph",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Text-shadow; max text width.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "button",
+          "label": "Button",
+          "groups": [
+            "layout",
+            "spacing",
+            "typography",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "active",
+            "focusVisible"
+          ],
+          "notes": "Gradient CTA; hover translateY lift; letterspacing/uppercase; gap to second CTA."
+        },
+        {
+          "id": "container",
+          "label": "Background & box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Video + image + gradient layered; parallax attachment; overlay color/opacity behind text; min-height; entrance animations.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "content",
+          "label": "Content box",
+          "groups": [
+            "layout",
+            "spacing",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Max content width; vertical + horizontal alignment; glass panel (bg + blur backdrop); inner gap."
+        }
+      ]
+    },
+    "xcosb/gb-divider": {
+      "label": "Divider",
+      "elements": [
+        {
+          "id": "line",
+          "label": "Line",
+          "groups": [
+            "colors",
+            "background",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Gradient fade line; grow-on-scroll animation; vertical divider option.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/gb-breadcrumb": {
+      "label": "Breadcrumb",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Wrap control; separator spacing."
+        },
+        {
+          "id": "text",
+          "label": "Links text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive",
+            "transform"
+          ],
+          "states": [
+            "hover",
+            "focusVisible"
+          ],
+          "notes": "Link/hover/current colors; separator color; underline on hover; focus ring.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/gb-text": {
+      "label": "Text",
+      "elements": [
+        {
+          "id": "text",
+          "label": "Text",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Text-shadow; max width; drop cap; inner link hover underline.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ]
+        }
+      ]
+    },
+    "xcosb/gb-container": {
+      "label": "Container (12-col grid)",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Container",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Columns/gap mirrored in Layout; equal-height columns; min-height.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "column",
+          "label": "Column 1..N (each, separately)",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Per-column gradient; per-column hide-on-mobile; per-column vertical align/order."
+        }
+      ]
+    },
+    "xcosb/gb-text-widget": {
+      "label": "Text Widget",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Accent underline via border-bottom.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "content",
+          "label": "Content",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Link/hover colors; list bullet color; image margins."
+        },
+        {
+          "id": "wrapper",
+          "label": "Box",
+          "groups": [
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ]
+        }
+      ]
+    },
+    "xcosb/woo-categories": {
+      "label": "Product Categories",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Text-shadow over image variants.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "wrapper",
+          "label": "Grid wrapper",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Columns/gap; equal heights."
+        },
+        {
+          "id": "item",
+          "label": "Category card",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Hover lift + shadow + border-color; image overlay tint."
+        },
+        {
+          "id": "image",
+          "label": "Image",
+          "groups": [
+            "dimensions",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Aspect/crop; filters; hover zoom; radius follows card."
+        },
+        {
+          "id": "name",
+          "label": "Name",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Link color/hover underline; letter spacing."
+        },
+        {
+          "id": "count",
+          "label": "Count",
+          "groups": [
+            "typography",
+            "colors",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Count badge chip (bg/radius) vs muted text."
+        }
+      ]
+    },
+    "xcosb/woo-tags": {
+      "label": "Product Tags",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "wrapper",
+          "label": "List box",
+          "groups": [
+            "layout",
+            "spacing",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Wrap + gap + align."
+        },
+        {
+          "id": "chip",
+          "label": "Tag chip",
+          "groups": [
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "focusVisible"
+          ],
+          "notes": "Pill vs square; hover fill + lift; focus ring."
+        }
+      ]
+    },
+    "xcosb/woo-attributes": {
+      "label": "Product Attributes",
+      "elements": [
+        {
+          "id": "title",
+          "label": "Title",
+          "groups": [
+            "typography",
+            "colors",
+            "layout",
+            "spacing",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "wrapper",
+          "label": "List box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Card chrome around the rows."
+        },
+        {
+          "id": "item",
+          "label": "Term row / chip",
+          "groups": [
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover"
+          ],
+          "notes": "Row hover bg; term/value alignment; row separators via border-bottom."
+        }
+      ]
+    },
+    "xcosb/woo-search": {
+      "label": "Product Search",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Form box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Flex row/direction; focus-within ring highlight."
+        },
+        {
+          "id": "input",
+          "label": "Input",
+          "groups": [
+            "dimensions",
+            "spacing",
+            "typography",
+            "colors",
+            "border",
+            "radius",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "focus",
+            "focusVisible"
+          ],
+          "notes": "Placeholder color; caret color; icon spacing; focus ring outline.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        },
+        {
+          "id": "button",
+          "label": "Button",
+          "groups": [
+            "spacing",
+            "typography",
+            "colors",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "states": [
+            "hover",
+            "active",
+            "focusVisible",
+            "disabled"
+          ],
+          "notes": "Icon+text gap; hover lift; disabled ghost."
+        }
+      ]
+    },
+    "xcosb/cc-cart": {
+      "label": "Cart (WooCommerce)",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Cart box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Centered column card; mobile full-bleed; inner WC markup untouched.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    },
+    "xcosb/cc-checkout": {
+      "label": "Checkout (WooCommerce)",
+      "elements": [
+        {
+          "id": "wrapper",
+          "label": "Checkout box",
+          "groups": [
+            "layout",
+            "spacing",
+            "background",
+            "border",
+            "radius",
+            "shadow",
+            "effects",
+            "transform",
+            "visibility",
+            "advanced",
+            "responsive"
+          ],
+          "notes": "Form column card; focus ring inherits theme; inner WC markup untouched.",
+          "transformNote": "CSS transform: translate X/Y, scale, rotate, transform origin — responsive per device."
+        }
+      ]
+    }
+  },
+  "cardSurface": {
+    "label": "Product Card — whole-card surface",
+    "elements": [
+      {
+        "id": "surface",
+        "label": "Card",
+        "groups": [
+          "layout",
+          "spacing",
+          "background",
+          "border",
+          "radius",
+          "shadow",
+          "effects",
+          "visibility",
+          "advanced",
+          "responsive"
+        ],
+        "states": [
+          "hover"
+        ],
+        "notes": "Whole-card chrome: hover lift/shadow; full-bleed image setups (card padding 0, inner padding on blocks); hover border color. Applies to the wrapping card element in Product Card templates."
+      }
+    ]
+  }
+}
