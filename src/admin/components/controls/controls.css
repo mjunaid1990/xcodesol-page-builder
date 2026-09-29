@@ -327,7 +327,8 @@
 .xsb-box-model-header-row {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: flex-end;
+	gap: var(--xsb-space-2);
 }
 
 .xsb-box-model-grid {
@@ -1561,19 +1562,25 @@ html[data-theme='dark'] .xsb-sheet-in {
 	gap: 6px;
 }
 
+/* Stacked controls keep the label on the left: `align-self: center` would
+ * otherwise centre it once the field stops being a grid. */
 .xsb-ctrl-spacing-box .xsb-control-field__header,
 .xsb-ctrl-gap .xsb-control-field__header,
 .xsb-toggle-field .xsb-control-field__header,
 .xsb-box-spacing-field .xsb-control-field__header {
 	grid-column: auto;
 	grid-row: auto;
+	align-self: stretch;
+	width: 100%;
 }
 
 .xsb-ctrl-spacing-box .xsb-control-field__body,
 .xsb-ctrl-gap .xsb-control-field__body,
-.xsb-toggle-field .xsb-control-field__body {
+.xsb-toggle-field .xsb-control-field__body,
+.xsb-box-spacing-field .xsb-control-field__body {
 	grid-column: auto;
 	grid-row: auto;
+	width: 100%;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1885,6 +1892,192 @@ html[data-theme='dark'] .xsb-sheet-in {
 	font-weight: 700;
 	color: transparent;
 	text-shadow: 0 0 0 var(--xsb-text, #0f172a);
+}
+
+/* ------------------------------------------------------------------ *
+ * Scrubber rows (number + slider) and box spacing rows
+ *
+ * The schema inspector builds these rows itself instead of going through
+ * ControlBase, so they carry their own wrapper class names. They follow
+ * the same Elementor pattern: label and unit actions on the first line,
+ * the value control on the second.
+ * ------------------------------------------------------------------ */
+
+.xsb-control-label-wrap {
+	display: flex;
+	align-items: center;
+	gap: var(--xsb-space-3);
+	min-width: 0;
+}
+
+.xsb-control-label {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--xsb-text-sub, #475569);
+	font-size: 11px;
+	font-weight: var(--xsb-weight-semibold, 600);
+	letter-spacing: 0.02em;
+	text-overflow: ellipsis;
+	text-transform: capitalize;
+	white-space: nowrap;
+}
+
+/* Dragging the label scrubs the value, so advertise the affordance. */
+.xsb-control-label.is-scrubbable {
+	cursor: ew-resize;
+	user-select: none;
+}
+
+.xsb-control-label-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--xsb-space-2);
+	margin-left: auto;
+}
+
+.xsb-control-device-reset {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	height: 20px;
+	padding: 0 6px;
+	border: 1px solid var(--xsb-accent-soft, rgba(37, 99, 235, 0.25));
+	border-radius: var(--xsb-radius-full, 999px);
+	background: var(--xsb-accent-soft, rgba(37, 99, 235, 0.08));
+	color: var(--xsb-accent, #2563eb);
+	font-size: 9px;
+	font-weight: var(--xsb-weight-semibold, 600);
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.xsb-control-device-reset:hover {
+	background: var(--xsb-accent, #2563eb);
+	color: var(--xsb-accent-contrast, #fff);
+}
+
+.xsb-number-input-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+
+.xsb-number-input-wrap .xsb-number-input {
+	text-align: center;
+	-moz-appearance: textfield;
+}
+
+.xsb-number-input-wrap .xsb-number-input::-webkit-inner-spin-button,
+.xsb-number-input-wrap .xsb-number-input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.xsb-number-input-unit {
+	position: absolute;
+	right: 8px;
+	color: var(--xsb-faint, #94a3b8);
+	font-size: 10px;
+	pointer-events: none;
+}
+
+.xsb-slider-input-row {
+	display: flex;
+	align-items: center;
+	gap: var(--xsb-space-4);
+}
+
+.xsb-slider-range {
+	-webkit-appearance: none;
+	appearance: none;
+	flex: 1 1 auto;
+	height: 3px;
+	margin: 0;
+	border: 0;
+	border-radius: var(--xsb-radius-full, 999px);
+	background: var(--xsb-line, #cbd5e1);
+	cursor: pointer;
+}
+
+.xsb-slider-range::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 12px;
+	height: 12px;
+	border: 2px solid var(--xsb-accent, #2563eb);
+	border-radius: 50%;
+	background: var(--xsb-surface, #fff);
+	box-shadow: var(--xsb-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.2));
+	cursor: grab;
+}
+
+.xsb-slider-range::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	border: 2px solid var(--xsb-accent, #2563eb);
+	border-radius: 50%;
+	background: var(--xsb-surface, #fff);
+	cursor: grab;
+}
+
+/* Four-sided spacing: one cell per side, micro-label underneath. */
+.xsb-box-spacing-grid {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: var(--xsb-space-2);
+}
+
+.xsb-spacing-col {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.xsb-spacing-input {
+	height: 30px;
+	padding: 0 6px;
+	text-align: center;
+	-moz-appearance: textfield;
+}
+
+.xsb-spacing-input::-webkit-inner-spin-button,
+.xsb-spacing-input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.xsb-spacing-sublabel {
+	color: var(--xsb-faint, #94a3b8);
+	font-size: 9px;
+	letter-spacing: 0.02em;
+	text-align: center;
+	text-transform: capitalize;
+}
+
+.xsb-link-toggle-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--xsb-radius-sm, 6px);
+	background: transparent;
+	color: var(--xsb-faint, #94a3b8);
+	cursor: pointer;
+	transition: color var(--xsb-dur-2) var(--xsb-ease), background var(--xsb-dur-2) var(--xsb-ease);
+}
+
+.xsb-link-toggle-btn:hover {
+	background: var(--xsb-bg-subtle, #f1f5f9);
+	color: var(--xsb-text-sub, #475569);
+}
+
+.xsb-link-toggle-btn.is-linked {
+	background: var(--xsb-accent-soft, rgba(37, 99, 235, 0.08));
+	color: var(--xsb-accent, #2563eb);
 }
 
 

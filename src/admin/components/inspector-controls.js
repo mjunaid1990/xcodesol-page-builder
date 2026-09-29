@@ -415,6 +415,7 @@ export function SliderScrubberControl( {
 } ) {
 	const numVal = typeof value === 'object' && value !== null ? ( value.value ?? 0 ) : ( Number( value ) || 0 );
 	const currentUnit = typeof value === 'object' && value !== null ? ( value.unit || unit ) : unit;
+	const unitless = ! units || units.length === 0;
 
 	const handleNumberChange = ( nextNum ) => {
 		if ( typeof value === 'object' && value !== null ) {
@@ -453,14 +454,16 @@ export function SliderScrubberControl( {
 							<span>{ activeDevice }</span>
 						</button>
 					) }
-					<UnitSelect
-						units={ units }
-						value={ currentUnit }
-						onChange={ handleUnitChange }
-					/>
+					{ ! unitless && (
+						<UnitSelect
+							units={ units }
+							value={ currentUnit }
+							onChange={ handleUnitChange }
+						/>
+					) }
 				</div>
 			</div>
-			<div className="xsb-slider-input-row" style={ { display: 'flex', alignItems: 'center', gap: '8px' } }>
+			<div className="xsb-slider-input-row">
 				<input
 					type="range"
 					className="xsb-slider-range"
@@ -469,9 +472,9 @@ export function SliderScrubberControl( {
 					max={ max }
 					step={ step }
 					onChange={ ( e ) => handleNumberChange( Number( e.target.value ) ) }
-					style={ { flex: 1 } }
+					aria-label={ label }
 				/>
-				<div className="xsb-number-input-wrap" style={ { width: '70px', flex: 'none' } }>
+				<div className="xsb-number-input-wrap">
 					<input
 						type="number"
 						className="xsb-text-input xsb-number-input"
@@ -480,8 +483,8 @@ export function SliderScrubberControl( {
 						max={ max }
 						step={ step }
 						onChange={ ( e ) => handleNumberChange( Number( e.target.value ) ) }
+						aria-label={ label }
 					/>
-					<span className="xsb-number-input-unit">{ currentUnit }</span>
 				</div>
 			</div>
 		</div>
@@ -511,6 +514,7 @@ export function NumberScrubberControl( {
 
 	const numVal = typeof value === 'object' && value !== null ? ( value.value ?? 0 ) : ( Number( value ) || 0 );
 	const currentUnit = typeof value === 'object' && value !== null ? ( value.unit || unit ) : unit;
+	const unitless = ! units || units.length === 0;
 
 	const handleMouseDown = ( e ) => {
 		setIsDragging( true );
@@ -581,11 +585,13 @@ export function NumberScrubberControl( {
 							<span>{ activeDevice }</span>
 						</button>
 					) }
-					<UnitSelect
-						units={ units }
-						value={ currentUnit }
-						onChange={ handleUnitChange }
-					/>
+					{ ! unitless && (
+						<UnitSelect
+							units={ units }
+							value={ currentUnit }
+							onChange={ handleUnitChange }
+						/>
+					) }
 				</div>
 			</div>
 			<div className="xsb-number-input-wrap">
@@ -597,8 +603,8 @@ export function NumberScrubberControl( {
 					max={ max }
 					step={ step }
 					onChange={ ( e ) => handleDirectChange( Number( e.target.value ) ) }
+					aria-label={ label }
 				/>
-				<span className="xsb-number-input-unit">{ currentUnit }</span>
 			</div>
 		</div>
 	);

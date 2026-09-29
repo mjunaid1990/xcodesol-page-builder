@@ -662,6 +662,7 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 							min={ 0 }
 							max={ 100 }
 							unit="px"
+							units={ [ 'px', 'rem', '%' ] }
 						/>
 					</div>
 				) }
@@ -704,6 +705,7 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 						min={ 0 }
 						max={ 100 }
 						unit="px"
+						units={ [ 'px', '%', 'rem', 'em' ] }
 					/>
 				</CollapsibleSection>
 			) }
@@ -759,6 +761,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'child_order', val ) }
 							min={ -10 }
 							max={ 100 }
+							units={ [] }
 						/>
 					</div>
 					<div className="xsb-control-field">
@@ -768,6 +771,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'flex_grow', val ) }
 							min={ 0 }
 							max={ 10 }
+							units={ [] }
 						/>
 					</div>
 					<div className="xsb-control-field">
@@ -777,6 +781,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'flex_shrink', val ) }
 							min={ 0 }
 							max={ 10 }
+							units={ [] }
 						/>
 					</div>
 				</>
@@ -791,6 +796,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'col_width_override', val ) }
 							min={ 0 }
 							max={ 12 }
+							units={ [] }
 						/>
 					</div>
 					<div className="xsb-control-field">
@@ -800,6 +806,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'child_order', val ) }
 							min={ -10 }
 							max={ 100 }
+							units={ [] }
 						/>
 					</div>
 					<div className="xsb-control-field">
@@ -828,6 +835,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'grid_column_span', val ) }
 							min={ 1 }
 							max={ 12 }
+							units={ [] }
 						/>
 					</div>
 					<div className="xsb-control-field">
@@ -837,6 +845,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'grid_row_span', val ) }
 							min={ 1 }
 							max={ 12 }
+							units={ [] }
 						/>
 					</div>
 					<div className="xsb-control-field">
@@ -926,6 +935,7 @@ function ParentLayoutChildSection( { parentMode, settings, onChange } ) {
 							onChange={ ( val ) => onChange( 'child_order', val ) }
 							min={ -10 }
 							max={ 100 }
+							units={ [] }
 						/>
 					</div>
 				</>

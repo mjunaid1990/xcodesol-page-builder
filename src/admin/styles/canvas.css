@@ -61,6 +61,44 @@
  * empty live-zone state, so both share one set of rules. */
 
 /* ------------------------------------------------------------------ *
+ * Container columns and empty drop targets
+ *
+ * Elementor centres "Drag widget here" inside an empty element, so an
+ * empty container reads as one large target instead of a caption pinned
+ * to one edge. Targets that already hold widgets keep normal flow. The
+ * column itself needs positioning so its gutter handle anchors to it.
+ * ------------------------------------------------------------------ */
+
+.xsb-container-col {
+	position: relative;
+	min-width: 0;
+}
+
+.xsb-container-col:not(:has(> .xsb-nested-block)),
+.xsb-live-zone-body:not(:has(> .xsb-live-block)) {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: stretch;
+}
+
+/* Empty targets stay roomy; the page-level zone gets the most room since
+ * its hint doubles as the "drop your first section" affordance. */
+.xsb-container-col:not(:has(> .xsb-nested-block)),
+.xsb-container-flow:not(:has(> .xsb-nested-block)) {
+	min-height: 150px;
+}
+
+.xsb-container-flow:not(:has(> .xsb-nested-block)) {
+	align-content: center;
+	justify-content: center;
+}
+
+.xsb-live-zone-body:not(:has(> .xsb-live-block)) {
+	min-height: 180px;
+}
+
+/* ------------------------------------------------------------------ *
  * Insertion line
  * ------------------------------------------------------------------ */
 
