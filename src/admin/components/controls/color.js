@@ -1,164 +1,174 @@
 /**
- * Color picker control with a full popover picker (saturation area, hue +
- * alpha sliders, hex input) plus theme token swatches — the Elementor
- * colour-picker pattern.
+ * Color control with an inline, full-featured picker.
  *
  * @package Xcodesol_Page_Builder
  */
 
-import { useEffect, useRef, useState, useCallback } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import ControlBase from './control-base';
 
-const THEME_COLOR_SWATCHES = [
-	{ label: 'Primary', value: '#2563eb' },
-	{ label: 'Indigo', value: '#4f46e5' },
-	{ label: 'Dark', value: '#0f172a' },
-	{ label: 'Body', value: '#334155' },
-	{ label: 'Muted', value: '#64748b' },
-	{ label: 'Light', value: '#f8fafc' },
-	{ label: 'White', value: '#ffffff' },
-	{ label: 'Accent', value: '#06b6d4' },
+const PALETTE = [
+	'#4f46e5', '#6366f1', '#0f172a', '#334155', '#64748b', '#ffffff',
+	'#10b981', '#f59e0b', '#ef4444', '#f8fafc', '#06b6d4', '#000000',
 ];
 
-/* ----- hsl <-> hex helpers (tiny, dependency-free) ---------------------- */
-
-function hexToRgb( hex ) {
-	const m = /^#?([a-f\d]{3}|[a-f\d]{6})$/i.exec( String( hex || '' ).trim() );
-	if ( ! m ) {
-		return null;
+function toHex( color ) {
+	if ( ! color ) return '#2563eb';
+	const match = color.match( /^#([\da-f]{3}|[\da-f]{6})$/i );
+	if ( ! match ) return '#2563eb';
+	if ( match[ 1 ].length === 3 ) {
+		return `#${ match[ 1 ].split( '' ).map( ( digit ) => digit + digit ).join( '' ) }`;
 	}
-	let h = m[ 1 ];
-	if ( 3 === h.length ) {
-		h = h.split( '' ).map( ( c ) => c + c ).join( '' );
+	return `#${ match[ 1 ] }`;
+}
+
+function rgbToHex( red, green, blue ) {
+	return `#${ [ red, green, blue ].map( ( value ) => Math.max( 0, Math.min( 255, Math.round( value ) ) ).toString( 16 ).padStart( 2, '0' ) ).join( '' ) }`;
+}
+
+function hslToRgb( hue, saturation, lightness ) {
+	const h = ( ( hue % 360 ) + 360 ) % 360 / 360;
+	const s = saturation / 100;
+	const l = lightness / 100;
+	const channel = ( n ) => {
+		const k = ( n + h * 12 ) % 12;
+		const a = s * Math.min( l, 1 - l );
+		return 255 * ( l - a * Math.max( -1, Math.min( k - 3, 9 - k, 1 ) ) );
+	};
+	return [ channel( 0 ), channel( 8 ), channel( 4 ) ];
+}
+
+function parseColor( color ) {
+	const source = String( color || '' ).trim();
+	const hex = source.match( /^#([\da-f]{3}|[\da-f]{6})$/i );
+	if ( hex ) {
+		const normalized = toHex( source ).slice( 1 );
+		return { rgb: [ 0, 2, 4 ].map( ( offset ) => parseInt( normalized.slice( offset, offset + 2 ), 16 ) ), alpha: 1 };
 	}
-	const n = parseInt( h, 16 );
-	return { r: ( n >> 16 ) & 255, g: ( n >> 8 ) & 255, b: n & 255 };
+	const rgb = source.match( /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/i );
+	if ( rgb ) return { rgb: [ Number( rgb[ 1 ] ), Number( rgb[ 2 ] ), Number( rgb[ 3 ] ) ], alpha: rgb[ 4 ] === undefined ? 1 : Math.max( 0, Math.min( 1, Number( rgb[ 4 ] ) ) ) };
+	const hsl = source.match( /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%(?:\s*,\s*([\d.]+))?\s*\)$/i );
+	if ( hsl ) return { rgb: hslToRgb( Number( hsl[ 1 ] ), Number( hsl[ 2 ] ), Number( hsl[ 3 ] ) ), alpha: hsl[ 4 ] === undefined ? 1 : Math.max( 0, Math.min( 1, Number( hsl[ 4 ] ) ) ) };
+	const fallback = toHex( source ).slice( 1 );
+	return { rgb: [ 0, 2, 4 ].map( ( offset ) => parseInt( fallback.slice( offset, offset + 2 ), 16 ) ), alpha: 1 };
 }
 
-function rgbToHex( r, g, b ) {
-	const to = ( v ) => Math.max( 0, Math.min( 255, Math.round( v ) ) ).toString( 16 ).padStart( 2, '0' );
-	return `#${ to( r ) }${ to( g ) }${ to( b ) }`;
+function colorFormatFor( color ) {
+	if ( /^rgba\(/i.test( color ) ) return 'rgba';
+	if ( /^rgb\(/i.test( color ) ) return 'rgb';
+	if ( /^hsla\(/i.test( color ) ) return 'hsla';
+	if ( /^hsl\(/i.test( color ) ) return 'hsl';
+	return 'hex';
 }
 
-function rgbToHsv( r, g, b ) {
-	r /= 255; g /= 255; b /= 255;
-	const max = Math.max( r, g, b );
-	const min = Math.min( r, g, b );
-	const d = max - min;
-	let h = 0;
-	if ( d ) {
-		if ( max === r ) h = ( ( g - b ) / d ) % 6;
-		else if ( max === g ) h = ( b - r ) / d + 2;
-		else h = ( r - g ) / d + 4;
-		h = Math.round( h * 60 );
-		if ( h < 0 ) h += 360;
+function hsvToRgb( hue, saturation, value ) {
+	const chroma = value * saturation;
+	const x = chroma * ( 1 - Math.abs( ( hue / 60 ) % 2 - 1 ) );
+	const match = value - chroma;
+	let rgb = [ 0, 0, 0 ];
+	if ( hue < 60 ) rgb = [ chroma, x, 0 ];
+	else if ( hue < 120 ) rgb = [ x, chroma, 0 ];
+	else if ( hue < 180 ) rgb = [ 0, chroma, x ];
+	else if ( hue < 240 ) rgb = [ 0, x, chroma ];
+	else if ( hue < 300 ) rgb = [ x, 0, chroma ];
+	else rgb = [ chroma, 0, x ];
+	return rgb.map( ( part ) => ( part + match ) * 255 );
+}
+
+function formatColor( hsv, alpha, format ) {
+	const rgb = hsvToRgb( hsv.hue, hsv.saturation, hsv.value );
+	if ( format === 'hex' ) return rgbToHex( ...rgb );
+	if ( format === 'hsl' || format === 'hsla' ) {
+		const saturation = hsv.saturation;
+		const lightness = hsv.value * ( 1 - saturation / 2 );
+		const hslSaturation = lightness === 0 || lightness === 1 ? 0 : ( hsv.value - lightness ) / Math.min( lightness, 1 - lightness );
+		const values = `${ Math.round( hsv.hue ) }, ${ Math.round( hslSaturation * 100 ) }%, ${ Math.round( lightness * 100 ) }%`;
+		return format === 'hsla' ? `hsla(${ values }, ${ Number( alpha.toFixed( 2 ) ) })` : `hsl(${ values })`;
 	}
-	return { h, s: max ? d / max : 0, v: max };
+	const values = rgb.map( ( channel ) => Math.round( channel ) ).join( ', ' );
+	return format === 'rgba' ? `rgba(${ values }, ${ Number( alpha.toFixed( 2 ) ) })` : `rgb(${ values })`;
 }
 
-function hsvToRgb( h, s, v ) {
-	const c = v * s;
-	const x = c * ( 1 - Math.abs( ( ( h / 60 ) % 2 ) - 1 ) );
-	const m = v - c;
-	let rgb = [ c, x, 0 ];
-	if ( h < 60 ) rgb = [ c, x, 0 ];
-	else if ( h < 120 ) rgb = [ x, c, 0 ];
-	else if ( h < 180 ) rgb = [ 0, c, x ];
-	else if ( h < 240 ) rgb = [ 0, x, c ];
-	else if ( h < 300 ) rgb = [ x, 0, c ];
-	else rgb = [ c, 0, x ];
-	return { r: ( rgb[ 0 ] + m ) * 255, g: ( rgb[ 1 ] + m ) * 255, b: ( rgb[ 2 ] + m ) * 255 };
-}
-
-function parseAlpha( color ) {
-	const m = /rgba?\([^)]*?,\s*([01]?\.?\d*)\s*\)$/i.exec( String( color || '' ) );
-	if ( m ) {
-		return Math.round( parseFloat( m[ 1 ] ) * 100 );
+function hexToHsv( hex ) {
+	const [ redValue, greenValue, blueValue ] = parseColor( hex ).rgb;
+	const red = redValue / 255;
+	const green = greenValue / 255;
+	const blue = blueValue / 255;
+	const max = Math.max( red, green, blue );
+	const min = Math.min( red, green, blue );
+	const delta = max - min;
+	let hue = 0;
+	if ( delta ) {
+		if ( max === red ) hue = ( ( green - blue ) / delta ) % 6;
+		else if ( max === green ) hue = ( blue - red ) / delta + 2;
+		else hue = ( red - green ) / delta + 4;
+		hue = Math.round( hue * 60 );
+		if ( hue < 0 ) hue += 360;
 	}
-	const hex8 = /^#[a-f\d]{8}$/i.exec( String( color || '' ).trim() );
-	if ( hex8 ) {
-		return Math.round( ( parseInt( color.slice( 7, 9 ), 16 ) / 255 ) * 100 );
-	}
-	return 100;
+	return { hue, saturation: max ? delta / max : 0, value: max };
 }
 
-function clamp( v, min, max ) {
-	return Math.max( min, Math.min( max, v ) );
+function hsvToHex( hue, saturation, value ) {
+	const chroma = value * saturation;
+	const x = chroma * ( 1 - Math.abs( ( hue / 60 ) % 2 - 1 ) );
+	const match = value - chroma;
+	let rgb = [ 0, 0, 0 ];
+	if ( hue < 60 ) rgb = [ chroma, x, 0 ];
+	else if ( hue < 120 ) rgb = [ x, chroma, 0 ];
+	else if ( hue < 180 ) rgb = [ 0, chroma, x ];
+	else if ( hue < 240 ) rgb = [ 0, x, chroma ];
+	else if ( hue < 300 ) rgb = [ x, 0, chroma ];
+	else rgb = [ chroma, 0, x ];
+	return `#${ rgb.map( ( part ) => Math.round( ( part + match ) * 255 ).toString( 16 ).padStart( 2, '0' ) ).join( '' ) }`;
 }
 
-export default function ColorControl( {
-	config = {},
-	value,
-	onChange,
-	device,
-	state,
-} ) {
-	const {
-		id,
-		label,
-		description,
-		default: defaultValue = '',
-	} = config;
-
+export default function ColorControl( { config = {}, value, onChange, device, state, customPalette = [], overlayPopover = false } ) {
+	const { id, label, description, default: defaultValue = '' } = config;
 	const currentColor = value !== undefined && value !== null ? String( value ) : String( defaultValue || '' );
-	const isModified = currentColor !== String( defaultValue || '' );
-	const [ showPalette, setShowPalette ] = useState( false );
-	const [ areaHue, setAreaHue ] = useState( 0 );
+	const [ isOpen, setIsOpen ] = useState( false );
+	const [ hsv, setHsv ] = useState( () => hexToHsv( currentColor ) );
+	const [ alpha, setAlpha ] = useState( () => parseColor( currentColor ).alpha );
+	const [ colorFormat, setColorFormat ] = useState( () => colorFormatFor( currentColor ) );
+	const wrapperRef = useRef( null );
 	const areaRef = useRef( null );
+	const displayColor = currentColor || 'transparent';
 
-	const handleHexChange = ( e ) => {
-		onChange( e.target.value );
+	useEffect( () => {
+		setHsv( hexToHsv( currentColor ) );
+		setAlpha( parseColor( currentColor ).alpha );
+		setColorFormat( colorFormatFor( currentColor ) );
+	}, [ currentColor ] );
+	useEffect( () => {
+		if ( ! isOpen ) return undefined;
+		const closeOnOutside = ( event ) => {
+			if ( wrapperRef.current && ! wrapperRef.current.contains( event.target ) ) setIsOpen( false );
+		};
+		document.addEventListener( 'mousedown', closeOnOutside );
+		return () => document.removeEventListener( 'mousedown', closeOnOutside );
+	}, [ isOpen ] );
+
+	const pickFromArea = ( event ) => {
+		if ( ! areaRef.current ) return;
+		const rect = areaRef.current.getBoundingClientRect();
+		const saturation = Math.max( 0, Math.min( 1, ( event.clientX - rect.left ) / rect.width ) );
+		const brightness = 1 - Math.max( 0, Math.min( 1, ( event.clientY - rect.top ) / rect.height ) );
+		const next = { ...hsv, saturation, value: brightness };
+		setHsv( next );
+		onChange( formatColor( next, alpha, colorFormat ) );
 	};
 
-	// Seed the area hue from the current color when the popover opens.
-	useEffect( () => {
-		if ( ! showPalette ) {
-			return;
-		}
-		const rgb = hexToRgb( currentColor.startsWith( '#' ) ? currentColor.slice( 0, 7 ) : '' );
-		if ( rgb ) {
-			setAreaHue( rgbToHsv( rgb.r, rgb.g, rgb.b ).h );
-		}
-	}, [ showPalette ] ); // eslint-disable-line react-hooks/exhaustive-deps
-
-	const alpha = parseAlpha( currentColor );
-
-	const baseRgb = hexToRgb( currentColor.startsWith( '#' ) && currentColor.length >= 7
-		? currentColor.slice( 0, 7 )
-		: ( currentColor || '#000000' ) ) || { r: 0, g: 0, b: 0 };
-	const hsv = rgbToHsv( baseRgb.r, baseRgb.g, baseRgb.b );
-
-	const emit = useCallback( ( h, s, v, a ) => {
-		const { r, g, b } = hsvToRgb( h, s, v );
-		const hex = rgbToHex( r, g, b );
-		if ( a < 100 ) {
-			onChange( `rgba(${ Math.round( r ) }, ${ Math.round( g ) }, ${ Math.round( b ) }, ${ ( a / 100 ).toFixed( 2 ) })` );
-		} else {
-			onChange( hex );
-		}
-	}, [ onChange ] );
-
-	const pickFromArea = useCallback( ( e ) => {
-		const el = areaRef.current;
-		if ( ! el ) {
-			return;
-		}
-		const apply = ( ev ) => {
-			const rect = el.getBoundingClientRect();
-			const s = clamp( ( ev.clientX - rect.left ) / rect.width, 0, 1 );
-			const v = 1 - clamp( ( ev.clientY - rect.top ) / rect.height, 0, 1 );
-			emit( areaHue, s, v, alpha );
+	const startAreaPick = ( event ) => {
+		event.preventDefault();
+		pickFromArea( event );
+		const move = ( moveEvent ) => pickFromArea( moveEvent );
+		const stop = () => {
+			document.removeEventListener( 'mousemove', move );
+			document.removeEventListener( 'mouseup', stop );
 		};
-		apply( e );
-		const onMove = ( ev ) => apply( ev );
-		const onUp = () => {
-			window.removeEventListener( 'mousemove', onMove );
-			window.removeEventListener( 'mouseup', onUp );
-		};
-		window.addEventListener( 'mousemove', onMove );
-		window.addEventListener( 'mouseup', onUp );
-	}, [ areaHue, alpha, emit ] );
+		document.addEventListener( 'mousemove', move );
+		document.addEventListener( 'mouseup', stop );
+	};
 
 	return (
 		<ControlBase
@@ -167,111 +177,106 @@ export default function ColorControl( {
 			description={ description }
 			device={ device }
 			state={ state }
-			isModified={ isModified }
+			isModified={ currentColor !== String( defaultValue || '' ) }
 			onReset={ () => onChange( defaultValue ) }
 			className="xsb-ctrl-color"
 		>
-			<div className="xsb-color-control-wrap">
+			<div className="xsb-color-control-wrap" ref={ wrapperRef }>
 				<div className="xsb-color-input-row">
-					<div
-						className="xsb-color-swatch-chip"
+					<button
+						type="button"
+						id={ id ? `xsb-ctrl-${ id }` : undefined }
+						className="xsb-color-swatch-chip xsb-color-picker-trigger"
 						style={ { backgroundColor: currentColor || 'transparent' } }
-					>
-						<input
-							type="color"
-							id={ id ? `xsb-ctrl-${ id }` : undefined }
-							value={ currentColor.startsWith( '#' ) && currentColor.length >= 7 ? currentColor.slice( 0, 7 ) : '#2563eb' }
-							onChange={ handleHexChange }
-							className="xsb-native-color-picker"
-							title="Pick color"
-						/>
-					</div>
+						title={ __( 'Choose color', 'xcodesol-page-builder' ) }
+						aria-label={ __( 'Choose color', 'xcodesol-page-builder' ) }
+						aria-expanded={ isOpen }
+						onClick={ () => setIsOpen( ( open ) => ! open ) }
+					/>
 					<input
 						type="text"
 						value={ currentColor }
-						placeholder="#000000 or rgba()"
-						onChange={ handleHexChange }
+						placeholder="HEX, RGB, RGBA, HSL or HSLA"
+						onChange={ ( event ) => onChange( event.target.value ) }
 						className="xsb-color-hex-input"
+						aria-label={ label || __( 'Color value', 'xcodesol-page-builder' ) }
 					/>
-					<button
-						type="button"
-						className={ `xsb-color-palette-btn${ showPalette ? ' is-open' : '' }` }
-						onClick={ () => setShowPalette( ( prev ) => ! prev ) }
-						title={ __( 'Color picker', 'xcodesol-page-builder' ) }
-						aria-expanded={ showPalette }
-					>
-						<span className="dashicons dashicons-admin-appearance" aria-hidden="true" />
-					</button>
 				</div>
-				{ showPalette && (
-					<div className="xsb-color-popover">
+				{ isOpen && (
+					<div className={ `xsb-color-popover${ overlayPopover ? ' xsb-color-popover--anchored' : ' xsb-color-popover--inline' }` }>
 						<div
-							className="xsb-color-picker-area"
 							ref={ areaRef }
-							style={ { '--xsb-area-hue': `hsl(${ areaHue } 100% 50%)` } }
-							onMouseDown={ pickFromArea }
+							className="xsb-color-picker-area"
+									style={ { '--xsb-area-hue': hsvToHex( hsv.hue, 1, 1 ) } }
+							onMouseDown={ startAreaPick }
 							role="presentation"
 						>
-							<span
-								className="xsb-color-picker-dot"
-								style={ {
-									left: `${ hsv.s * 100 }%`,
-									top: `${ ( 1 - hsv.v ) * 100 }%`,
-								} }
-							/>
+							<span className="xsb-color-picker-dot" style={ { left: `${ hsv.saturation * 100 }%`, top: `${ ( 1 - hsv.value ) * 100 }%` } } />
 						</div>
 						<input
 							type="range"
 							min="0"
 							max="360"
-							value={ areaHue }
-							onChange={ ( e ) => {
-								const h = Number( e.target.value );
-								setAreaHue( h );
-								emit( h, hsv.s || 1, hsv.v || 1, alpha );
-							} }
+							value={ hsv.hue }
 							className="xsb-color-picker-slider xsb-color-picker-slider--hue"
 							aria-label={ __( 'Hue', 'xcodesol-page-builder' ) }
+							onChange={ ( event ) => {
+								const hue = Number( event.target.value );
+								const next = { ...hsv, hue };
+								setHsv( next );
+									onChange( formatColor( next, alpha, colorFormat ) );
+								} }
 						/>
-						<input
-							type="range"
-							min="0"
-							max="100"
-							value={ alpha }
-							onChange={ ( e ) => emit( areaHue, hsv.s, hsv.v, Number( e.target.value ) ) }
-							className="xsb-color-picker-slider xsb-color-picker-slider--alpha"
-							style={ { '--xsb-area-hue': `hsl(${ areaHue } 100% 50%)` } }
-							aria-label={ __( 'Opacity', 'xcodesol-page-builder' ) }
-						/>
-						<div className="xsb-color-picker-footer">
-							<span
-								className="xsb-color-picker-alpha-btn"
-								style={ { '--xsb-pick-fill': currentColor } }
-								aria-hidden="true"
-							>
-								A
-							</span>
+						{ [ 'rgba', 'hsla' ].includes( colorFormat ) && (
 							<input
-								type="text"
-								value={ currentColor }
-								placeholder="#000000"
-								onChange={ handleHexChange }
-								className="xsb-color-hex-input"
-								aria-label={ __( 'Hex color', 'xcodesol-page-builder' ) }
+								type="range"
+								min="0"
+								max="1"
+								step="0.01"
+								value={ alpha }
+								className="xsb-color-picker-slider xsb-color-picker-slider--alpha"
+								aria-label={ __( 'Opacity', 'xcodesol-page-builder' ) }
+								onChange={ ( event ) => {
+									const nextAlpha = Number( event.target.value );
+									setAlpha( nextAlpha );
+									onChange( formatColor( hsv, nextAlpha, colorFormat ) );
+								} }
 							/>
+						) }
+						<div className="xsb-color-format-row">
+							<label htmlFor={ id ? `xsb-color-format-${ id }` : undefined }>{ __( 'Format', 'xcodesol-page-builder' ) }</label>
+							<select
+								id={ id ? `xsb-color-format-${ id }` : undefined }
+								value={ colorFormat }
+								aria-label={ __( 'Color format', 'xcodesol-page-builder' ) }
+								onChange={ ( event ) => {
+									const nextFormat = event.target.value;
+									setColorFormat( nextFormat );
+									const nextAlpha = nextFormat === 'rgba' || nextFormat === 'hsla' ? alpha : 1;
+									onChange( formatColor( hsv, nextAlpha, nextFormat ) );
+								} }
+							>
+								<option value="hex">HEX</option>
+								<option value="rgb">RGB</option>
+								<option value="rgba">RGBA</option>
+								<option value="hsl">HSL</option>
+								<option value="hsla">HSLA</option>
+							</select>
 						</div>
-						<div className="xsb-theme-swatches-grid">
-							{ THEME_COLOR_SWATCHES.map( ( s ) => (
+						<div className="xsb-color-picker-footer">
+							<span className="xsb-color-picker-preview" style={ { backgroundColor: displayColor } } />
+							<code className="xsb-color-format-value">{ currentColor }</code>
+						</div>
+						<div className="xsb-color-swatch-grid" aria-label={ __( 'Color palette', 'xcodesol-page-builder' ) }>
+							{ [ ...new Set( [ ...customPalette, ...PALETTE ].filter( ( color ) => typeof color === 'string' && color ) ) ].map( ( color ) => (
 								<button
-									key={ s.value }
+									key={ color }
 									type="button"
-									className={ `xsb-swatch-dot${ currentColor.toLowerCase() === s.value.toLowerCase() ? ' is-active' : '' }` }
-									style={ { backgroundColor: s.value } }
-									onClick={ () => {
-										onChange( s.value );
-										setShowPalette( false );
-									} }
-									title={ s.label }
+									className={ `xsb-swatch-chip${ displayColor.toLowerCase() === color ? ' is-selected' : '' }` }
+									style={ { backgroundColor: color } }
+									title={ color }
+									aria-label={ color }
+									onClick={ () => onChange( color ) }
 								/>
 							) ) }
 						</div>

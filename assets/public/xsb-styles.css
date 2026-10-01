@@ -555,6 +555,42 @@ a.xsb-banner-btn:hover {
 	width: 100%;
 }
 
+.xsb-container--has-video {
+	position: relative;
+	isolation: isolate;
+}
+
+.xsb-container--has-overlay {
+	position: relative;
+	isolation: isolate;
+}
+
+.xsb-container-background-video {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	z-index: 0;
+	pointer-events: none;
+}
+
+.xsb-container-background-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+.xsb-container--has-video > .xsb-container-col,
+.xsb-container--has-video > .xsb-container-flow,
+.xsb-container--has-overlay > .xsb-container-col,
+.xsb-container--has-overlay > .xsb-container-flow {
+	position: relative;
+	z-index: 2;
+}
+
 .xsb-container-col {
 	box-sizing: border-box;
 	min-width: 0;
@@ -2805,4 +2841,3 @@ a.xsb-banner-btn:hover {
 		display: none !important;
 	}
 }
-

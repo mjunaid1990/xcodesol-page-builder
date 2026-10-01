@@ -38,10 +38,10 @@ export default function SegmentedControl( {
 			className="xsb-ctrl-segmented"
 		>
 			<div
-				className={ `xsb-segmented-control${ size ? ` xsb-segmented-control--${ size }` : '' }` }
+				className={ `xsb-segmented-control${ size ? ` xsb-segmented-control--${ size }` : '' }${ id === 'bg_type' ? ' xsb-segmented-control--background-type' : '' }` }
 				role="radiogroup"
 				aria-label={ label || id }
-				style={ columns ? { gridTemplateColumns: `repeat(${ columns }, 1fr)` } : undefined }
+				style={ columns ? { gridTemplateColumns: `repeat(${ columns }, minmax(0, 1fr))` } : undefined }
 			>
 				{ options.map( ( opt ) => {
 					const optVal = typeof opt === 'object' ? opt.value : opt;

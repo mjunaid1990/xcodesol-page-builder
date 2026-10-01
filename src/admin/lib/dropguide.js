@@ -111,7 +111,43 @@ export function computeDropGuide( px, py, rootEl, opts ) {
 		: activeStr.indexOf( 'block-' ) === 0 ? parseNum( activeStr.slice( 6 ) ) : -1;
 	const nestedActive = activeStr.indexOf( 'nested-' ) === 0 ? activeStr.slice( 7 ) : null;
 	const isNestedDrag = !! nestedActive;
-	const canUseColumns = ( isPalette || isNestedDrag ) && ! ( isPalette && isContainerBlockType( blockType ) );
+	// Containers are valid children too. Their drag guide should target a
+	// container column just like any widget so users can see the nesting point
+	// before dropping instead of getting a misleading page-level target.
+	const canUseColumns = isPalette || isNestedDrag;
+
+	// A container already inside a column owns its own inner column. Resolve
+	// these targets before their parent column so a drop inside a nested
+	// container cannot silently land beside it.
+	if ( isPalette ) {
+		const innerContainers = Array.from( rootEl.querySelectorAll( '[data-inner-container-path], [data-inner-container-id]' ) );
+		for ( let i = innerContainers.length - 1; i >= 0; i-- ) {
+			const el = innerContainers[ i ];
+			if ( ! ptInRect( el.getBoundingClientRect(), px, py ) ) continue;
+			const rawPath = el.getAttribute( 'data-inner-container-path' );
+			if ( rawPath ) {
+				let address;
+				try { address = JSON.parse( rawPath ); } catch ( error ) { address = null; }
+				if ( address && Array.isArray( address.path ) ) {
+					const columns = Array.from( el.querySelectorAll( ':scope > .xsb-nested-container-column' ) );
+					let columnIndex = 0;
+					if ( columns.length > 1 ) {
+						const hoveredColumn = columns.findIndex( ( column ) => ptInRect( column.getBoundingClientRect(), px, py ) );
+						if ( hoveredColumn >= 0 ) columnIndex = hoveredColumn;
+					}
+					const targetColumn = columns[ columnIndex ];
+					const childEls = targetColumn
+						? Array.from( targetColumn.querySelectorAll( ':scope > .xsb-nested-container-item' ) )
+						: Array.from( el.querySelectorAll( ':scope > .xsb-nested-container-item' ) );
+					return { kind: 'inner-container', ...address, columnIndex, slot: slotFromRects( childEls.map( ( child ) => child.getBoundingClientRect() ), py ) };
+				}
+			}
+			const [ ci, cj, bi ] = ( el.getAttribute( 'data-inner-container-id' ) || '' ).split( '-' ).map( parseNum );
+			if ( ci < 0 || cj < 0 || bi < 0 ) continue;
+			const childEls = Array.from( el.querySelectorAll( ':scope > .xsb-nested-container-item' ) );
+			return { kind: 'inner-container', ci, cj, bi, slot: slotFromRects( childEls.map( ( child ) => child.getBoundingClientRect() ), py ) };
+		}
+	}
 
 	const colEls = canUseColumns ? Array.from( rootEl.querySelectorAll( '[data-col-id]' ) ) : [];
 

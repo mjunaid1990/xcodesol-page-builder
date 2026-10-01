@@ -8,6 +8,7 @@
 
 import { __ } from '@wordpress/i18n';
 import { IconDesktop, IconTablet, IconMobile } from '../icons';
+import ResetButton from '../reset-button';
 
 export default function ControlBase( {
 	id,
@@ -39,7 +40,7 @@ export default function ControlBase( {
 								{ label }
 							</label>
 						) }
-						{ state && state !== 'normal' && (
+						{ state && state !== 'normal' && state !== 'default' && (
 							<span className="xsb-control-field__state-badge" title={ `${ state } state` }>
 								{ state }
 							</span>
@@ -57,18 +58,7 @@ export default function ControlBase( {
 						) }
 					</div>
 					{ onReset && isModified && (
-						<button
-							type="button"
-							className="xsb-control-field__reset-btn"
-							onClick={ ( e ) => {
-								e.stopPropagation();
-								onReset();
-							} }
-							title={ __( 'Reset to default', 'xcodesol-page-builder' ) }
-							aria-label={ __( 'Reset to default', 'xcodesol-page-builder' ) }
-						>
-							<span className="dashicons dashicons-undo" aria-hidden="true" />
-						</button>
+						<ResetButton className="xsb-control-field__reset-btn" onClick={ ( e ) => { e.stopPropagation(); onReset(); } } />
 					) }
 				</div>
 			) }

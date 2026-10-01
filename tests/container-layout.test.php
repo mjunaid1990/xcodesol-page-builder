@@ -208,6 +208,25 @@ xsb_assert(
 	'full map sanitizes variants',
 	6.0 === XCOPB_Sanitizer::sanitize_container_settings( array( 'layout_mode' => 'columns', 'tablet_columns' => 42 ) )['tablet_columns']
 );
+$saved_background = XCOPB_Sanitizer::sanitize_container_settings(
+	array(
+		'bg_type'            => 'image',
+		'bg_image'           => array( 'url' => 'https://example.test/hero.jpg', 'id' => 42, 'unsafe' => 'ignored' ),
+		'bg_size'            => 'custom',
+		'bg_size_custom'     => '480px auto',
+		'bg_position'        => 'custom',
+		'bg_position_custom' => '25% 40%',
+		'bg_repeat'          => 'round',
+		'bg_attachment'      => 'fixed',
+		'overlay_color'      => 'rgba(20, 30, 40, 0.6)',
+		'overlay_opacity'    => 65,
+		'overlay_blend_mode' => 'multiply',
+	)
+);
+xsb_assert( 'image background URL and media ID persist', array( 'url' => 'https://example.test/hero.jpg', 'id' => 42 ) === $saved_background['bg_image'] );
+xsb_assert( 'custom image fit and position persist', '480px auto' === $saved_background['bg_size_custom'] && '25% 40%' === $saved_background['bg_position_custom'] );
+xsb_assert( 'overlay color supports rgba and opacity persists', 'rgba(20, 30, 40, 0.6)' === $saved_background['overlay_color'] && 65.0 === $saved_background['overlay_opacity'] );
+xsb_assert( 'background attachment, repeat and blend mode persist', 'fixed' === $saved_background['bg_attachment'] && 'round' === $saved_background['bg_repeat'] && 'multiply' === $saved_background['overlay_blend_mode'] );
 
 echo "\n== migrator: legacy layouts gain an explicit mode ==\n";
 
@@ -400,6 +419,27 @@ echo "\n== renderer: flow declarations survive into the wrapper only ==\n";
 
 $flow_root_style = xsb_root_style( $list );
 xsb_assert_missing( 'flow layout does not leak onto the box', $flow_root_style, array( 'display:flex' ) );
+
+echo "\n== renderer: saved background and overlay controls ==\n";
+$background_output = xsb_render_container(
+	array(
+		'bg_type'            => 'image',
+		'bg_image'           => 'https://example.test/hero.jpg',
+		'bg_size'            => 'contain',
+		'bg_position'        => 'right bottom',
+		'bg_repeat'          => 'repeat-x',
+		'bg_attachment'      => 'fixed',
+		'bg_origin'          => 'content-box',
+		'bg_clip'            => 'padding-box',
+		'overlay_color'      => 'rgba(10, 20, 30, 0.8)',
+		'overlay_opacity'    => 55,
+		'overlay_blend_mode' => 'multiply',
+	),
+	array( array( $child ) )
+);
+$background_style = xsb_root_style( $background_output );
+xsb_assert_contains( 'image positioning and sizing render on the container', $background_style, array( 'background-size:contain', 'background-position:right bottom', 'background-repeat:repeat-x', 'background-attachment:fixed', 'background-origin:content-box', 'background-clip:padding-box' ) );
+xsb_assert_contains( 'background overlay renders with saved opacity and blend', $background_output, array( 'class="xsb-container-background-overlay"', 'rgba(10, 20, 30, 0.8)', 'opacity:0.55', 'mix-blend-mode:multiply' ) );
 
 printf( "\n%d passed, %d failed\n", $GLOBALS['xsb_pass'], $GLOBALS['xsb_fail'] );
 exit( $GLOBALS['xsb_fail'] > 0 ? 1 : 0 );

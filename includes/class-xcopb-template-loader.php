@@ -40,6 +40,22 @@ class XCOPB_Template_Loader {
 	 */
 	private static $context = array();
 
+	/** Prevent duplicate inline settings when multiple builder blocks render. */
+	private static $inline_settings_added = false;
+
+	/** Convert a supported solid colour to RGBA for the site-background overlay. */
+	private function color_with_alpha( $color, $alpha ) {
+		$color = trim( (string) $color );
+		$alpha = min( 1, max( 0, (float) $alpha ) );
+		if ( preg_match( '/^#([a-f0-9]{3}|[a-f0-9]{6})$/i', $color, $match ) ) {
+			$hex = $match[1];
+			if ( 3 === strlen( $hex ) ) { $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2]; }
+			return 'rgba(' . hexdec( substr( $hex, 0, 2 ) ) . ',' . hexdec( substr( $hex, 2, 2 ) ) . ',' . hexdec( substr( $hex, 4, 2 ) ) . ',' . $alpha . ')';
+		}
+		if ( preg_match( '/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*[0-9.]+)?\s*\)$/i', $color, $match ) ) { return 'rgba(' . min( 255, (int) $match[1] ) . ',' . min( 255, (int) $match[2] ) . ',' . min( 255, (int) $match[3] ) . ',' . $alpha . ')'; }
+		return '';
+	}
+
 	/**
 	 * Get instance.
 	 *
@@ -80,6 +96,81 @@ class XCOPB_Template_Loader {
 				: 'assets/public/xsb-styles.css';
 			wp_enqueue_style( 'xcopb-public', XCOPB_PLUGIN_URL . $css_file, array(), XCOPB_VERSION );
 		}
+		$motion_file = XCOPB_PLUGIN_DIR . 'assets/shared/motion-presets.css';
+		if ( file_exists( $motion_file ) ) {
+			wp_enqueue_style( 'xcopb-motion-presets', XCOPB_PLUGIN_URL . 'assets/shared/motion-presets.css', array( 'xcopb-public' ), filemtime( $motion_file ) );
+		}
+		if ( self::$inline_settings_added ) { return; }
+		self::$inline_settings_added = true;
+		$inline = '.xcopb-hide-page-title .entry-title,.xcopb-hide-page-title .page-title,.xcopb-hide-page-title .wp-block-post-title,.xcopb-hide-page-title .elementor-page-title{display:none!important}';
+		$site = get_option( 'xcopb_site_settings', array() );
+		if ( is_array( $site ) ) {
+			$colors = isset( $site['global_colors'] ) && is_array( $site['global_colors'] ) ? $site['global_colors'] : array();
+			$vars = array();
+			foreach ( array( 'primary', 'secondary', 'text', 'accent', 'background' ) as $key ) {
+				$color = isset( $colors[ $key ] ) ? trim( (string) $colors[ $key ] ) : '';
+				if ( $color && ! sanitize_hex_color( $color ) && ! preg_match( '/^(?:rgba?|hsla?)\(\s*[0-9.%+\-\s,\/]+\)$/i', $color ) && ! preg_match( '/^(?:transparent|currentcolor|[a-z]{3,20})$/i', $color ) ) { $color = ''; }
+				if ( $color ) { $vars[] = '--xcopb-' . $key . ':' . $color; }
+			}
+			if ( $vars ) { $inline .= ':root{' . implode( ';', $vars ) . '}'; }
+			if ( ! empty( $site['custom_colors'] ) && is_array( $site['custom_colors'] ) ) {
+				foreach ( $site['custom_colors'] as $custom ) {
+					$name = isset( $custom['name'] ) ? sanitize_title( $custom['name'] ) : '';
+					$value = isset( $custom['value'] ) ? trim( (string) $custom['value'] ) : '';
+					if ( $name && ( sanitize_hex_color( $value ) || preg_match( '/^(?:rgba?|hsla?)\(\s*[0-9.%+\-\s,\/]+\)$/i', $value ) || preg_match( '/^(?:transparent|currentcolor|[a-z]{3,20})$/i', $value ) ) ) { $inline .= ':root{--xcopb-custom-' . $name . ':' . $value . '}'; }
+				}
+			}
+			if ( ! empty( $colors['background'] ) ) { $inline .= 'body{background-color:var(--xcopb-background)!important}'; }
+			$background_image = isset( $site['background_image'] ) && is_array( $site['background_image'] ) ? $site['background_image'] : array();
+			$background_style = isset( $site['background_image_style'] ) && is_array( $site['background_image_style'] ) ? $site['background_image_style'] : array();
+			$background_url = ! empty( $background_image['url'] ) ? esc_url_raw( $background_image['url'] ) : '';
+			if ( $background_url ) {
+				$image_layers = array();
+				$overlay = isset( $background_style['overlay'] ) ? $background_style['overlay'] : '';
+				$opacity = isset( $background_style['overlay_opacity'] ) ? min( 100, max( 0, (int) $background_style['overlay_opacity'] ) ) / 100 : 0;
+				if ( $overlay && $opacity > 0 ) { $overlay_rgb = $this->color_with_alpha( $overlay, $opacity ); if ( $overlay_rgb ) { $image_layers[] = 'linear-gradient(' . $overlay_rgb . ',' . $overlay_rgb . ')'; } }
+				$image_layers[] = 'url("' . esc_url( $background_url ) . '")';
+				$inline .= 'body{background-image:' . implode( ',', $image_layers ) . '!important;background-size:' . ( isset( $background_style['size'] ) && in_array( $background_style['size'], array( 'cover', 'contain', 'auto' ), true ) ? $background_style['size'] : 'cover' ) . '!important;background-position:' . ( isset( $background_style['position'] ) && preg_match( '/^(?:center|left|right) (?:center|top|bottom)$/', $background_style['position'] ) ? $background_style['position'] : 'center center' ) . '!important;background-repeat:' . ( isset( $background_style['repeat'] ) && in_array( $background_style['repeat'], array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y' ), true ) ? $background_style['repeat'] : 'no-repeat' ) . '!important;background-attachment:' . ( isset( $background_style['attachment'] ) && 'fixed' === $background_style['attachment'] ? 'fixed' : 'scroll' ) . '!important}';
+			}
+			if ( ! empty( $colors['text'] ) ) { $inline .= 'body{color:var(--xcopb-text)}'; }
+			$fonts = isset( $site['global_fonts'] ) && is_array( $site['global_fonts'] ) ? $site['global_fonts'] : array();
+			$body_font = isset( $fonts['body'] ) ? sanitize_text_field( $fonts['body'] ) : '';
+			$heading_font = isset( $fonts['heading'] ) ? sanitize_text_field( $fonts['heading'] ) : '';
+			if ( $body_font ) { $inline .= 'body{font-family:' . esc_attr( $body_font ) . ',sans-serif}'; }
+			if ( $heading_font ) { $inline .= 'h1,h2,h3,h4,h5,h6{font-family:' . esc_attr( $heading_font ) . ',sans-serif}'; }
+			$type = isset( $site['typography'] ) && is_array( $site['typography'] ) ? $site['typography'] : array();
+			if ( isset( $type['body_size'] ) ) { $inline .= 'body{font-size:' . absint( $type['body_size'] ) . 'px}'; }
+			if ( isset( $type['body_weight'] ) ) { $inline .= 'body{font-weight:' . absint( $type['body_weight'] ) . '}'; }
+			if ( isset( $type['line_height'] ) ) { $inline .= 'body{line-height:' . esc_attr( (string) $type['line_height'] ) . '}'; }
+			if ( isset( $type['paragraph_spacing'] ) ) { $inline .= 'p{margin-bottom:' . absint( $type['paragraph_spacing'] ) . 'px}'; }
+			$button = isset( $site['button_style'] ) && is_array( $site['button_style'] ) ? $site['button_style'] : array();
+			$button_css = array();
+			foreach ( array( 'text' => 'color', 'background' => 'background-color' ) as $key => $property ) { if ( ! empty( $button[ $key ] ) ) { $button_css[] = $property . ':' . esc_attr( $button[ $key ] ) . '!important'; } }
+			if ( ! empty( $button['gradient_enabled'] ) && ! empty( $button['gradient'] ) && is_array( $button['gradient'] ) ) { $gradient = $button['gradient']; if ( ! empty( $gradient['colorA'] ) && ! empty( $gradient['colorB'] ) ) { $button_css[] = 'background-image:' . ( isset( $gradient['type'] ) && 'radial' === $gradient['type'] ? 'radial-gradient(circle,' . esc_attr( $gradient['colorA'] ) . ' ' . absint( $gradient['posA'] ?? 0 ) . '%,' . esc_attr( $gradient['colorB'] ) . ' ' . absint( $gradient['posB'] ?? 100 ) . '%)' : 'linear-gradient(' . absint( $gradient['angle'] ?? 90 ) . 'deg,' . esc_attr( $gradient['colorA'] ) . ' ' . absint( $gradient['posA'] ?? 0 ) . '%,' . esc_attr( $gradient['colorB'] ) . ' ' . absint( $gradient['posB'] ?? 100 ) . '%)' ) . '!important'; } }
+			$box_css = static function ( $value, $fallback = 0 ) { if ( is_array( $value ) ) { $parts = array(); foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) { $parts[] = absint( $value[ $side ] ?? $fallback ) . 'px'; } return implode( ' ', $parts ); } return absint( is_numeric( $value ) ? $value : $fallback ) . 'px'; };
+			$radius = $box_css( $button['radius'] ?? 6, 6 );
+			$padding = isset( $button['padding'] ) && is_array( $button['padding'] ) ? $box_css( $button['padding'] ) : absint( $button['padding_y'] ?? 12 ) . 'px ' . absint( $button['padding_x'] ?? 24 ) . 'px';
+			$button_css[] = 'border-radius:' . $radius . '!important';
+			$button_css[] = 'padding:' . $padding . '!important';
+			foreach ( array( 'font_size' => 'font-size' ) as $key => $property ) { if ( isset( $button[ $key ] ) ) { $button_css[] = $property . ':' . absint( $button[ $key ] ) . 'px!important'; } }
+			$button_css[] = 'border-width:' . $box_css( $button['border_width'] ?? 0 ) . '!important';
+			if ( ! empty( $button['border_style'] ) && in_array( $button['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ) { $button_css[] = 'border-style:' . $button['border_style'] . '!important'; }
+			if ( ! empty( $button['border_color'] ) ) { $button_css[] = 'border-color:' . esc_attr( $button['border_color'] ) . '!important'; }
+			if ( ! empty( $button['shadow'] ) && 'none' !== $button['shadow'] && preg_match( '/^[\w\s#(),.%+\/-]+$/', $button['shadow'] ) && ! preg_match( '/[;{}<>]|url\s*\(|var\s*\(/i', $button['shadow'] ) ) { $button_css[] = 'box-shadow:' . esc_attr( $button['shadow'] ) . '!important'; }
+			if ( $button_css ) { $inline .= '.xcopb-template-wrapper .xsb-button,.xcopb-template-wrapper .xcopb-button,.xcopb-template-wrapper .wp-block-button__link{' . implode( ';', $button_css ) . '}'; }
+			$hover_css = array();
+			foreach ( array( 'hover_text' => 'color', 'hover_background' => 'background-color' ) as $key => $property ) { if ( ! empty( $button[ $key ] ) ) { $hover_css[] = $property . ':' . esc_attr( $button[ $key ] ) . '!important'; } }
+			if ( ! empty( $button['hover_gradient_enabled'] ) && ! empty( $button['hover_gradient'] ) && is_array( $button['hover_gradient'] ) ) { $gradient = $button['hover_gradient']; if ( ! empty( $gradient['colorA'] ) && ! empty( $gradient['colorB'] ) ) { $hover_css[] = 'background-image:' . ( isset( $gradient['type'] ) && 'radial' === $gradient['type'] ? 'radial-gradient(circle,' . esc_attr( $gradient['colorA'] ) . ' ' . absint( $gradient['posA'] ?? 0 ) . '%,' . esc_attr( $gradient['colorB'] ) . ' ' . absint( $gradient['posB'] ?? 100 ) . '%)' : 'linear-gradient(' . absint( $gradient['angle'] ?? 90 ) . 'deg,' . esc_attr( $gradient['colorA'] ) . ' ' . absint( $gradient['posA'] ?? 0 ) . '%,' . esc_attr( $gradient['colorB'] ) . ' ' . absint( $gradient['posB'] ?? 100 ) . '%)' ) . '!important'; } }
+			if ( $hover_css ) { $inline .= '.xcopb-template-wrapper .xsb-button:hover,.xcopb-template-wrapper .xcopb-button:hover,.xcopb-template-wrapper .wp-block-button__link:hover{' . implode( ';', $hover_css ) . '}'; }
+			if ( ! empty( $site['custom_css'] ) ) { $inline .= "\n" . $site['custom_css']; }
+		}
+		if ( is_singular() ) {
+			$page_settings = get_post_meta( get_queried_object_id(), '_xcopb_page_settings', true );
+			if ( is_array( $page_settings ) && ! empty( $page_settings['custom_css'] ) ) {
+				$inline .= "\n" . str_replace( 'selector', 'body.page-id-' . absint( get_queried_object_id() ) . ' .xcopb-template-wrapper', $page_settings['custom_css'] );
+			}
+		}
+		wp_add_inline_style( 'xcopb-public', $inline );
 	}
 
 	/**
@@ -95,6 +186,8 @@ class XCOPB_Template_Loader {
 	 * Enqueue public styles when a template is selected.
 	 */
 	public function enqueue_public_assets() {
+		$site_settings = get_option( 'xcopb_site_settings', array() );
+		if ( is_array( $site_settings ) && ( ! empty( $site_settings['custom_css'] ) || ! empty( $site_settings['button_style'] ) || ! empty( $site_settings['typography'] ) || ! empty( $site_settings['global_colors'] ) || ! empty( $site_settings['background_image'] ) ) ) { $this->enqueue_public_styles(); }
 		if ( null !== self::$selected_template_id || is_singular( XCOPB_Registrar::POST_TYPE ) || is_singular( 'xcosb_template' ) ) {
 			$this->enqueue_public_styles();
 			return;
@@ -103,7 +196,12 @@ class XCOPB_Template_Loader {
 		if ( is_singular() ) {
 			$post_id = get_the_ID();
 			$tpl     = get_post_meta( $post_id, '_wp_page_template', true );
-			if ( 'xcopb_canvas' === $tpl || 'xcopb_full_width' === $tpl ) {
+			$hide_title = '1' === (string) get_post_meta( $post_id, '_xcopb_hide_title', true );
+			$page_settings = get_post_meta( $post_id, '_xcopb_page_settings', true );
+			if ( $hide_title || ( is_array( $page_settings ) && ! empty( $page_settings ) ) ) {
+				$this->enqueue_public_styles();
+			}
+			if ( in_array( $tpl, array( 'xcopb_canvas', 'xcopb_full_width', 'elementor_canvas', 'elementor_header_footer' ), true ) ) {
 				$this->enqueue_public_styles();
 				return;
 			}
@@ -282,18 +380,26 @@ class XCOPB_Template_Loader {
 		if ( is_singular() ) {
 			$page_template = get_post_meta( get_the_ID(), '_wp_page_template', true );
 
-			if ( 'xcopb_canvas' === $page_template ) {
+			if ( in_array( $page_template, array( 'xcopb_canvas', 'elementor_canvas' ), true ) ) {
 				$canvas_file = XCOPB_PLUGIN_DIR . 'templates/page-builder-canvas.php';
 				if ( file_exists( $canvas_file ) ) {
 					return $canvas_file;
 				}
 			}
 
-			if ( 'xcopb_full_width' === $page_template ) {
+			if ( in_array( $page_template, array( 'xcopb_full_width', 'elementor_header_footer' ), true ) ) {
 				$full_width_file = XCOPB_PLUGIN_DIR . 'templates/page-builder-full-width.php';
 				if ( file_exists( $full_width_file ) ) {
 					return $full_width_file;
 				}
+			}
+
+			// Let Elementor and the active theme keep control of their own page
+			// layouts. Our content filter still renders the saved builder layout
+			// inside their template, while Canvas / Full Width above stay native
+			// Xcodesol layouts.
+			if ( '' !== $page_template && 'default' !== $page_template ) {
+				return $template;
 			}
 		}
 
@@ -328,6 +434,8 @@ class XCOPB_Template_Loader {
 
 		$templates['xcopb_full_width'] = __( 'Page Builder Full Width', 'xcodesol-page-builder' );
 		$templates['xcopb_canvas']     = __( 'Page Builder Canvas', 'xcodesol-page-builder' );
+		if ( ! isset( $templates['elementor_canvas'] ) ) { $templates['elementor_canvas'] = __( 'Elementor Canvas', 'xcodesol-page-builder' ); }
+		if ( ! isset( $templates['elementor_header_footer'] ) ) { $templates['elementor_header_footer'] = __( 'Elementor Full Width', 'xcodesol-page-builder' ); }
 
 		return $templates;
 	}
@@ -340,14 +448,17 @@ class XCOPB_Template_Loader {
 	 */
 	public function filter_body_class( $classes ) {
 		$is_builder_active = false;
+		if ( is_singular() && '1' === (string) get_post_meta( get_the_ID(), '_xcopb_hide_title', true ) ) {
+			$classes[] = 'xcopb-hide-page-title';
+		}
 
 		if ( null !== self::$selected_template_id || is_singular( XCOPB_Registrar::POST_TYPE ) || is_singular( 'xcosb_template' ) ) {
 			$is_builder_active = true;
 		} elseif ( is_singular() ) {
 			$tpl = get_post_meta( get_the_ID(), '_wp_page_template', true );
-			if ( 'xcopb_canvas' === $tpl || 'xcopb_full_width' === $tpl ) {
+			if ( in_array( $tpl, array( 'xcopb_canvas', 'xcopb_full_width', 'elementor_canvas', 'elementor_header_footer' ), true ) ) {
 				$is_builder_active = true;
-				if ( 'xcopb_canvas' === $tpl ) {
+				if ( in_array( $tpl, array( 'xcopb_canvas', 'elementor_canvas' ), true ) ) {
 					$classes[] = 'xcopb-canvas';
 				}
 			}

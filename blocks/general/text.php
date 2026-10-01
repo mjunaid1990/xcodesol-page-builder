@@ -19,6 +19,11 @@ $font_size     = isset( $settings['font_size'] ) && '' !== $settings['font_size'
 $font_weight   = ! empty( $settings['font_weight'] ) ? $settings['font_weight'] : '';
 $line_height   = isset( $settings['line_height'] ) && '' !== $settings['line_height'] ? $settings['line_height'] : '';
 $letter_spacing = isset( $settings['letter_spacing'] ) && '' !== $settings['letter_spacing'] ? $settings['letter_spacing'] : '';
+$font_family    = ! empty( $settings['font_family'] ) ? $settings['font_family'] : '';
+$text_transform = ! empty( $settings['text_transform'] ) ? $settings['text_transform'] : '';
+$text_columns   = isset( $settings['text_columns'] ) ? min( 3, max( 1, absint( $settings['text_columns'] ) ) ) : 1;
+$column_gap     = isset( $settings['column_gap'] ) ? absint( $settings['column_gap'] ) : 24;
+$paragraph_spacing = isset( $settings['paragraph_spacing'] ) ? absint( $settings['paragraph_spacing'] ) : 16;
 
 // Border + entrance animation.
 $border_width  = isset( $settings['border_width'] ) ? max( 0, absint( $settings['border_width'] ) ) : 0;
@@ -39,7 +44,7 @@ foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 }
 
 $allowed_tags = array( 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'blockquote' );
-$anim_list    = array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
+$anim_list    = class_exists( 'XCOPB_Motion_Presets' ) ? array_slice( XCOPB_Motion_Presets::ids(), 1 ) : array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
 
 if ( ! in_array( $tag, $allowed_tags, true ) ) {
 	$tag = 'p';
@@ -50,7 +55,7 @@ if ( '' === $content ) {
 }
 
 $style = '';
-$has_extra = '' !== $color || 'left' !== $align || '' !== $font_size || '' !== $font_weight || '' !== $line_height || '' !== $letter_spacing || $border_width > 0 || $border_radius > 0 || ! empty( $margins );
+$has_extra = '' !== $color || 'left' !== $align || '' !== $font_size || '' !== $font_weight || '' !== $line_height || '' !== $letter_spacing || '' !== $font_family || '' !== $text_transform || $border_width > 0 || $border_radius > 0 || ! empty( $margins ) || $text_columns > 1 || ! empty( $settings['blockquote_background'] );
 if ( $has_extra ) {
 	$style .= ' style="';
 	if ( '' !== $color ) {
@@ -71,6 +76,11 @@ if ( $has_extra ) {
 	if ( '' !== $letter_spacing ) {
 		$style .= 'letter-spacing:' . (float) $letter_spacing . 'px;';
 	}
+	if ( '' !== $font_family ) { $style .= 'font-family:' . esc_attr( $font_family ) . ';'; }
+	if ( in_array( $text_transform, array( 'uppercase', 'lowercase', 'capitalize' ), true ) ) { $style .= 'text-transform:' . $text_transform . ';'; }
+	if ( $text_columns > 1 ) { $style .= 'columns:' . $text_columns . ';column-gap:' . $column_gap . 'px;'; }
+	if ( ! empty( $settings['blockquote_background'] ) ) { $style .= 'background:' . esc_attr( $settings['blockquote_background'] ) . ';'; }
+	if ( ! empty( $settings['blockquote_color'] ) ) { $style .= 'border-left:' . max( 2, $border_width ) . 'px solid ' . esc_attr( $settings['blockquote_color'] ) . ';'; }
 	if ( $border_width > 0 ) {
 		$style .= 'border:' . $border_width . 'px ' . esc_attr( $border_style ) . ' ' . esc_attr( $border_color ? $border_color : '#000000' ) . ';';
 	}
@@ -87,6 +97,7 @@ if ( $has_extra ) {
 			}
 		}
 	}
+	$style .= '--xsb-text-paragraph-gap:' . $paragraph_spacing . 'px;';
 	$style .= '"';
 }
 
@@ -94,7 +105,10 @@ if ( $has_extra ) {
 $anim_class = '';
 if ( 'none' !== $animation && in_array( $animation, $anim_list, true ) ) {
 	$anim_class = ' xsb-anim-' . $animation;
-	$duration_delay = ' animation-duration:' . $anim_duration . 'ms; animation-delay:' . $anim_delay . 'ms;';
+	$animation_keyframe = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::keyframe( $animation ) : 'xsb-' . $animation;
+	$animation_easing = isset( $settings['animation_easing'] ) && in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), true ) ? $settings['animation_easing'] : 'ease';
+	$animation_repeat = isset( $settings['animation_repeat'] ) && in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? $settings['animation_repeat'] : '1';
+	$duration_delay = ' animation-name:' . esc_attr( $animation_keyframe ) . '; animation-duration:' . $anim_duration . 'ms; animation-delay:' . $anim_delay . 'ms; animation-timing-function:' . esc_attr( $animation_easing ) . '; animation-iteration-count:' . esc_attr( $animation_repeat ) . ';';
 	if ( '' === $style ) {
 		$style = ' style="' . trim( $duration_delay, ' ;' ) . '"';
 	} else {
@@ -103,9 +117,10 @@ if ( 'none' !== $animation && in_array( $animation, $anim_list, true ) ) {
 }
 
 echo wp_kses( sprintf(
-	'<%1$s class="xsb-text-block%2$s"%3$s>%4$s</%1$s>',
+	'<%1$s class="xsb-text-block%2$s%3$s"%4$s>%5$s</%1$s>',
 	$tag,
 	$anim_class,
+	! empty( $settings['drop_cap'] ) ? ' xsb-text-block--drop-cap' : '',
 	$style,
 	wp_kses_post( $content )
 ), XCOPB_Block_Registry::allowed_output_html() );

@@ -1,0 +1,20 @@
+[
+	{"value":"fade-in","label":"Fade In","keyframe":"xsb-motion-fade-in"},
+	{"value":"fade-in-up","label":"Fade In Up","keyframe":"xsb-motion-fade-in-up"},
+	{"value":"fade-in-down","label":"Fade In Down","keyframe":"xsb-motion-fade-in-down"},
+	{"value":"fade-in-left","label":"Fade In Left","keyframe":"xsb-motion-fade-in-left"},
+	{"value":"fade-in-right","label":"Fade In Right","keyframe":"xsb-motion-fade-in-right"},
+	{"value":"slide-up","label":"Slide Up","keyframe":"xsb-motion-slide-up"},
+	{"value":"slide-down","label":"Slide Down","keyframe":"xsb-motion-slide-down"},
+	{"value":"slide-left","label":"Slide Left","keyframe":"xsb-motion-slide-left"},
+	{"value":"slide-right","label":"Slide Right","keyframe":"xsb-motion-slide-right"},
+	{"value":"zoom-in","label":"Zoom In","keyframe":"xsb-motion-zoom-in"},
+	{"value":"zoom-out","label":"Zoom Out","keyframe":"xsb-motion-zoom-out"},
+	{"value":"bounce-in","label":"Bounce In","keyframe":"xsb-motion-bounce-in"},
+	{"value":"flip-in-x","label":"Flip In X","keyframe":"xsb-motion-flip-in-x"},
+	{"value":"flip-in-y","label":"Flip In Y","keyframe":"xsb-motion-flip-in-y"},
+	{"value":"rotate-in","label":"Rotate In","keyframe":"xsb-motion-rotate-in"},
+	{"value":"roll-in","label":"Roll In","keyframe":"xsb-motion-roll-in"},
+	{"value":"blur-in","label":"Blur In","keyframe":"xsb-motion-blur-in"},
+	{"value":"bounce","label":"Bounce","keyframe":"xsb-motion-bounce"}
+]

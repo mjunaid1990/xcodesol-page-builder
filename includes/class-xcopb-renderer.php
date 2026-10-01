@@ -113,8 +113,23 @@ class XCOPB_Renderer {
 			$classes[] = 'xcopb-disable-on-mobile';
 			$classes[] = 'xsb-disable-on-mobile';
 		}
+		$wrapper_id = '';
+		$wrapper_style = array();
+		if ( 'page' === get_post_type( $template_id ) ) {
+			$page_style = get_post_meta( $template_id, '_xcopb_page_settings', true );
+			if ( is_array( $page_style ) ) {
+				if ( ! empty( $page_style['css_id'] ) ) { $wrapper_id = ' id="' . esc_attr( $page_style['css_id'] ) . '"'; }
+				if ( ! empty( $page_style['css_class'] ) ) { $classes = array_merge( $classes, preg_split( '/\s+/', sanitize_text_field( $page_style['css_class'] ) ) ); }
+				foreach ( array( 'margin', 'padding' ) as $box_name ) {
+					if ( empty( $page_style[ $box_name ] ) || ! is_array( $page_style[ $box_name ] ) ) { continue; }
+					$box = $page_style[ $box_name ]; $unit = isset( $box['unit'] ) && in_array( $box['unit'], array( 'px', '%', 'em', 'rem', 'vw', 'vh' ), true ) ? $box['unit'] : 'px';
+					$sides = isset( $box['values'] ) && is_array( $box['values'] ) ? $box['values'] : $box;
+					foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) { if ( isset( $sides[ $side ] ) && is_numeric( $sides[ $side ] ) ) { $wrapper_style[] = $box_name . '-' . $side . ':' . (float) $sides[ $side ] . $unit; } }
+				}
+			}
+		}
 
-		$output = '<div class="' . esc_attr( implode( ' ', $classes ) ) . '">';
+		$output = '<div' . $wrapper_id . ' class="' . esc_attr( implode( ' ', array_filter( $classes ) ) ) . '"' . ( $wrapper_style ? ' style="' . esc_attr( implode( ';', $wrapper_style ) ) . '"' : '' ) . '>';
 
 		$output .= $this->render_block_list( $blocks, $context );
 

@@ -17,8 +17,8 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useState } from '@wordpress/element';
-import { ToggleControl } from '@wordpress/components';
+import { useMemo, useState } from '@wordpress/element';
+import { SelectControl as WPSelectControl, TextControl as WPTextControl, ToggleControl } from '@wordpress/components';
 
 import TemplateSettings from './template-settings';
 import ConditionsEditor from './conditions-editor';
@@ -27,6 +27,7 @@ import { hasStylePopover } from './style-popover';
 import {
 	IconClose,
 	IconSettings,
+	IconPalette,
 	IconInfo,
 	IconCopy,
 	IconTrash,
@@ -50,7 +51,7 @@ import {
 	ColorPickerControl,
 	LinkControl,
 	NumberScrubberControl,
-	BoxModelSpacingControl,
+	CodeEditorControl,
 	ButtonLivePreview,
 	InspectorEmptyState,
 	SchemaInspectorRenderer,
@@ -58,8 +59,10 @@ import {
 	TextControl,
 } from './inspector-controls';
 
-import { CONTAINER_SCHEMA } from '../schemas/container-schema';
-import { manifestFor } from '../schemas';
+import { manifestFor, schemaFor } from '../schemas';
+import GradientControl from './controls/gradient';
+import MediaPickerControl from './controls/media';
+import SpacingBoxControl from './controls/spacing-box';
 
 const BLOCK_NAMES = {
 	'xcopb/gb-container': __( 'Container', 'xcodesol-page-builder' ),
@@ -133,6 +136,180 @@ function TemplateRulesView( { viewOptions, viewType, setViewType, rules } ) {
 			/>
 		</div>
 	);
+}
+
+function PageSettingsView( { title, setTitle, settings = {}, setSettings, pageTemplateOptions = [] } ) {
+	const update = ( key, value ) => setSettings( ( current ) => ( { ...current, [ key ]: value } ) );
+	const chooseFeaturedImage = () => {
+		if ( ! window.wp?.media ) {
+			return;
+		}
+		const frame = window.wp.media( {
+			title: __( 'Choose featured image', 'xcodesol-page-builder' ),
+			button: { text: __( 'Use as featured image', 'xcodesol-page-builder' ) },
+			library: { type: 'image' },
+			multiple: false,
+		} );
+		frame.on( 'select', () => {
+			const image = frame.state().get( 'selection' ).first()?.toJSON();
+			if ( image ) {
+				update( 'featured_image_id', image.id );
+				update( 'featured_image_url', image.sizes?.medium?.url || image.url );
+			}
+		} );
+		frame.open();
+	};
+	const pageLayouts = pageTemplateOptions.length
+		? pageTemplateOptions
+		: [ { value: '', label: __( 'Default', 'xcodesol-page-builder' ) } ];
+
+	return (
+		<div className="xsb-inspector-rules xsb-page-settings">
+			<CollapsibleSection id="page-general-settings" title={ __( 'General Settings', 'xcodesol-page-builder' ) } defaultOpen={ true }>
+				<WPTextControl label={ __( 'Title', 'xcodesol-page-builder' ) } value={ title || '' } onChange={ setTitle } />
+				<WPSelectControl
+					label={ __( 'Status', 'xcodesol-page-builder' ) }
+					value={ settings.status || 'draft' }
+					options={ [
+						{ label: __( 'Draft', 'xcodesol-page-builder' ), value: 'draft' },
+						{ label: __( 'Published', 'xcodesol-page-builder' ), value: 'publish' },
+						{ label: __( 'Pending review', 'xcodesol-page-builder' ), value: 'pending' },
+						{ label: __( 'Private', 'xcodesol-page-builder' ), value: 'private' },
+					] }
+					onChange={ ( value ) => update( 'status', value ) }
+				/>
+				<div className="xsb-page-featured-image">
+					<span className="xsb-control-label">{ __( 'Featured Image', 'xcodesol-page-builder' ) }</span>
+					{ settings.featured_image_url ? (
+						<div className="xsb-page-featured-image__preview">
+							<img src={ settings.featured_image_url } alt="" />
+							<div className="xsb-page-featured-image__actions">
+								<button type="button" className="xsb-btn xsb-btn--secondary" onClick={ chooseFeaturedImage }>{ __( 'Replace', 'xcodesol-page-builder' ) }</button>
+								<button type="button" className="xsb-btn xsb-btn--secondary" onClick={ () => { update( 'featured_image_id', 0 ); update( 'featured_image_url', '' ); } }>{ __( 'Remove', 'xcodesol-page-builder' ) }</button>
+							</div>
+						</div>
+					) : (
+						<button type="button" className="xsb-page-featured-image__empty" onClick={ chooseFeaturedImage }>
+							<span className="dashicons dashicons-plus-alt2" aria-hidden="true" />
+							<span>{ __( 'Choose image', 'xcodesol-page-builder' ) }</span>
+						</button>
+					) }
+				</div>
+				<WPTextControl
+					label={ __( 'Order', 'xcodesol-page-builder' ) }
+					type="number"
+					value={ settings.order ?? 0 }
+					onChange={ ( value ) => update( 'order', Number( value ) || 0 ) }
+				/>
+				<div className="xsb-page-settings__toggle">
+					<ToggleControl label={ __( 'Allow Comments', 'xcodesol-page-builder' ) } checked={ !! settings.comments } onChange={ ( value ) => update( 'comments', value ) } />
+				</div>
+				<div className="xsb-page-settings__toggle">
+					<ToggleControl label={ __( 'Hide Title', 'xcodesol-page-builder' ) } checked={ !! settings.hide_title } onChange={ ( value ) => update( 'hide_title', value ) } />
+				</div>
+			</CollapsibleSection>
+			<CollapsibleSection id="page-layout-settings" title={ __( 'Page Layout', 'xcodesol-page-builder' ) } defaultOpen={ true }>
+				<WPSelectControl
+					label={ __( 'Layout', 'xcodesol-page-builder' ) }
+					value={ settings.page_template || '' }
+					options={ pageLayouts }
+					onChange={ ( value ) => update( 'page_template', value ) }
+				/>
+				<p className="xsb-page-settings__help">{ __( 'Choose a WordPress page template. Page layouts are separate from archive and single-post display templates.', 'xcodesol-page-builder' ) }</p>
+			</CollapsibleSection>
+			<CollapsibleSection id="page-spacing-settings" title={ __( 'Margin & Padding', 'xcodesol-page-builder' ) }>
+				<SpacingBoxControl config={ { id: 'page-margin', label: __( 'Margin', 'xcodesol-page-builder' ), units: [ 'px', '%', 'em', 'rem', 'vw', 'vh' ], allowNegative: true, default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } } value={ settings.margin || { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } onChange={ ( value ) => update( 'margin', value ) } />
+				<SpacingBoxControl config={ { id: 'page-padding', label: __( 'Padding', 'xcodesol-page-builder' ), units: [ 'px', '%', 'em', 'rem', 'vw', 'vh' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } } value={ settings.padding || { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } onChange={ ( value ) => update( 'padding', value ) } />
+			</CollapsibleSection>
+			<CollapsibleSection id="page-advanced-settings" title={ __( 'Advanced', 'xcodesol-page-builder' ) }>
+				<div className="xsb-control-row-2col">
+					<WPTextControl label={ __( 'CSS ID', 'xcodesol-page-builder' ) } value={ settings.css_id || '' } onChange={ ( value ) => update( 'css_id', value.replace( /[^a-zA-Z0-9_-]/g, '' ) ) } />
+					<WPTextControl label={ __( 'CSS Classes', 'xcodesol-page-builder' ) } value={ settings.css_class || '' } onChange={ ( value ) => update( 'css_class', value ) } />
+				</div>
+				<CodeEditorControl label={ __( 'Page Custom CSS', 'xcodesol-page-builder' ) } value={ settings.custom_css || '' } onChange={ ( value ) => update( 'custom_css', value ) } placeholder={ "selector {\n  /* Styles for this page */\n}" } />
+				<p className="xsb-page-settings__help">{ __( 'Use selector to target this page’s builder content.', 'xcodesol-page-builder' ) }</p>
+			</CollapsibleSection>
+		</div>
+	);
+}
+
+function SiteSettingsView( { settings = {}, setSettings, fontOptions = [] } ) {
+	const [ newColorName, setNewColorName ] = useState( '' );
+	const [ newColorValue, setNewColorValue ] = useState( '#6366f1' );
+	const updateColor = ( key, value ) => setSettings( ( current ) => ( { ...current, global_colors: { ...( current.global_colors || {} ), [ key ]: value } } ) );
+	const updateFont = ( key, value ) => setSettings( ( current ) => ( { ...current, global_fonts: { ...( current.global_fonts || {} ), [ key ]: value } } ) );
+	const updateTypography = ( key, value ) => setSettings( ( current ) => ( { ...current, typography: { ...( current.typography || {} ), [ key ]: value } } ) );
+	const updateButtonStyle = ( key, value ) => setSettings( ( current ) => ( { ...current, button_style: { ...( current.button_style || {} ), [ key ]: value } } ) );
+	const colors = settings.global_colors || {};
+	const fonts = settings.global_fonts || {};
+	const typography = settings.typography || {};
+	const buttonStyle = settings.button_style || {};
+	const backgroundImage = settings.background_image || {};
+	const backgroundImageStyle = settings.background_image_style || {};
+	const customColors = Array.isArray( settings.custom_colors ) ? settings.custom_colors : [];
+	const customPalette = [ ...Object.values( colors ), ...customColors.map( ( color ) => color.value ) ];
+	const fontsList = [ { label: __( 'Theme default', 'xcodesol-page-builder' ), value: fonts.body || 'system-ui' }, ...fontOptions.map( ( item ) => ( { label: item.label || item.name || item.value, value: item.value || item.family || item.name } ) ).filter( ( item ) => item.value ) ];
+	const tokenRows = [ [ 'primary', __( 'Primary', 'xcodesol-page-builder' ) ], [ 'secondary', __( 'Secondary', 'xcodesol-page-builder' ) ], [ 'text', __( 'Text', 'xcodesol-page-builder' ) ], [ 'accent', __( 'Accent', 'xcodesol-page-builder' ) ] ];
+	return <div className="xsb-inspector-rules xsb-page-settings xsb-site-settings">
+		<p className="xsb-site-settings__intro">{ __( 'Set shared colours and fonts once. Use them across your pages for a consistent look.', 'xcodesol-page-builder' ) }</p>
+		<CollapsibleSection id="site-global-colors" title={ __( 'Global Colours', 'xcodesol-page-builder' ) } defaultOpen>
+			<div className="xsb-site-settings__group-title">{ __( 'System Colours', 'xcodesol-page-builder' ) }</div>
+			<div className="xsb-site-settings__color-list">
+				{ tokenRows.map( ( [ key, label ] ) => <div className="xsb-site-settings__color-row" key={ key }><span className="xsb-site-settings__color-label">{ label }</span><ColorPickerControl value={ colors[ key ] || '' } onChange={ ( value ) => updateColor( key, value ) } showTokens={ false } inlinePopover customPalette={ customPalette } /></div> ) }
+			</div>
+			<div className="xsb-site-settings__group-title xsb-site-settings__custom-title">{ __( 'Custom Colours', 'xcodesol-page-builder' ) }</div>
+			{ customColors.length > 0 && <div className="xsb-site-settings__color-list">{ customColors.map( ( item ) => <div className="xsb-site-settings__color-row" key={ item.id }><span className="xsb-site-settings__color-label">{ item.name }</span><ColorPickerControl value={ item.value } onChange={ ( value ) => setSettings( ( current ) => ( { ...current, custom_colors: ( current.custom_colors || [] ).map( ( color ) => color.id === item.id ? { ...color, value } : color ) } ) ) } showTokens={ false } inlinePopover customPalette={ customPalette } /><button type="button" className="xsb-site-settings__remove-color" aria-label={ sprintf( __( 'Remove %s', 'xcodesol-page-builder' ), item.name ) } onClick={ () => setSettings( ( current ) => ( { ...current, custom_colors: ( current.custom_colors || [] ).filter( ( color ) => color.id !== item.id ) } ) ) }><IconTrash width={ 14 } height={ 14 } /></button></div> ) }</div> }
+			<div className="xsb-site-settings__add-color"><input className="xsb-text-input" value={ newColorName } onChange={ ( event ) => setNewColorName( event.target.value ) } placeholder={ __( 'Colour name', 'xcodesol-page-builder' ) } /><ColorPickerControl value={ newColorValue } onChange={ setNewColorValue } showTokens={ false } inlinePopover customPalette={ customPalette } /><button type="button" className="xsb-btn xsb-btn--secondary" disabled={ ! newColorName.trim() } onClick={ () => { const id = `custom-${ Date.now() }`; setSettings( ( current ) => ( { ...current, custom_colors: [ ...( current.custom_colors || [] ), { id, name: newColorName.trim(), value: newColorValue } ] } ) ); setNewColorName( '' ); } }>{ __( 'Add Colour', 'xcodesol-page-builder' ) }</button></div>
+		</CollapsibleSection>
+		<CollapsibleSection id="site-global-fonts" title={ __( 'Global Fonts', 'xcodesol-page-builder' ) }>
+			<p className="xsb-site-settings__help">{ __( 'Choose the typefaces used for body text and headings throughout your site.', 'xcodesol-page-builder' ) }</p>
+			<WPSelectControl label={ __( 'Body Text', 'xcodesol-page-builder' ) } value={ fonts.body || 'system-ui' } options={ fontsList } onChange={ ( value ) => updateFont( 'body', value ) } />
+			<WPSelectControl label={ __( 'Headings', 'xcodesol-page-builder' ) } value={ fonts.heading || 'system-ui' } options={ fontsList } onChange={ ( value ) => updateFont( 'heading', value ) } />
+			<div className="xsb-site-settings__subheading">{ __( 'Typography', 'xcodesol-page-builder' ) }</div>
+			<div className="xsb-site-settings__field-grid"><label>{ __( 'Body size (px)', 'xcodesol-page-builder' ) }<input className="xsb-text-input" type="number" min="10" max="48" value={ typography.body_size || 16 } onChange={ ( event ) => updateTypography( 'body_size', Number( event.target.value ) ) } /></label><label>{ __( 'Body weight', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ typography.body_weight || '400' } onChange={ ( event ) => updateTypography( 'body_weight', event.target.value ) }><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option><option value="700">700</option></select></label><label>{ __( 'Line height', 'xcodesol-page-builder' ) }<input className="xsb-text-input" type="number" min="1" max="3" step="0.1" value={ typography.line_height || 1.6 } onChange={ ( event ) => updateTypography( 'line_height', Number( event.target.value ) ) } /></label><label>{ __( 'Paragraph spacing (px)', 'xcodesol-page-builder' ) }<input className="xsb-text-input" type="number" min="0" max="100" value={ typography.paragraph_spacing ?? 16 } onChange={ ( event ) => updateTypography( 'paragraph_spacing', Number( event.target.value ) ) } /></label></div>
+		</CollapsibleSection>
+		<CollapsibleSection id="site-button-style" title={ __( 'Buttons', 'xcodesol-page-builder' ) }>
+			<p className="xsb-site-settings__help">{ __( 'Set default and hover styles for buttons across the site.', 'xcodesol-page-builder' ) }</p>
+			<div className="xsb-site-settings__subheading">{ __( 'Size', 'xcodesol-page-builder' ) }</div>
+			<div className="xsb-site-settings__choice-chips" role="group" aria-label={ __( 'Button size', 'xcodesol-page-builder' ) }>{ [ [ 'xs', __( 'Extra small', 'xcodesol-page-builder' ), 11, 6, 12 ], [ 'small', __( 'Small', 'xcodesol-page-builder' ), 13, 8, 16 ], [ 'medium', __( 'Medium', 'xcodesol-page-builder' ), 16, 12, 24 ], [ 'large', __( 'Large', 'xcodesol-page-builder' ), 18, 15, 30 ], [ 'xl', __( 'Extra large', 'xcodesol-page-builder' ), 20, 18, 36 ], [ 'custom', __( 'Custom', 'xcodesol-page-builder' ), null, null, null ] ].map( ( [ value, label, fontSize, paddingY, paddingX ] ) => <button type="button" key={ value } className={ `xsb-site-settings__choice-chip${ ( buttonStyle.size || 'medium' ) === value ? ' is-active' : '' }` } aria-pressed={ ( buttonStyle.size || 'medium' ) === value } onClick={ () => { updateButtonStyle( 'size', value ); if ( value !== 'custom' ) { updateButtonStyle( 'font_size', fontSize ); updateButtonStyle( 'padding', { top: paddingY, right: paddingX, bottom: paddingY, left: paddingX, unit: 'px', isLinked: false } ); } } }>{ label }</button> ) }</div>
+			<ColorPickerControl label={ __( 'Text colour', 'xcodesol-page-builder' ) } value={ buttonStyle.text || '' } onChange={ ( value ) => updateButtonStyle( 'text', value ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+			<ColorPickerControl label={ __( 'Background', 'xcodesol-page-builder' ) } value={ buttonStyle.background || '' } onChange={ ( value ) => updateButtonStyle( 'background', value ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+			<ColorPickerControl label={ __( 'Hover text colour', 'xcodesol-page-builder' ) } value={ buttonStyle.hover_text || '' } onChange={ ( value ) => updateButtonStyle( 'hover_text', value ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+			<ColorPickerControl label={ __( 'Hover background', 'xcodesol-page-builder' ) } value={ buttonStyle.hover_background || '' } onChange={ ( value ) => updateButtonStyle( 'hover_background', value ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+			<ToggleControl label={ __( 'Use gradient background', 'xcodesol-page-builder' ) } checked={ !! buttonStyle.gradient_enabled } onChange={ ( value ) => updateButtonStyle( 'gradient_enabled', value ) } />
+			{ buttonStyle.gradient_enabled && <GradientControl config={ { id: 'site-button-gradient', label: __( 'Background gradient', 'xcodesol-page-builder' ), default: { type: 'linear', angle: 90, colorA: '#4f46e5', colorB: '#06b6d4', posA: 0, posB: 100 } } } value={ buttonStyle.gradient || {} } onChange={ ( value ) => updateButtonStyle( 'gradient', value ) } customPalette={ customPalette } /> }
+			<ToggleControl label={ __( 'Use hover gradient', 'xcodesol-page-builder' ) } checked={ !! buttonStyle.hover_gradient_enabled } onChange={ ( value ) => updateButtonStyle( 'hover_gradient_enabled', value ) } />
+			{ buttonStyle.hover_gradient_enabled && <GradientControl config={ { id: 'site-button-hover-gradient', label: __( 'Hover gradient', 'xcodesol-page-builder' ), default: { type: 'linear', angle: 90, colorA: '#4338ca', colorB: '#0891b2', posA: 0, posB: 100 } } } value={ buttonStyle.hover_gradient || {} } onChange={ ( value ) => updateButtonStyle( 'hover_gradient', value ) } customPalette={ customPalette } /> }
+			<div className="xsb-site-settings__subheading">{ __( 'Border', 'xcodesol-page-builder' ) }</div>
+			<ColorPickerControl label={ __( 'Border colour', 'xcodesol-page-builder' ) } value={ buttonStyle.border_color || '' } onChange={ ( value ) => updateButtonStyle( 'border_color', value ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+			<div className="xsb-site-settings__field-grid"><label>{ __( 'Border style', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ buttonStyle.border_style || 'solid' } onChange={ ( event ) => updateButtonStyle( 'border_style', event.target.value ) }><option value="solid">{ __( 'Solid', 'xcodesol-page-builder' ) }</option><option value="dashed">{ __( 'Dashed', 'xcodesol-page-builder' ) }</option><option value="dotted">{ __( 'Dotted', 'xcodesol-page-builder' ) }</option><option value="double">{ __( 'Double', 'xcodesol-page-builder' ) }</option></select></label></div>
+			<SpacingBoxControl config={ { id: 'site-button-border-width', label: __( 'Border width', 'xcodesol-page-builder' ), units: [ 'px' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } } value={ typeof buttonStyle.border_width === 'object' ? buttonStyle.border_width : { top: buttonStyle.border_width ?? 0, right: buttonStyle.border_width ?? 0, bottom: buttonStyle.border_width ?? 0, left: buttonStyle.border_width ?? 0, unit: 'px', isLinked: true } } onChange={ ( value ) => updateButtonStyle( 'border_width', value ) } />
+			<SpacingBoxControl config={ { id: 'site-button-corner-radius', label: __( 'Corner radius', 'xcodesol-page-builder' ), units: [ 'px' ], default: { top: 6, right: 6, bottom: 6, left: 6, unit: 'px', isLinked: true } } } value={ typeof buttonStyle.radius === 'object' ? buttonStyle.radius : { top: buttonStyle.radius ?? 6, right: buttonStyle.radius ?? 6, bottom: buttonStyle.radius ?? 6, left: buttonStyle.radius ?? 6, unit: 'px', isLinked: true } } onChange={ ( value ) => updateButtonStyle( 'radius', value ) } />
+			{ ( buttonStyle.size || 'medium' ) === 'custom' && <><SpacingBoxControl config={ { id: 'site-button-padding', label: __( 'Padding', 'xcodesol-page-builder' ), units: [ 'px' ], default: { top: 12, right: 24, bottom: 12, left: 24, unit: 'px', isLinked: false } } } value={ typeof buttonStyle.padding === 'object' ? buttonStyle.padding : { top: buttonStyle.padding_y ?? 12, right: buttonStyle.padding_x ?? 24, bottom: buttonStyle.padding_y ?? 12, left: buttonStyle.padding_x ?? 24, unit: 'px', isLinked: false } } onChange={ ( value ) => updateButtonStyle( 'padding', value ) } /><div className="xsb-site-settings__field-grid"><label>{ __( 'Text size (px)', 'xcodesol-page-builder' ) }<input className="xsb-text-input" type="number" min="8" max="48" value={ buttonStyle.font_size ?? 16 } onChange={ ( event ) => updateButtonStyle( 'font_size', Number( event.target.value ) ) } /></label></div></> }
+			<div className="xsb-site-settings__subheading">{ __( 'Shadow', 'xcodesol-page-builder' ) }</div>
+			<div className="xsb-site-settings__shadow-chips" role="group" aria-label={ __( 'Button shadow', 'xcodesol-page-builder' ) }>{ [ [ 'none', __( 'None', 'xcodesol-page-builder' ), 'none' ], [ 'soft', __( 'Soft', 'xcodesol-page-builder' ), '0 2px 8px rgba(15,23,42,.12)' ], [ 'medium', __( 'Medium', 'xcodesol-page-builder' ), '0 6px 16px rgba(15,23,42,.18)' ], [ 'strong', __( 'Strong', 'xcodesol-page-builder' ), '0 12px 28px rgba(15,23,42,.24)' ] ].map( ( [ value, label, shadow ] ) => <button type="button" key={ value } className={ `xsb-site-settings__shadow-chip${ ( buttonStyle.shadow_preset || 'none' ) === value ? ' is-active' : '' }` } aria-pressed={ ( buttonStyle.shadow_preset || 'none' ) === value } onClick={ () => { updateButtonStyle( 'shadow_preset', value ); updateButtonStyle( 'shadow', shadow ); } }><span className="xsb-site-settings__shadow-sample" style={ { boxShadow: shadow === 'none' ? 'inset 0 0 0 1px #cbd5e1' : shadow } } /><span>{ label }</span></button> ) }</div>
+			<label className="xsb-site-settings__custom-shadow">{ __( 'Custom box shadow (CSS)', 'xcodesol-page-builder' ) }<input className="xsb-text-input" type="text" value={ buttonStyle.shadow_preset === 'custom' ? ( buttonStyle.shadow || '' ) : '' } placeholder="0 4px 12px rgba(0, 0, 0, .15)" onChange={ ( event ) => { updateButtonStyle( 'shadow_preset', 'custom' ); updateButtonStyle( 'shadow', event.target.value ); } } /></label>
+		</CollapsibleSection>
+		<CollapsibleSection id="site-theme-background" title={ __( 'Site Background', 'xcodesol-page-builder' ) }>
+			<p className="xsb-site-settings__help">{ __( 'Set the default page background. Individual containers can use their own background.', 'xcodesol-page-builder' ) }</p>
+			<ColorPickerControl label={ __( 'Background colour', 'xcodesol-page-builder' ) } value={ colors.background || '' } onChange={ ( value ) => updateColor( 'background', value ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+			<MediaPickerControl config={ { id: 'site-background-image', label: __( 'Background image', 'xcodesol-page-builder' ), allowedTypes: [ 'image' ] } } value={ backgroundImage } onChange={ ( value ) => setSettings( ( current ) => ( { ...current, background_image: value } ) ) } />
+			{ ( backgroundImage.url || backgroundImage.id ) && <>
+				<div className="xsb-site-settings__field-grid">
+					<label>{ __( 'Image size', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ backgroundImageStyle.size || 'cover' } onChange={ ( event ) => setSettings( ( current ) => ( { ...current, background_image_style: { ...( current.background_image_style || {} ), size: event.target.value } } ) ) }><option value="cover">{ __( 'Cover', 'xcodesol-page-builder' ) }</option><option value="contain">{ __( 'Contain', 'xcodesol-page-builder' ) }</option><option value="auto">{ __( 'Original size', 'xcodesol-page-builder' ) }</option></select></label>
+					<label>{ __( 'Repeat', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ backgroundImageStyle.repeat || 'no-repeat' } onChange={ ( event ) => setSettings( ( current ) => ( { ...current, background_image_style: { ...( current.background_image_style || {} ), repeat: event.target.value } } ) ) }><option value="no-repeat">{ __( 'No repeat', 'xcodesol-page-builder' ) }</option><option value="repeat">{ __( 'Repeat', 'xcodesol-page-builder' ) }</option><option value="repeat-x">{ __( 'Repeat horizontally', 'xcodesol-page-builder' ) }</option><option value="repeat-y">{ __( 'Repeat vertically', 'xcodesol-page-builder' ) }</option></select></label>
+					<label>{ __( 'Position', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ backgroundImageStyle.position || 'center center' } onChange={ ( event ) => setSettings( ( current ) => ( { ...current, background_image_style: { ...( current.background_image_style || {} ), position: event.target.value } } ) ) }>{ [ 'center center', 'center top', 'center bottom', 'left center', 'right center', 'left top', 'right top', 'left bottom', 'right bottom' ].map( ( position ) => <option key={ position } value={ position }>{ position.replace( /\b\w/g, ( letter ) => letter.toUpperCase() ) }</option> ) }</select></label>
+					<label>{ __( 'Attachment', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ backgroundImageStyle.attachment || 'scroll' } onChange={ ( event ) => setSettings( ( current ) => ( { ...current, background_image_style: { ...( current.background_image_style || {} ), attachment: event.target.value } } ) ) }><option value="scroll">{ __( 'Scroll', 'xcodesol-page-builder' ) }</option><option value="fixed">{ __( 'Fixed', 'xcodesol-page-builder' ) }</option></select></label>
+				</div>
+				<ColorPickerControl label={ __( 'Image overlay colour', 'xcodesol-page-builder' ) } value={ backgroundImageStyle.overlay || '' } onChange={ ( value ) => setSettings( ( current ) => ( { ...current, background_image_style: { ...( current.background_image_style || {} ), overlay: value } } ) ) } showTokens={ false } inlinePopover customPalette={ customPalette } />
+				<label className="xsb-site-settings__range-label">{ __( 'Overlay opacity', 'xcodesol-page-builder' ) }<input type="range" min="0" max="100" value={ backgroundImageStyle.overlay_opacity ?? 0 } onChange={ ( event ) => setSettings( ( current ) => ( { ...current, background_image_style: { ...( current.background_image_style || {} ), overlay_opacity: Number( event.target.value ) } } ) ) } /><span>{ backgroundImageStyle.overlay_opacity ?? 0 }%</span></label>
+			</> }
+		</CollapsibleSection>
+		<CollapsibleSection id="site-custom-css" title={ __( 'Custom CSS', 'xcodesol-page-builder' ) }>
+			<p className="xsb-site-settings__help">{ __( 'Add site-wide CSS for details that are not available in the visual controls.', 'xcodesol-page-builder' ) }</p>
+			<CodeEditorControl label={ __( 'Site-wide CSS', 'xcodesol-page-builder' ) } value={ settings.custom_css || '' } onChange={ ( value ) => setSettings( ( current ) => ( { ...current, custom_css: value } ) ) } placeholder={ "body {\n  /* Site-wide styles */\n}" } />
+		</CollapsibleSection>
+	</div>;
 }
 
 function BlockAdvancedTab( { settings = {}, onChange } ) {
@@ -493,6 +670,7 @@ function BlockContentInspector( { block, onChange } ) {
 				</div>
 			);
 	}
+
 }
 
 /**
@@ -604,6 +782,7 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 								}
 							} }
 							defaultColor="#4f46e5"
+							customPalette={ customPalette }
 						/>
 					</div>
 				) }
@@ -621,6 +800,7 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 								}
 							} }
 							defaultColor="#ffffff"
+							customPalette={ customPalette }
 						/>
 					</div>
 				) }
@@ -632,6 +812,7 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 							value={ settings.hover_bg_color || '' }
 							onChange={ ( val ) => onChange( 'hover_bg_color', val ) }
 							defaultColor="#4338ca"
+							customPalette={ customPalette }
 						/>
 						<ColorPickerControl
 							label={ __( 'Hover Text', 'xcodesol-page-builder' ) }
@@ -667,26 +848,26 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 					</div>
 				) }
 
-				<BoxModelSpacingControl
-					label={ __( 'Padding', 'xcodesol-page-builder' ) }
-					values={ typeof settings.padding === 'object' ? settings.padding : {
+				<SpacingBoxControl
+					config={ { id: 'block-padding', label: __( 'Padding', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } }
+					value={ typeof settings.padding === 'object' ? settings.padding : {
 						top: Number( settings.padding ) || 0,
 						right: Number( settings.padding ) || 0,
 						bottom: Number( settings.padding ) || 0,
 						left: Number( settings.padding ) || 0,
 					} }
-					onChange={ ( val ) => onChange( 'padding', typeof val === 'object' ? val.top : val ) }
+					onChange={ ( val ) => onChange( 'padding', val ) }
 				/>
 
-				<BoxModelSpacingControl
-					label={ __( 'Margin', 'xcodesol-page-builder' ) }
-					values={ typeof settings.margin === 'object' ? settings.margin : {
+				<SpacingBoxControl
+					config={ { id: 'block-margin', label: __( 'Margin', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], allowNegative: true, default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } }
+					value={ typeof settings.margin === 'object' ? settings.margin : {
 						top: Number( settings.margin ) || 0,
 						right: Number( settings.margin ) || 0,
 						bottom: Number( settings.margin ) || 0,
 						left: Number( settings.margin ) || 0,
 					} }
-					onChange={ ( val ) => onChange( 'margin', typeof val === 'object' ? val.top : val ) }
+					onChange={ ( val ) => onChange( 'margin', val ) }
 				/>
 			</CollapsibleSection>
 
@@ -695,18 +876,11 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 				<CollapsibleSection
 					id="style-border"
 					title={ __( 'Border & Corners', 'xcodesol-page-builder' ) }
-					hint={ `${ settings.border_radius ?? ( isButton ? 6 : 0 ) }px` }
+					hint={ typeof settings.border_radius === 'object' ? `${ settings.border_radius.top ?? 0 } / ${ settings.border_radius.right ?? 0 } / ${ settings.border_radius.bottom ?? 0 } / ${ settings.border_radius.left ?? 0 }px` : `${ settings.border_radius ?? ( isButton ? 6 : 0 ) }px` }
 					onReset={ () => onChange( 'border_radius', 0 ) }
 				>
-					<NumberScrubberControl
-						label={ __( 'Corner Radius', 'xcodesol-page-builder' ) }
-						value={ settings.border_radius ?? ( isButton ? 6 : 0 ) }
-						onChange={ ( val ) => onChange( 'border_radius', val ) }
-						min={ 0 }
-						max={ 100 }
-						unit="px"
-						units={ [ 'px', '%', 'rem', 'em' ] }
-					/>
+					<SpacingBoxControl config={ { id: 'block-border-width', label: __( 'Border width', 'xcodesol-page-builder' ), units: [ 'px' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } } value={ typeof settings.border_width === 'object' ? settings.border_width : { top: settings.border_width ?? 0, right: settings.border_width ?? 0, bottom: settings.border_width ?? 0, left: settings.border_width ?? 0, unit: 'px', isLinked: true } } onChange={ ( val ) => onChange( 'border_width', val ) } />
+					<SpacingBoxControl config={ { id: 'block-border-radius', label: __( 'Corner radius', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } } value={ typeof settings.border_radius === 'object' ? settings.border_radius : { top: settings.border_radius ?? ( isButton ? 6 : 0 ), right: settings.border_radius ?? ( isButton ? 6 : 0 ), bottom: settings.border_radius ?? ( isButton ? 6 : 0 ), left: settings.border_radius ?? ( isButton ? 6 : 0 ), unit: 'px', isLinked: true } } onChange={ ( val ) => onChange( 'border_radius', val ) } />
 				</CollapsibleSection>
 			) }
 
@@ -957,6 +1131,18 @@ export default function Inspector( {
 	viewOptions = {},
 	viewType,
 	showTemplateSettings,
+	showPageSettings,
+	showGlobalSettings,
+	globalSettings,
+	customPalette = [],
+	setGlobalSettings,
+	globalFontOptions,
+	onSaveGlobalSettings,
+	pageSettings,
+	setPageSettings,
+	pageTemplateOptions,
+	title,
+	setTitle,
 	setViewType,
 	structure,
 	open,
@@ -968,17 +1154,47 @@ export default function Inspector( {
 	const [ tab, setTab ] = useState( 'content' );
 	const [ activeStyleState, setActiveStyleState ] = useState( 'default' );
 	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ sectionStates, setSectionStates ] = useState( {} );
+	const [ schemaResetVersion, setSchemaResetVersion ] = useState( 0 );
 
 	if ( ! open ) {
 		return null;
 	}
 
-	const nestedBlock =
-		selectedNested &&
-		layout[ selectedNested.ci ] &&
-		Array.isArray( layout[ selectedNested.ci ].inner )
-			? ( layout[ selectedNested.ci ].inner || [] )[ selectedNested.cj ]?.[ selectedNested.bi ]
-			: null;
+	if ( showPageSettings ) {
+		return (
+			<aside className="xsb-inspector xcopb-inspector">
+				<div className="xsb-inspector-head">
+					<div className="xsb-inspector-head-title-wrap">
+						<span className="xsb-inspector-head-icon" aria-hidden="true"><span className="dashicons dashicons-admin-page" /></span>
+						<h3 className="xsb-inspector-subject">{ __( 'Page Settings', 'xcodesol-page-builder' ) }</h3>
+					</div>
+					<button type="button" className="xsb-inspector-close-btn" onClick={ onClose } aria-label={ __( 'Close inspector', 'xcodesol-page-builder' ) }>
+						<IconClose width={ 14 } height={ 14 } />
+					</button>
+				</div>
+				<div className="xsb-inspector-body">
+					<PageSettingsView title={ title } setTitle={ setTitle } settings={ pageSettings } setSettings={ setPageSettings } pageTemplateOptions={ pageTemplateOptions } />
+				</div>
+			</aside>
+		);
+	}
+	if ( showGlobalSettings ) {
+		return <aside className="xsb-inspector xcopb-inspector xsb-inspector--site-settings"><div className="xsb-inspector-head"><div className="xsb-inspector-head-title-wrap"><span className="xsb-inspector-head-icon"><IconPalette width={ 15 } height={ 15 } /></span><h3 className="xsb-inspector-subject">{ __( 'Site Settings', 'xcodesol-page-builder' ) }</h3></div><button type="button" className="xsb-inspector-close-btn" onClick={ onClose } aria-label={ __( 'Close inspector', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></div><div className="xsb-inspector-body"><SiteSettingsView settings={ globalSettings } setSettings={ setGlobalSettings } fontOptions={ globalFontOptions } /></div><div className="xsb-inspector-footer"><button type="button" className="xsb-inspector-footer-btn xsb-inspector-footer-btn--primary" onClick={ onSaveGlobalSettings }>{ __( 'Save Changes', 'xcodesol-page-builder' ) }</button></div></aside>;
+	}
+
+	const nestedBlock = ( () => {
+		if ( ! selectedNested || ! layout[ selectedNested.ci ] ) return null;
+		const path = Array.isArray( selectedNested.path ) && selectedNested.path.length
+			? selectedNested.path
+			: [ selectedNested ];
+		let current = layout[ selectedNested.ci ];
+		for ( const step of path ) {
+			current = current?.inner?.[ Number( step.cj ) ]?.[ Number( step.bi ) ];
+			if ( ! current ) return null;
+		}
+		return current;
+	} )();
 
 	const block = nestedBlock || ( selectedIndex !== null ? layout[ selectedIndex ] : null );
 
@@ -1088,7 +1304,8 @@ export default function Inspector( {
 					selectedNested.cj,
 					selectedNested.bi,
 					key,
-					value
+					value,
+					selectedNested.path
 				)
 		: ( key, value ) => {
 				const next = [ ...layout ];
@@ -1107,6 +1324,8 @@ export default function Inspector( {
 			};
 
 	const blockLabel = BLOCK_NAMES[ block.type ] || block.label || block.type.replace( /^xcopb\/|^xcosb\//, '' );
+	const blockSchema = schemaFor( block.type );
+	const schemaManifest = manifestFor( block.type );
 
 	// Build breadcrumb (show last 2 levels, full path in tooltip)
 	const rawBreadcrumb = selectedNested
@@ -1131,25 +1350,13 @@ export default function Inspector( {
 
 	return (
 		<aside className="xsb-inspector xcopb-inspector">
-			{/* 1. Header (sticky): icon + name + breadcrumb, actions on right (duplicate, delete, close) */}
+				{/* Selected widget title and inspector actions. */}
 			<div className="xsb-inspector-head">
 				<div className="xsb-inspector-head-title-wrap">
 					<span className="xsb-inspector-head-icon" aria-hidden="true">
 						{ getBlockIcon( block.type ) }
 					</span>
-					<div className="xsb-inspector-head-info">
-						<h3 className="xsb-inspector-subject" title={ blockLabel }>
-							{ blockLabel }
-						</h3>
-						<div className="xsb-inspector-breadcrumb" title={ cleanBreadcrumb.join( ' / ' ) }>
-							{ breadcrumbDisplay.map( ( part, i ) => (
-								<span key={ i } className="xsb-bc-item">
-									{ part }
-									{ i < breadcrumbDisplay.length - 1 && <span className="xsb-bc-sep">/</span> }
-								</span>
-							) ) }
-						</div>
-					</div>
+					<h3 className="xsb-inspector-subject" title={ blockLabel }>{ blockLabel }</h3>
 				</div>
 
 				<div className="xsb-inspector-actions">
@@ -1237,41 +1444,33 @@ export default function Inspector( {
 				</button>
 			</div>
 
-			{/* State Tabs: Normal / Hover state switch rendered in the same tab style as Content | Style | Advanced */}
-			{ block.type === 'xcopb/gb-container' && ( tab === 'style' || ( tab === 'advanced' && ( CONTAINER_SCHEMA.sections || [] ).some( ( s ) => s.tab === 'advanced' && s.stateful ) ) ) && (
-				<div className="xsb-state-tabs" role="tablist">
-					<button
-						type="button"
-						role="tab"
-						tabIndex={ activeStyleState === 'default' ? 0 : -1 }
-						aria-selected={ activeStyleState === 'default' }
-						className={ `xsb-state-tab${ activeStyleState === 'default' ? ' is-active' : '' }` }
-						onClick={ () => setActiveStyleState( 'default' ) }
-					>
-						{ __( 'Normal', 'xcodesol-page-builder' ) }
-					</button>
-					<button
-						type="button"
-						role="tab"
-						tabIndex={ activeStyleState === 'hover' ? 0 : -1 }
-						aria-selected={ activeStyleState === 'hover' }
-						className={ `xsb-state-tab${ activeStyleState === 'hover' ? ' is-active' : '' }` }
-						onClick={ () => setActiveStyleState( 'hover' ) }
-					>
-						{ __( 'Hover', 'xcodesol-page-builder' ) }
-					</button>
+			{ blockSchema && (
+				<div className="xsb-inspector-search">
+					<input
+						type="search"
+						className="xsb-inspector-search__input"
+						value={ searchQuery }
+						placeholder={ __( 'Find a setting…', 'xcodesol-page-builder' ) }
+						aria-label={ __( 'Find a setting', 'xcodesol-page-builder' ) }
+						onChange={ ( event ) => setSearchQuery( event.target.value ) }
+					/>
 				</div>
 			) }
 
 			<div className="xsb-inspector-body">
-				{ block.type === 'xcopb/gb-container' ? (
+				{ blockSchema ? (
 					<SchemaInspectorRenderer
-						schema={ CONTAINER_SCHEMA }
-						manifest={ manifestFor( block.type ) || CONTAINER_SCHEMA.manifest }
+						schema={ blockSchema }
+						manifest={ schemaManifest || blockSchema.manifest }
 						settings={ block.settings || {} }
+						context={ { isNested: !! selectedNested, parent_layout_mode: selectedNested ? parentMode : null } }
 						activeTab={ tab }
 						activeDevice={ device }
 						activeState={ activeStyleState }
+						sectionStates={ sectionStates }
+						setSectionStates={ setSectionStates }
+						resetVersion={ schemaResetVersion }
+						blockType={ block.type }
 						onUpdateSetting={ updateSetting }
 						searchQuery={ searchQuery }
 					/>
@@ -1318,6 +1517,16 @@ export default function Inspector( {
 					type="button"
 					className="xsb-inspector-footer-btn"
 					onClick={ () => {
+						if ( blockSchema ) {
+							const nextSettings = { ...( block.settings || {} ) };
+							blockSchema.controls.filter( control => control.tab === tab ).forEach( control => {
+								[ control.id, `hover_${ control.id }`, `focus_${ control.id }`, `hover_${ control.id }_tablet`, `hover_${ control.id }_mobile`, `focus_${ control.id }_tablet`, `focus_${ control.id }_mobile`, ...[ 'tablet', 'mobile' ].map( deviceName => `${ deviceName }_${ control.id }` ) ].forEach( key => { delete nextSettings[ key ]; } );
+							} );
+							updateSetting( nextSettings );
+							setSectionStates( {} );
+							setSchemaResetVersion( version => version + 1 );
+							return;
+						}
 						if ( tab === 'style' ) {
 							updateSetting( {
 								bg_color: undefined,

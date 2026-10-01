@@ -339,6 +339,15 @@ class XCOPB_Admin {
 		$popover_css_ver = filemtime( XCOPB_PLUGIN_DIR . 'assets/admin/popover.css' );
 		wp_enqueue_style( 'dashicons' );
 		wp_enqueue_style( 'wp-components' );
+		if ( function_exists( 'wp_enqueue_code_editor' ) ) {
+			wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
+		}
+		$css_editor_settings = function_exists( 'wp_enqueue_code_editor' ) ? wp_enqueue_code_editor( array( 'type' => 'text/css' ) ) : false;
+		$cm_settings = function_exists( 'wp_enqueue_code_editor' ) ? wp_enqueue_code_editor( array( 'type' => 'text/css' ) ) : false;
+		if ( is_array( $css_editor_settings ) && is_array( $cm_settings ) && ! empty( $cm_settings['codemirror'] ) ) {
+			$css_editor_settings['codemirror'] = $cm_settings['codemirror'];
+			$css_editor_settings['codemirror']['mode'] = 'css';
+		}
 		wp_enqueue_style( 'xcopb-admin', XCOPB_PLUGIN_URL . 'assets/admin/builder.css', array( 'wp-components', 'dashicons' ), $admin_css_ver ? $admin_css_ver : XCOPB_VERSION );
 		wp_enqueue_style( 'xcopb-admin-popover', XCOPB_PLUGIN_URL . 'assets/admin/popover.css', array( 'xcopb-admin' ), $popover_css_ver ? $popover_css_ver : XCOPB_VERSION );
 
@@ -368,7 +377,9 @@ class XCOPB_Admin {
 
 		$view_type = $post_id ? XCOPB_Registrar::get_field( $post_id, '_xcopb_view_type', '' ) : '';
 		$post_obj  = $post_id ? get_post( $post_id ) : null;
-		if ( empty( $view_type ) && $post_obj ) {
+		if ( $post_obj && 'page' === $post_obj->post_type ) {
+			$view_type = 'page';
+		} elseif ( empty( $view_type ) && $post_obj ) {
 			if ( 'page' === $post_obj->post_type ) {
 				$view_type = 'page';
 			} elseif ( 'post' === $post_obj->post_type ) {
@@ -395,6 +406,11 @@ class XCOPB_Admin {
 			'viewOptions'       => XCOPB_Registrar::get_view_type_options(),
 			'productAttributes' => $this->get_product_attribute_options(),
 			'fontOptions'       => $this->get_theme_font_options(),
+			'siteSettings'      => $this->get_site_settings(),
+			'isWordPressPage'   => $post_obj && 'page' === $post_obj->post_type,
+			'canManageSiteSettings' => current_user_can( 'manage_options' ),
+			'pageTemplateOptions' => $post_obj && 'page' === $post_obj->post_type ? $this->get_page_template_options( $post_obj ) : array(),
+			'cssEditorSettings' => $css_editor_settings ? $css_editor_settings : array(),
 		);
 
 		if ( is_array( $extra ) && ! empty( $extra ) ) {
@@ -407,6 +423,64 @@ class XCOPB_Admin {
 		if ( function_exists( 'wp_set_script_translations' ) ) {
 			wp_set_script_translations( 'xcopb-builder', 'xcodesol-page-builder', XCOPB_PLUGIN_DIR . 'languages' );
 		}
+	}
+
+	/**
+	 * Get page layouts available to a real WordPress page.
+	 *
+	 * @param WP_Post $post Page being edited.
+	 * @return array[]
+	 */
+	private function get_page_template_options( $post ) {
+		$options = array(
+			array( 'value' => '', 'label' => __( 'Default', 'xcodesol-page-builder' ) ),
+			array( 'value' => 'elementor_canvas', 'label' => __( 'Elementor Canvas', 'xcodesol-page-builder' ) ),
+			array( 'value' => 'elementor_header_footer', 'label' => __( 'Elementor Full Width', 'xcodesol-page-builder' ) ),
+		);
+
+		if ( function_exists( 'get_page_templates' ) ) {
+			$templates = get_page_templates( $post );
+			foreach ( $templates as $slug => $label ) {
+				if ( in_array( $slug, array( 'elementor_canvas', 'elementor_header_footer', 'xcopb_canvas', 'xcopb_full_width' ), true ) ) {
+					continue;
+				}
+				$options[] = array(
+					'value' => sanitize_text_field( $slug ),
+					'label' => sanitize_text_field( $label ),
+				);
+			}
+		}
+
+		return $options;
+	}
+
+	/** Return persisted site-wide builder design settings. */
+	private function get_site_settings() {
+		$theme = function_exists( 'wp_get_global_settings' ) ? wp_get_global_settings() : array();
+		$theme_styles = function_exists( 'wp_get_global_styles' ) ? wp_get_global_styles() : array();
+		$palette = isset( $theme['color']['palette']['theme'] ) && is_array( $theme['color']['palette']['theme'] ) ? $theme['color']['palette']['theme'] : array();
+		$pick = static function ( $needles, $fallback ) use ( $palette ) { foreach ( $palette as $item ) { $name = strtolower( isset( $item['slug'] ) ? $item['slug'] : ( isset( $item['name'] ) ? $item['name'] : '' ) ); foreach ( $needles as $needle ) { if ( $name && false !== strpos( $name, $needle ) && ! empty( $item['color'] ) ) { return $item['color']; } } } return $fallback; };
+		$body_font = isset( $theme_styles['typography']['fontFamily'] ) ? $theme_styles['typography']['fontFamily'] : ( isset( $theme['typography']['fontFamilies']['theme'][0]['fontFamily'] ) ? $theme['typography']['fontFamilies']['theme'][0]['fontFamily'] : 'system-ui' );
+		$heading_font = isset( $theme_styles['elements']['heading']['typography']['fontFamily'] ) ? $theme_styles['elements']['heading']['typography']['fontFamily'] : $body_font;
+		$theme_text = isset( $theme_styles['color']['text'] ) ? $theme_styles['color']['text'] : get_theme_mod( 'body_text_color', get_theme_mod( 'text_color', '#172033' ) );
+		$theme_background = isset( $theme_styles['color']['background'] ) ? $theme_styles['color']['background'] : ( get_theme_mod( 'background_color', '#ffffff' ) ?: '#ffffff' );
+		$theme_type = isset( $theme_styles['typography'] ) && is_array( $theme_styles['typography'] ) ? $theme_styles['typography'] : array();
+		$theme_button = isset( $theme_styles['elements']['button'] ) && is_array( $theme_styles['elements']['button'] ) ? $theme_styles['elements']['button'] : array();
+		$theme_body_px = isset( $theme_type['fontSize'] ) ? (float) $theme_type['fontSize'] : 16;
+		if ( $theme_body_px < 10 || $theme_body_px > 48 ) { $theme_body_px = 16; }
+		$theme_button_text = isset( $theme_button['color']['text'] ) ? $theme_button['color']['text'] : '#ffffff';
+		$theme_button_background = isset( $theme_button['color']['background'] ) ? $theme_button['color']['background'] : $pick( array( 'primary', 'accent' ), '#6c63ff' );
+		$theme_button_radius = isset( $theme_button['border']['radius'] ) && is_numeric( $theme_button['border']['radius'] ) ? (float) $theme_button['border']['radius'] : 6;
+		$defaults = array(
+			'global_colors' => array( 'primary' => $pick( array( 'primary', 'accent' ), get_theme_mod( 'primary_color', get_theme_mod( 'accent_color', '#6c63ff' ) ) ), 'secondary' => $pick( array( 'secondary' ), get_theme_mod( 'secondary_color', '#292d50' ) ), 'text' => $theme_text, 'accent' => $pick( array( 'accent', 'tertiary' ), get_theme_mod( 'accent_color', '#18a0fb' ) ), 'background' => $theme_background ),
+			'global_fonts' => array( 'body' => $body_font, 'heading' => $heading_font ),
+			'typography' => array( 'body_size' => $theme_body_px, 'body_weight' => isset( $theme_type['fontWeight'] ) ? (string) $theme_type['fontWeight'] : '400', 'line_height' => isset( $theme_type['lineHeight'] ) ? (float) $theme_type['lineHeight'] : 1.6, 'paragraph_spacing' => 16 ),
+			'button_style' => array( 'text' => $theme_button_text, 'background' => $theme_button_background, 'hover_text' => '#ffffff', 'hover_background' => '#5148d8', 'gradient_enabled' => false, 'hover_gradient_enabled' => false, 'gradient' => array(), 'hover_gradient' => array(), 'size' => 'medium', 'font_size' => 16, 'radius' => array( 'top' => $theme_button_radius, 'right' => $theme_button_radius, 'bottom' => $theme_button_radius, 'left' => $theme_button_radius, 'unit' => 'px', 'isLinked' => true ), 'border_width' => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0, 'unit' => 'px', 'isLinked' => true ), 'border_style' => 'solid', 'border_color' => '', 'padding' => array( 'top' => 12, 'right' => 24, 'bottom' => 12, 'left' => 24, 'unit' => 'px', 'isLinked' => false ), 'padding_y' => 12, 'padding_x' => 24, 'shadow_preset' => 'none', 'shadow' => 'none' ),
+			'background_image' => array(), 'background_image_style' => array( 'size' => 'cover', 'repeat' => 'no-repeat', 'position' => 'center center', 'attachment' => 'scroll', 'overlay' => '', 'overlay_opacity' => 0 ),
+			'custom_colors' => array(), 'custom_css' => '',
+		);
+		$saved = get_option( 'xcopb_site_settings', array() );
+		return is_array( $saved ) ? array_replace_recursive( $defaults, $saved ) : $defaults;
 	}
 
 	/**

@@ -60,6 +60,27 @@ if ( isset( $settings['padding'] ) && is_array( $settings['padding'] ) ) {
 
 $xsb_align    = ! empty( $settings['align'] ) ? $settings['align'] : 'stretch';
 $xsb_bg       = ! empty( $settings['bg_color'] ) ? $settings['bg_color'] : ( ! empty( $settings['background'] ) ? $settings['background'] : '' );
+$xsb_bg_type  = isset( $settings['bg_type'] ) ? (string) $settings['bg_type'] : '';
+$xsb_bg_size  = isset( $settings['bg_size'] ) && in_array( $settings['bg_size'], array( 'cover', 'contain', 'auto', '100% 100%', 'custom' ), true ) ? $settings['bg_size'] : 'cover';
+$xsb_bg_size_css = 'custom' === $xsb_bg_size && ! empty( $settings['bg_size_custom'] ) ? $settings['bg_size_custom'] : ( 'custom' === $xsb_bg_size ? 'cover' : $xsb_bg_size );
+$xsb_bg_position = isset( $settings['bg_position'] ) && in_array( $settings['bg_position'], array( 'left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom' ), true ) ? $settings['bg_position'] : 'center center';
+$xsb_bg_position_css = 'custom' === ( $settings['bg_position'] ?? '' ) && ! empty( $settings['bg_position_custom'] ) ? $settings['bg_position_custom'] : $xsb_bg_position;
+$xsb_bg_repeat = isset( $settings['bg_repeat'] ) && in_array( $settings['bg_repeat'], array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ), true ) ? $settings['bg_repeat'] : 'no-repeat';
+$xsb_bg_attachment = isset( $settings['bg_attachment'] ) && in_array( $settings['bg_attachment'], array( 'scroll', 'fixed', 'local' ), true ) ? $settings['bg_attachment'] : 'scroll';
+$xsb_bg_origin = isset( $settings['bg_origin'] ) && in_array( $settings['bg_origin'], array( 'border-box', 'padding-box', 'content-box' ), true ) ? $settings['bg_origin'] : 'padding-box';
+$xsb_bg_clip = isset( $settings['bg_clip'] ) && in_array( $settings['bg_clip'], array( 'border-box', 'padding-box', 'content-box' ), true ) ? $settings['bg_clip'] : 'border-box';
+$xsb_overlay_color = isset( $settings['overlay_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['overlay_color'] ) : '';
+$xsb_overlay_opacity = isset( $settings['overlay_opacity'] ) ? max( 0, min( 100, (float) $settings['overlay_opacity'] ) ) / 100 : 1;
+$xsb_overlay_blend = isset( $settings['overlay_blend_mode'] ) && in_array( $settings['overlay_blend_mode'], array( 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity' ), true ) ? $settings['overlay_blend_mode'] : 'normal';
+$xsb_has_overlay = '' !== $xsb_overlay_color && $xsb_overlay_opacity > 0 && 'none' !== $xsb_bg_type;
+$xsb_bg_video_value = $settings['bg_video_url'] ?? '';
+$xsb_bg_video_url   = is_array( $xsb_bg_video_value ) ? ( $xsb_bg_video_value['url'] ?? '' ) : $xsb_bg_video_value;
+$xsb_bg_video_url   = 'video' === ( $settings['bg_type'] ?? '' ) ? esc_url( $xsb_bg_video_url ) : '';
+
+if ( '' === $xsb_bg_video_url && ! empty( $settings['bg_video'] ) ) {
+	$legacy_bg_video = $settings['bg_video'];
+	$xsb_bg_video_url = is_array( $legacy_bg_video ) ? esc_url( $legacy_bg_video['url'] ?? '' ) : esc_url( $legacy_bg_video );
+}
 
 // Rich background gradient or image
 if ( ! empty( $settings['bg_type'] ) && 'gradient' === $settings['bg_type'] && ! empty( $settings['gradient'] ) && is_array( $settings['gradient'] ) ) {
@@ -73,10 +94,10 @@ if ( ! empty( $settings['bg_type'] ) && 'gradient' === $settings['bg_type'] && !
 	$xsb_bg  = 'linear' === $g_type
 		? sprintf( 'linear-gradient(%ddeg, %s %d%%, %s %d%%)', $g_angle, $g_ca, $g_pa, $g_cb, $g_pb )
 		: sprintf( 'radial-gradient(circle, %s %d%%, %s %d%%)', $g_ca, $g_pa, $g_cb, $g_pb );
-} elseif ( ! empty( $settings['bg_type'] ) && 'image' === $settings['bg_type'] && ! empty( $settings['bg_image'] ) ) {
+	} elseif ( ! empty( $settings['bg_type'] ) && 'image' === $settings['bg_type'] && ! empty( $settings['bg_image'] ) ) {
 	$img_url = is_array( $settings['bg_image'] ) ? ( $settings['bg_image']['url'] ?? '' ) : $settings['bg_image'];
 	if ( $img_url ) {
-		$xsb_bg = 'url("' . esc_url( $img_url ) . '") center / cover no-repeat';
+		$xsb_bg = 'url("' . esc_url( $img_url ) . '")';
 	}
 }
 
@@ -103,7 +124,17 @@ $xsb_anim_delay = isset( $settings['animation_delay'] ) ? absint( $settings['ani
 
 // Whole-container placement inside the template area.
 $xsb_position  = ! empty( $settings['position'] ) ? $settings['position'] : 'full';
-$xsb_max_width = isset( $settings['max_width'] ) ? ( is_array( $settings['max_width'] ) ? absint( $settings['max_width']['value'] ?? 1200 ) : min( 2000, max( 0, absint( $settings['max_width'] ) ) ) ) : 0;
+$xsb_is_boxed         = isset( $settings['content_width'] ) && 'boxed' === $settings['content_width'];
+$xsb_max_width_raw    = $settings['max_width'] ?? ( $xsb_is_boxed ? 1200 : 0 );
+$xsb_max_width_value  = is_array( $xsb_max_width_raw ) ? (float) ( $xsb_max_width_raw['value'] ?? 1200 ) : (float) $xsb_max_width_raw;
+$xsb_max_width_value  = min( 5000, max( 0, $xsb_max_width_value ) );
+$xsb_max_width_unit   = is_array( $xsb_max_width_raw ) ? ( $xsb_max_width_raw['unit'] ?? 'px' ) : 'px';
+$xsb_max_width_unit   = in_array( $xsb_max_width_unit, array( 'px', '%', 'vw', 'ch' ), true ) ? $xsb_max_width_unit : 'px';
+if ( $xsb_is_boxed && $xsb_max_width_value <= 0 ) {
+	$xsb_max_width_value = 1200;
+	$xsb_max_width_unit  = 'px';
+}
+$xsb_max_width       = $xsb_max_width_value > 0 ? $xsb_max_width_value . $xsb_max_width_unit : '';
 
 $xsb_shadow_map = array(
 	'none'   => '',
@@ -111,7 +142,7 @@ $xsb_shadow_map = array(
 	'medium' => '0 10px 28px rgba(0,0,0,0.18)',
 	'strong' => '0 18px 50px rgba(0,0,0,0.28)',
 );
-$xsb_anim_list = array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
+$xsb_anim_list = class_exists( 'XCOPB_Motion_Presets' ) ? array_slice( XCOPB_Motion_Presets::ids(), 1 ) : array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
 
 // ---------------------------------------------------------------------------
 // Layout mode: one explicit mode per container. Containers saved before the
@@ -531,6 +562,22 @@ if ( ! empty( $xsb_bg ) ) {
 	$xsb_style .= 'background:' . esc_attr( $xsb_bg ) . ';';
 }
 
+if ( 'image' === $xsb_bg_type && ! empty( $settings['bg_image'] ) ) {
+	$xsb_style .= 'background-size:' . esc_attr( $xsb_bg_size_css ) . ';background-position:' . esc_attr( $xsb_bg_position_css ) . ';background-repeat:' . esc_attr( $xsb_bg_repeat ) . ';background-attachment:' . esc_attr( $xsb_bg_attachment ) . ';background-origin:' . esc_attr( $xsb_bg_origin ) . ';background-clip:' . esc_attr( $xsb_bg_clip ) . ';';
+}
+
+if ( ! empty( $settings['text_color'] ) ) {
+	$xsb_style .= 'color:' . esc_attr( $settings['text_color'] ) . ';';
+}
+
+if ( isset( $settings['text_align'] ) && in_array( $settings['text_align'], array( 'left', 'center', 'right', 'justify' ), true ) ) {
+	$xsb_style .= 'text-align:' . esc_attr( $settings['text_align'] ) . ';';
+}
+
+if ( '' !== $xsb_bg_video_url || $xsb_has_overlay ) {
+	$xsb_style .= 'position:relative;isolation:isolate;';
+}
+
 if ( is_array( $xsb_shadow ) && ! empty( $xsb_shadow ) ) {
 	$shadow_parts = array();
 	foreach ( $xsb_shadow as $s ) {
@@ -561,16 +608,23 @@ if ( ! empty( $settings['backdrop_filter_blur'] ) && (int) $settings['backdrop_f
 	$xsb_style .= sprintf( 'backdrop-filter:blur(%dpx);-webkit-backdrop-filter:blur(%dpx);', (int) $settings['backdrop_filter_blur'], (int) $settings['backdrop_filter_blur'] );
 }
 
+if ( ! empty( $settings['filter_blur'] ) && (int) $settings['filter_blur'] > 0 ) {
+	$xsb_style .= sprintf( 'filter:blur(%dpx);', min( 100, absint( $settings['filter_blur'] ) ) );
+}
+
 $xsb_anim_class = '';
 if ( 'none' !== $xsb_anim && in_array( $xsb_anim, $xsb_anim_list, true ) ) {
 	$xsb_anim_class = ' xsb-anim-' . $xsb_anim;
-	$xsb_style .= 'animation-duration:' . $xsb_anim_ms . 'ms;';
+	$xsb_keyframe = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::keyframe( $xsb_anim ) : 'xsb-' . $xsb_anim;
+	$xsb_style .= 'animation-name:' . esc_attr( $xsb_keyframe ) . ';animation-duration:' . $xsb_anim_ms . 'ms;';
 	$xsb_style .= 'animation-delay:' . $xsb_anim_delay . 'ms;';
+	$xsb_style .= 'animation-timing-function:' . ( isset( $settings['animation_easing'] ) && in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'cubic-bezier(0.16,1,0.3,1)' ), true ) ? $settings['animation_easing'] : 'ease' ) . ';';
+	$xsb_style .= 'animation-iteration-count:' . ( isset( $settings['animation_repeat'] ) && in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? $settings['animation_repeat'] : '1' ) . ';';
 }
 
 // Position the whole container (left / center / right / boxed) with a max width.
-if ( ( in_array( $xsb_position, array( 'left', 'center', 'right' ), true ) || ( ! empty( $settings['content_width'] ) && 'boxed' === $settings['content_width'] ) ) && $xsb_max_width > 0 ) {
-	$xsb_style .= 'width:100%;max-width:' . $xsb_max_width . 'px;';
+if ( ( in_array( $xsb_position, array( 'left', 'center', 'right' ), true ) || ( ! empty( $settings['content_width'] ) && 'boxed' === $settings['content_width'] ) ) && '' !== $xsb_max_width ) {
+	$xsb_style .= 'width:100%;max-width:' . $xsb_max_width . ';';
 
 	if ( 'center' === $xsb_position || ( ! empty( $settings['content_width'] ) && 'boxed' === $settings['content_width'] ) ) {
 		$xsb_style .= 'margin-left:auto;margin-right:auto;';
@@ -869,7 +923,18 @@ foreach ( $xsb_device_widths as $xsb_device => $xsb_max_w ) {
 	$xsb_scoped_css .= "\n@media (max-width: " . $xsb_max_w . 'px) { ' . implode( ' ', $xsb_rules ) . ' }';
 }
 
-$xsb_output = '<' . $xsb_tag . $xsb_id_attr . $xsb_link_attr . ' class="xsb-container xsb-layout--' . esc_attr( $xsb_layout_mode ) . $xsb_anim_class . $xsb_classes_str . '" style="' . $xsb_style . '" data-xsb-layout="' . esc_attr( $xsb_token ) . '">';
+$xsb_video_class = '' !== $xsb_bg_video_url ? ' xsb-container--has-video' : '';
+$xsb_overlay_class = $xsb_has_overlay ? ' xsb-container--has-overlay' : '';
+$xsb_output = '<' . $xsb_tag . $xsb_id_attr . $xsb_link_attr . ' class="xsb-container xsb-layout--' . esc_attr( $xsb_layout_mode ) . $xsb_video_class . $xsb_overlay_class . $xsb_anim_class . $xsb_classes_str . '" style="' . $xsb_style . '" data-xsb-layout="' . esc_attr( $xsb_token ) . '">';
+
+if ( '' !== $xsb_bg_video_url ) {
+	$xsb_output .= '<video class="xsb-container-background-video" src="' . esc_url( $xsb_bg_video_url ) . '" muted loop autoplay playsinline aria-hidden="true"></video>';
+}
+
+if ( $xsb_has_overlay ) {
+	$xsb_overlay_style = sprintf( 'background-color:%s;opacity:%s;mix-blend-mode:%s;', esc_attr( $xsb_overlay_color ), esc_attr( (string) $xsb_overlay_opacity ), esc_attr( $xsb_overlay_blend ) );
+	$xsb_output .= '<div class="xsb-container-background-overlay" style="' . $xsb_overlay_style . '" aria-hidden="true"></div>';
+}
 
 // Scoped Custom CSS block
 if ( ! empty( $settings['custom_css'] ) ) {

@@ -6,6 +6,7 @@
 
 import { __ } from '@wordpress/i18n';
 import ControlBase from './control-base';
+import CssEditor from './css-editor';
 
 export default function CodeControl( {
 	config = {},
@@ -30,16 +31,7 @@ export default function CodeControl( {
 			state={ state }
 			className="xsb-ctrl-code"
 		>
-			<div className="xsb-code-editor-wrap">
-				<textarea
-					rows={ rows }
-					value={ value || '' }
-					onChange={ ( e ) => onChange( e.target.value ) }
-					className="xsb-code-textarea"
-					placeholder="selector {&#10;  /* Custom CSS */&#10;}"
-					spellCheck="false"
-				/>
-			</div>
+			<CssEditor value={ value } onChange={ onChange } rows={ rows } />
 		</ControlBase>
 	);
 }

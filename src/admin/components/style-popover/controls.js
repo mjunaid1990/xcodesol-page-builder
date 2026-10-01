@@ -10,6 +10,7 @@
 
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
+import ResetButton from '../reset-button';
 
 /* ------------------------------------------------------------------ *
  * Shared option sets
@@ -200,15 +201,7 @@ export function PropertyRow( { label, children, custom, onReset, help, status } 
 				</label>
 				<div className="xsb-style-property__control">{ children }</div>
 				{ custom && onReset && (
-					<button
-						type="button"
-						className="xsb-style-reset-button"
-						onClick={ onReset }
-						title={ __( 'Reset to default', 'xcodesol-page-builder' ) }
-						aria-label={ sprintfReset( label ) }
-					>
-						<span className="dashicons dashicons-undo" aria-hidden="true" />
-					</button>
+					<ResetButton className="xsb-style-reset-button" onClick={ onReset } label={ sprintfReset( label ) } />
 				) }
 			</div>
 			{ help && <p className="xsb-field-help">{ help }</p> }

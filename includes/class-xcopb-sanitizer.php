@@ -216,6 +216,14 @@ class XCOPB_Sanitizer {
 	 */
 	public static function container_enum_map() {
 		return array(
+			'bg_type'             => array( 'none', 'color', 'gradient', 'image', 'video' ),
+			'bg_size'             => array( 'cover', 'contain', 'auto', '100% 100%', 'custom' ),
+			'bg_position'         => array( 'left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom', 'custom' ),
+			'bg_repeat'           => array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ),
+			'bg_attachment'       => array( 'scroll', 'fixed', 'local' ),
+			'bg_origin'           => array( 'border-box', 'padding-box', 'content-box' ),
+			'bg_clip'             => array( 'border-box', 'padding-box', 'content-box' ),
+			'overlay_blend_mode'  => array( 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity' ),
 			'layout_mode'         => self::ALLOWED_LAYOUT_MODES,
 			'layout_type'         => array( 'flex', 'grid' ),
 			'stacking_breakpoint' => array( 'tablet', 'mobile', 'none' ),
@@ -263,6 +271,8 @@ class XCOPB_Sanitizer {
 			'grid_row_span'       => array( 1, 12, 1 ),
 			'z_index'             => array( -9999, 9999, 0 ),
 			'rotate'              => array( -360, 360, 0 ),
+			'filter_blur'         => array( 0, 100, 0 ),
+			'overlay_opacity'     => array( 0, 100, 100 ),
 			'child_span'          => array( 1, 12, 1 ),
 		);
 	}
@@ -308,7 +318,7 @@ class XCOPB_Sanitizer {
 	 * @return string[]
 	 */
 	public static function container_css_text_keys() {
-		return array( 'grid_named_areas', 'flex_basis', 'grid_area' );
+		return array( 'grid_named_areas', 'flex_basis', 'grid_area', 'bg_size_custom', 'bg_position_custom' );
 	}
 
 	/**
@@ -454,7 +464,9 @@ class XCOPB_Sanitizer {
 
 		switch ( $base ) {
 			case 'bg_color':
+			case 'overlay_color':
 			case 'border_color':
+			case 'text_color':
 			case 'color':
 			case 'background':
 				return self::sanitize_color( $value );
@@ -466,6 +478,7 @@ class XCOPB_Sanitizer {
 			case 'border_radius':
 				return self::sanitize_dimensions( $value );
 			case 'bg_image':
+			case 'bg_video_url':
 			case 'url':
 				return self::sanitize_url_or_media( $value );
 			case 'padding_top':
@@ -483,7 +496,18 @@ class XCOPB_Sanitizer {
 					return (float) self::sanitize_number( $w, 0.5, 12, 6 );
 				}, $value ) );
 			case 'gradient':
-				return is_array( $value ) ? $value : null;
+				if ( ! is_array( $value ) ) {
+					return null;
+				}
+				$type = isset( $value['type'] ) && in_array( $value['type'], array( 'linear', 'radial' ), true ) ? $value['type'] : 'linear';
+				return array(
+					'type'  => $type,
+					'angle' => self::sanitize_number( $value['angle'] ?? 90, 0, 360, 90 ),
+					'colorA' => self::sanitize_color( $value['colorA'] ?? '#4f46e5' ) ?: '#4f46e5',
+					'colorB' => self::sanitize_color( $value['colorB'] ?? '#06b6d4' ) ?: '#06b6d4',
+					'posA' => self::sanitize_number( $value['posA'] ?? 0, 0, 100, 0 ),
+					'posB' => self::sanitize_number( $value['posB'] ?? 100, 0, 100, 100 ),
+				);
 		}
 
 		return null;
@@ -573,6 +597,22 @@ class XCOPB_Sanitizer {
 		}
 		if ( isset( $settings['border_color'] ) ) {
 			$clean['border_color'] = self::sanitize_color( $settings['border_color'] );
+		}
+		if ( isset( $settings['animation'] ) ) {
+			$motion_ids = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::ids() : array( 'none', 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
+			$clean['animation'] = in_array( $settings['animation'], $motion_ids, true ) ? $settings['animation'] : 'none';
+		}
+		if ( isset( $settings['animation_duration'] ) ) {
+			$clean['animation_duration'] = (int) self::sanitize_number( $settings['animation_duration'], 100, 5000, 600 );
+		}
+		if ( isset( $settings['animation_delay'] ) ) {
+			$clean['animation_delay'] = (int) self::sanitize_number( $settings['animation_delay'], 0, 3000, 0 );
+		}
+		if ( isset( $settings['animation_easing'] ) ) {
+			$clean['animation_easing'] = in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), true ) ? $settings['animation_easing'] : 'ease';
+		}
+		if ( isset( $settings['animation_repeat'] ) ) {
+			$clean['animation_repeat'] = in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? (string) $settings['animation_repeat'] : '1';
 		}
 
 		// Spacing & Borders

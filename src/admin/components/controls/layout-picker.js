@@ -84,6 +84,19 @@ export const LAYOUT_MODES = [
 	},
 ];
 
+function LayoutModePreview( { mode } ) {
+	const classes = {
+		list: 'is-list', row: 'is-row', columns: 'is-columns', grid: 'is-grid',
+		masonry: 'is-masonry', 'scroll-row': 'is-scroll-row',
+	}[ mode ];
+	const count = mode === 'list' || mode === 'row' ? 3 : mode === 'columns' ? 2 : 4;
+	return (
+		<span className={ `xsb-layout-mini ${ classes }` } aria-hidden="true">
+			{ Array.from( { length: count }, ( _, index ) => <i key={ index } /> ) }
+		</span>
+	);
+}
+
 export default function LayoutPickerControl( {
 	config = {},
 	value = 'columns',
@@ -128,9 +141,7 @@ export default function LayoutPickerControl( {
 								onClick={ () => onChange( mode.id ) }
 								title={ mode.description }
 							>
-								<div className="xsb-layout-thumb-icon">
-									{ mode.icon }
-								</div>
+								<LayoutModePreview mode={ mode.id } />
 								<span className="xsb-layout-thumb-label">{ mode.label }</span>
 							</button>
 						);

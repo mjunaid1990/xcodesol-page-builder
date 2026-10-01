@@ -15,6 +15,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { __, sprintf } from '@wordpress/i18n';
+import '../../../assets/shared/motion-presets.css';
 
 import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS, WIDGET_BLOCKS } from './block-palette';
 import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/columns';
@@ -38,6 +39,19 @@ function getBlockMeta(type) {
 		...WIDGET_BLOCKS,
 	];
 	return all.find((b) => b.type === type) || { type, label: type, icon: 'dashicons-editor-help', defaults: {} };
+}
+
+function nestingAccent(depth = 1) {
+	const level = Math.max(1, Number(depth) || 1);
+	const hue = (263 + (level - 1) * 67) % 360;
+	return `hsl(${hue} 82% 58%)`;
+}
+
+function cssDimension(value, fallback = '') {
+	const allowedUnits = [ 'px', '%', 'vw', 'ch' ];
+	const amount = value && typeof value === 'object' ? Number( value.value ) : Number( value );
+	const unit = value && typeof value === 'object' && allowedUnits.includes( value.unit ) ? value.unit : 'px';
+	return Number.isFinite( amount ) && amount > 0 ? `${ amount }${ unit }` : fallback;
 }
 
 const POPOVER_WIDTH = 360;
@@ -193,6 +207,30 @@ function marginInlineCss(settings) {
 			style[`margin${side.charAt(0).toUpperCase()}${side.slice(1)}`] = `${Number(value)}px`;
 		}
 	});
+	return style;
+}
+
+/**
+ * Apply the shared Style-tab spacing values to a widget's editor wrapper.
+ * Dimensions stay as authored and legacy numeric values remain supported.
+ *
+ * @param {Object} settings Block settings.
+ * @return {Object} React inline spacing styles.
+ */
+function widgetSpacingInlineCss(settings) {
+	const style = {};
+	[ 'padding', 'margin' ].forEach( ( property ) => {
+		const value = settings[ property ];
+		if ( value === undefined || value === null || value === '' ) {
+			return;
+		}
+		if ( typeof value === 'object' ) {
+			const unit = value.unit || 'px';
+			style[ property ] = `${ value.top ?? 0 }${ unit } ${ value.right ?? 0 }${ unit } ${ value.bottom ?? 0 }${ unit } ${ value.left ?? 0 }${ unit }`;
+			return;
+		}
+		style[ property ] = `${ Number( value ) || 0 }px`;
+	} );
 	return style;
 }
 
@@ -581,10 +619,11 @@ function ProductCard({ config, cols, settings }) {
  * @param {string} device   Active preview device.
  * @return {Object} JSX body.
  */
-function renderBlockBody(block, settings, meta, device = 'desktop') {
+function renderBlockBody(block, settings, meta, device = 'desktop', canvasActions = {}) {
 	switch (block.type) {
 		case 'xcopb/post-title': {
 			const Tag = settings.tag || 'h1';
+			const title = __('The Future of Web Design and Visual Building', 'xcodesol-page-builder');
 			const headingStyle = {
 				textAlign: settings.align || 'left',
 				margin: 0,
@@ -592,13 +631,21 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 				fontSize: settings.font_size ? `${Number(settings.font_size)}px` : undefined,
 				fontWeight: settings.font_weight || undefined,
 				lineHeight: settings.line_height || undefined,
+				fontFamily: settings.font_family || undefined,
+				letterSpacing: settings.letter_spacing !== undefined ? `${ Number( settings.letter_spacing ) }px` : undefined,
+				textTransform: settings.text_transform || undefined,
+				textShadow: settings.text_shadow || undefined,
+				textDecoration: settings.text_decoration || undefined,
+				...( Number( settings.text_overflow_lines ) > 0 ? { display: '-webkit-box', WebkitLineClamp: Number( settings.text_overflow_lines ), WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {} ),
+				overflowWrap: settings.word_break === 'break-word' ? 'anywhere' : undefined,
 				...chromeInlineCss(settings),
 				...marginInlineCss(settings),
 			};
+			if (settings.hover_color) { headingStyle['--xsb-preview-hover-color'] = settings.hover_color; }
 			return (
 				<div className="xsb-bp xcopb-bp-post-title" style={{ width: '100%' }}>
 					<div className="xsb-bp-label-chip">{__('Post Title', 'xcodesol-page-builder')}</div>
-					<Tag style={headingStyle}>{__('The Future of Web Design and Visual Building', 'xcodesol-page-builder')}</Tag>
+					<Tag className={settings.hover_color ? 'xsb-preview-interactive-color' : undefined} style={headingStyle}>{settings.link_to_post ? <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>{title}</a> : title}</Tag>
 				</div>
 			);
 		}
@@ -609,16 +656,20 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 				...marginInlineCss(settings),
 			};
 			const imgStyle = {
-				maxWidth: '100%',
-				height: 'auto',
+				maxWidth: settings.width ? `${ Number( settings.width ) }px` : ( settings.max_width ? `${ Number( settings.max_width ) }px` : '100%' ),
+				height: settings.height ? `${ Number( settings.height ) }px` : 'auto',
+				objectFit: settings.object_fit || 'cover',
+				objectPosition: settings.object_position || 'center center',
 				borderRadius: `${Number(settings.border_radius) || 8}px`,
 				display: 'inline-block',
 				...chromeInlineCss(settings),
 			};
+			if (settings.grayscale !== undefined) { imgStyle.filter = `grayscale(${ Number( settings.grayscale ) }%)`; }
+			if (settings.hover_grayscale !== undefined) { imgStyle['--xsb-preview-hover-filter'] = `grayscale(${ Number( settings.hover_grayscale ) }%)`; }
 			return (
 				<div className="xsb-bp xcopb-bp-featured-image" style={wrapStyle}>
 					<div className="xsb-bp-label-chip">{__('Featured Image', 'xcodesol-page-builder')}</div>
-					<div className="xsb-preview-img-box" style={{ ...imgStyle, minHeight: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: '#ffffff' }}>
+					<div className={`xsb-preview-img-box${settings.hover_grayscale !== undefined ? ' xsb-preview-interactive-filter' : ''}`} style={{ ...imgStyle, minHeight: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: '#ffffff' }}>
 						<span className="dashicons dashicons-format-image" style={{ fontSize: '48px', width: '48px', height: '48px' }} aria-hidden="true" />
 					</div>
 				</div>
@@ -636,26 +687,18 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			);
 		}
 		case 'xcopb/post-meta': {
+			const textColor = settings.color || '#64748b';
+			const metaItems = [
+				settings.show_author !== false && [ 'dashicons-admin-users', 'John Doe' ],
+				settings.show_date !== false && [ 'dashicons-calendar-alt', new Date().toLocaleDateString() ],
+				settings.show_comments !== false && [ 'dashicons-admin-comments', __('5 Comments', 'xcodesol-page-builder') ],
+				settings.show_categories !== false && [ 'dashicons-category', 'Design, Tech' ],
+			].filter(Boolean);
 			return (
-				<div className="xsb-bp xcopb-bp-post-meta" style={{ width: '100%', ...marginInlineCss(settings) }}>
+				<div className="xsb-bp xcopb-bp-post-meta" style={{ width: '100%', textAlign: settings.align || 'left', color: textColor, ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Post Meta', 'xcodesol-page-builder')}</div>
 					<div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#64748b', alignItems: 'center', flexWrap: 'wrap' }}>
-						<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-							<span className="dashicons dashicons-admin-users" style={{ fontSize: '16px', width: '16px', height: '16px' }} aria-hidden="true" />
-							<span>John Doe</span>
-						</span>
-						<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-							<span className="dashicons dashicons-calendar-alt" style={{ fontSize: '16px', width: '16px', height: '16px' }} aria-hidden="true" />
-							<span>{new Date().toLocaleDateString()}</span>
-						</span>
-						<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-							<span className="dashicons dashicons-admin-comments" style={{ fontSize: '16px', width: '16px', height: '16px' }} aria-hidden="true" />
-							<span>{__('5 Comments', 'xcodesol-page-builder')}</span>
-						</span>
-						<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-							<span className="dashicons dashicons-category" style={{ fontSize: '16px', width: '16px', height: '16px' }} aria-hidden="true" />
-							<span>Design, Tech</span>
-						</span>
+						{metaItems.map(([icon, text]) => <span key={icon} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><span className={`dashicons ${icon}`} style={{ fontSize: '16px', width: '16px', height: '16px' }} aria-hidden="true" /><span>{text}</span></span>)}
 					</div>
 				</div>
 			);
@@ -664,7 +707,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			return (
 				<div className="xsb-bp xcopb-bp-post-excerpt" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Post Excerpt', 'xcodesol-page-builder')}</div>
-					<p style={{ color: '#475569', fontSize: '16px', lineHeight: '1.6', fontStyle: 'italic', margin: 0 }}>
+					<p style={{ color: settings.color || '#475569', textAlign: settings.align || 'left', fontSize: `${ Number( settings.font_size ) || 16 }px`, lineHeight: settings.line_height || 1.6, margin: 0, ...marginInlineCss(settings) }}>
 						{__('An insightful overview exploring modern design systems and visual theme builders.', 'xcodesol-page-builder')}
 					</p>
 				</div>
@@ -707,8 +750,8 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			return (
 				<div className="xsb-bp xcopb-bp-archive-title" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Archive Title', 'xcodesol-page-builder')}</div>
-					<Tag style={{ margin: 0, textAlign: settings.align || 'left', color: settings.color || undefined }}>
-						{__('Category: Web Design', 'xcodesol-page-builder')}
+					<Tag style={{ margin: 0, textAlign: settings.align || 'left', color: settings.color || undefined, fontSize: settings.font_size ? `${ Number( settings.font_size ) }px` : undefined, fontWeight: settings.font_weight || undefined }}>
+						{settings.include_context === false ? __('Web Design', 'xcodesol-page-builder') : __('Category: Web Design', 'xcodesol-page-builder')}
 					</Tag>
 				</div>
 			);
@@ -717,7 +760,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			return (
 				<div className="xsb-bp xcopb-bp-archive-desc" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Archive Description', 'xcodesol-page-builder')}</div>
-					<p style={{ color: settings.color || '#64748b', textAlign: settings.align || 'left', margin: 0, fontSize: '15px' }}>
+					<p style={{ color: settings.color || '#64748b', textAlign: settings.align || 'left', margin: 0, fontSize: '15px', ...marginInlineCss(settings) }}>
 						{__('Explore the latest articles, tutorials, and insights about modern visual web design.', 'xcodesol-page-builder')}
 					</p>
 				</div>
@@ -729,16 +772,16 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 				<div className="xsb-bp xcopb-bp-archive-posts" style={{ width: '100%' }}>
 					<div className="xsb-bp-label-chip">{__('Archive Posts Grid', 'xcodesol-page-builder')}</div>
 					<div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${Number(settings.gap) || 20}px` }}>
-						{[1, 2, 3].slice(0, cols).map((item) => (
+						{[1, 2, 3, 4, 5, 6].slice(0, cols).map((item) => (
 							<div key={item} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-								<div style={{ height: '120px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+								{settings.show_image !== false && <div style={{ height: '120px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 									<span className="dashicons dashicons-format-image" style={{ color: '#94a3b8' }} />
-								</div>
+								</div>}
 								<div style={{ padding: '14px' }}>
-									<span style={{ fontSize: '11px', color: '#94a3b8' }}>May 24, 2026</span>
+									{settings.show_meta !== false && <span style={{ fontSize: '11px', color: '#94a3b8' }}>May 24, 2026</span>}
 									<h4 style={{ margin: '6px 0 8px', fontSize: '15px' }}>{sprintf(__('Sample Post %d', 'xcodesol-page-builder'), item)}</h4>
-									<p style={{ margin: '0 0 10px', fontSize: '12px', color: '#64748b' }}>{__('Excerpt of the blog post previewing content in grid...', 'xcodesol-page-builder')}</p>
-									<span style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb' }}>{__('Read More →', 'xcodesol-page-builder')}</span>
+									{settings.show_excerpt !== false && <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#64748b' }}>{__('Excerpt of the blog post previewing content in grid...', 'xcodesol-page-builder')}</p>}
+									{settings.show_button !== false && <span style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb' }}>{settings.button_text || __('Read More', 'xcodesol-page-builder')} →</span>}
 								</div>
 							</div>
 						))}
@@ -749,18 +792,27 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 		case 'xcopb/gb-container':
 		case 'xcosb/gb-container':
 		case 'xcopb/container': {
-			return <NestedContainerPreview block={block} settings={settings} device={device} />;
+			return <NestedContainerPreview block={block} settings={settings} device={device} onAddWidget={canvasActions.onAddWidget} dropTarget={canvasActions.dropTarget} dropGuide={canvasActions.dropGuide} depth={canvasActions.depth || 1} containerIndex={canvasActions.containerIndex} containerPath={canvasActions.containerPath} onSelectNested={canvasActions.onSelectNested} selectedNested={canvasActions.selectedNested} />;
 		}
 		case 'xcopb/gb-heading': {
 			const Tag = settings.tag || 'h2';
+			const baseFontSize = settings.font_size && typeof settings.font_size === 'object' ? `${ settings.font_size.value || 28 }${ settings.font_size.unit || 'px' }` : ( settings.font_size ? `${ Number( settings.font_size ) }px` : undefined );
 			const headingStyle = {
 				textAlign: settings.align || 'left',
 				margin: 0,
 				color: settings.color || undefined,
-				fontSize: settings.font_size ? `${Number(settings.font_size)}px` : undefined,
+				fontSize: baseFontSize,
 				fontWeight: settings.font_weight || undefined,
 				lineHeight: settings.line_height || undefined,
 				letterSpacing: settings.letter_spacing ? `${Number(settings.letter_spacing)}px` : undefined,
+				fontFamily: settings.font_family || undefined,
+				textTransform: settings.text_transform || undefined,
+				textDecoration: settings.text_decoration || undefined,
+				animation: settings.animation && settings.animation !== 'none' ? `xsb-motion-${ settings.animation } ${ Number( settings.animation_duration ) || 600 }ms ${ settings.animation_easing || 'ease' } ${ settings.animation_repeat || '1' } both` : undefined,
+				animationDelay: settings.animation && settings.animation !== 'none' ? `${ Number( settings.animation_delay ) || 0 }ms` : undefined,
+				textShadow: settings.text_shadow || undefined,
+				wordBreak: settings.word_break === 'break-word' ? 'break-word' : undefined,
+				...( Number( settings.text_overflow_lines ) > 0 ? { display: '-webkit-box', WebkitLineClamp: Number( settings.text_overflow_lines ), WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {} ),
 				...chromeInlineCss(settings),
 				...marginInlineCss(settings),
 			};
@@ -782,14 +834,18 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 				gap: '8px',
 				backgroundColor: settings.bg_color || '#2563eb',
 				color: settings.text_color || '#ffffff',
-				padding: settings.size === 'small' ? '6px 14px' : (settings.size === 'large' ? '14px 30px' : (settings.size === 'xl' ? '18px 36px' : '10px 22px')),
-				fontSize: settings.size === 'small' ? '13px' : (settings.size === 'large' ? '17px' : (settings.size === 'xl' ? '20px' : '15px')),
-				fontWeight: 600,
-				borderRadius: `${settings.border_radius !== undefined ? Number(settings.border_radius) : 6}px`,
+				padding: settings.padding_y !== undefined || settings.padding_x !== undefined ? `${ Number( settings.padding_y ?? 12 ) }px ${ Number( settings.padding_x ?? 24 ) }px` : ( settings.size === 'xs' ? '6px 12px' : settings.size === 'sm' || settings.size === 'small' ? '8px 16px' : settings.size === 'lg' || settings.size === 'large' ? '16px 32px' : settings.size === 'xl' ? '20px 40px' : '12px 24px' ),
+				fontSize: settings.font_size ? `${ Number( settings.font_size ) }px` : ( settings.size === 'xs' ? '12px' : settings.size === 'sm' || settings.size === 'small' ? '13px' : settings.size === 'lg' || settings.size === 'large' ? '17px' : settings.size === 'xl' ? '19px' : '15px' ),
+				fontWeight: settings.font_weight || 600,
+				fontFamily: settings.font_family || undefined,
+				letterSpacing: settings.letter_spacing ? `${ Number( settings.letter_spacing ) }px` : undefined,
+				textTransform: settings.text_transform || undefined,
+				borderRadius: `${ settings.border_radius !== undefined ? Number(settings.border_radius) : 6 }px`,
+				border: settings.border_style && settings.border_style !== 'none' ? `${ Number( settings.border_width ) || 1 }px ${ settings.border_style } ${ settings.border_color || '#2563eb' }` : 'none',
 				textDecoration: 'none',
 				cursor: 'pointer',
-				border: 'none',
-				boxShadow: SHADOW_VALUES[settings.box_shadow || 'none'] || undefined,
+				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
+				...marginInlineCss( settings ),
 			};
 			const wrapStyle = {
 				textAlign: settings.align || 'left',
@@ -799,7 +855,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			return (
 				<div className="xsb-bp xcopb-bp-button" style={wrapStyle}>
 					<div className="xsb-bp-label-chip">{__('Button', 'xcodesol-page-builder')}</div>
-					<button type="button" style={btnStyle}>
+					<button type="button" className="xsb-preview-button-interactive" style={btnStyle}>
 						{settings.icon && <span className={`dashicons ${settings.icon}`} />}
 						<span>{settings.text || __('Click Here', 'xcodesol-page-builder')}</span>
 					</button>
@@ -813,18 +869,23 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 				...marginInlineCss(settings),
 			};
 			const imgStyle = {
-				maxWidth: settings.max_width || '100%',
-				height: 'auto',
-				borderRadius: `${Number(settings.border_radius) || 0}px`,
+				maxWidth: Number( settings.max_width ) > 0 ? `${ Number( settings.max_width ) }px` : '100%',
+				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : undefined,
+				height: Number( settings.height ) > 0 ? `${ Number( settings.height ) }px` : 'auto',
+				objectFit: settings.object_fit || undefined,
+				objectPosition: settings.object_position || undefined,
+				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
 				display: 'inline-block',
-				boxShadow: SHADOW_VALUES[settings.box_shadow || 'none'] || undefined,
+				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
+				opacity: Number.isFinite( Number( settings.opacity ) ) && settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
+				filter: Number( settings.grayscale ) > 0 ? `grayscale(${ Math.min( 100, Number( settings.grayscale ) ) }%)` : undefined,
 				...chromeInlineCss(settings),
 			};
 			return (
 				<div className="xsb-bp xcopb-bp-image" style={wrapStyle}>
 					<div className="xsb-bp-label-chip">{__('Image', 'xcodesol-page-builder')}</div>
-					{settings.url ? (
-						<img src={settings.url} alt={settings.alt || ''} style={imgStyle} />
+					{( typeof settings.url === 'object' ? settings.url?.url : settings.url ) ? (
+						<img src={typeof settings.url === 'object' ? settings.url.url : settings.url} alt={settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || ''} style={imgStyle} />
 					) : (
 						<div className="xsb-preview-img-box" style={{ ...imgStyle, minHeight: '140px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: '1px dashed #cbd5e1' }}>
 							<span className="dashicons dashicons-format-image" style={{ fontSize: '36px', color: '#94a3b8' }} aria-hidden="true" />
@@ -1117,8 +1178,8 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			const align = settings.align || 'center';
 			const bgType = settings.bg_type || 'color';
 			const bgColor = settings.bg_color || settings.background || '#2563eb';
-			const bgImage = settings.bg_image || '';
-			const bgVideo = settings.bg_video || '';
+			const bgImage = typeof settings.bg_image === 'object' ? settings.bg_image?.url || '' : settings.bg_image || '';
+			const bgVideo = typeof settings.bg_video === 'object' ? settings.bg_video?.url || '' : settings.bg_video || '';
 			const overlay = settings.overlay_color || '';
 			const isArchiveTitle = settings.title_source === 'archive_title';
 			const title = isArchiveTitle
@@ -1150,7 +1211,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			const anim = settings.animation || 'none';
 			if (anim !== 'none') {
 				// Keyframes are namespaced (xsb-fade-in, xsb-slide-up, ...).
-				bgStyle.animation = `xsb-${anim} ${Number(settings.animation_duration) || 600}ms ease both`;
+				bgStyle.animation = `xsb-motion-${anim} ${Number(settings.animation_duration) || 600}ms ${settings.animation_easing || 'ease'} ${settings.animation_repeat || '1'} both`;
 				bgStyle.animationDelay = `${Number(settings.animation_delay) || 0}ms`;
 			}
 
@@ -1174,6 +1235,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 					bgStyle.backgroundImage = `linear-gradient(${Number(settings.gradient_angle) || 180}deg, ${gA}, ${gB})`;
 				}
 			}
+			if ( bgType === 'color' && settings.bg_color ) { bgStyle.backgroundColor = settings.bg_color; }
 
 			if (bgType === 'image' && bgImage) {
 				const size = settings.bg_size || 'cover';
@@ -1250,29 +1312,29 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 		}
 		case 'xcopb/gb-divider':
 		case 'xcosb/gb-divider':
+			{
+			const lineStyle = { width: `${ Number( settings.width ) || 100 }%`, height: `${ Math.max( 1, Number( settings.height ) || 2 ) }px`, margin: `${ Number( settings.margin ) || 24 }px 0`, background: settings.style === 'gradient' ? `linear-gradient(90deg, ${ settings.color || '#e6e9f0' }, ${ settings.gradient_color || '#4f46e5' })` : settings.color || '#e6e9f0', border: settings.style === 'double' ? `${ Math.max( 1, Number( settings.height ) || 2 ) / 3 }px double ${ settings.color || '#e6e9f0' }` : 'none' };
+			lineStyle.marginLeft = settings.align === 'left' ? '0' : settings.align === 'right' ? 'auto' : 'auto';
+			lineStyle.marginRight = settings.align === 'right' ? '0' : 'auto';
+			if ( [ 'dashed', 'dotted' ].includes( settings.style ) ) { lineStyle.height = '0'; lineStyle.borderTop = `${ Math.max( 1, Number( settings.height ) || 2 ) }px ${ settings.style } ${ settings.color || '#e6e9f0' }`; }
 			return (
 				<div className="xsb-bp gb-divider">
 					<div className="xsb-bp-label-chip">{__('Divider', 'xcodesol-page-builder')}</div>
-					<hr
-						className="xsb-divider"
-						style={{
-							borderTop: `${settings.height || 2}px ${settings.style || 'solid'} ${settings.color || '#e6e9f0'}`,
-							margin: `${settings.margin ?? 24}px 0`,
-						}}
-					/>
+					<div className="xsb-divider" style={lineStyle}>{settings.label && <span style={{ position: 'relative', top: '-0.75em', padding: '0 10px', color: settings.label_color || '#64748b', background: settings.label_background || '#fff', fontSize: `${ Number( settings.label_size ) || 14 }px` }}>{settings.label}</span>}</div>
 				</div>
 			);
+			}
 		case 'xcopb/gb-breadcrumb':
 		case 'xcosb/gb-breadcrumb': {
-			const wrapCss = textInlineCss(settings);
+			const wrapCss = { ...textInlineCss(settings), textAlign: settings.align || 'left', fontSize: settings.font_size ? `${ Number( settings.font_size ) }px` : undefined, ...marginInlineCss( settings ) };
 			const linkCss = settings.link_color ? { color: settings.link_color } : {};
 			return (
 				<div className="xsb-bp gb-breadcrumb">
 					<div className="xsb-bp-label-chip">{__('Breadcrumb', 'xcodesol-page-builder')}</div>
 					<nav className="xsb-breadcrumb" style={wrapCss}>
-						<a href="#" style={linkCss}>{__('Home', 'xcodesol-page-builder')}</a>{' '}
-						<span className="xsb-bc-sep">/</span>{' '}
-						{SAMPLE.archiveTitle}
+						{settings.show_home !== false && <><a href="#" style={linkCss}>{settings.home_label || __('Home', 'xcodesol-page-builder')}</a>{' '}</>}
+						{settings.show_home !== false && settings.show_current !== false && <><span className="xsb-bc-sep">{settings.separator || '/'}</span>{' '}</>}
+						{settings.show_current !== false && SAMPLE.archiveTitle}
 					</nav>
 				</div>
 			);
@@ -1291,6 +1353,12 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			if (settings.font_weight) {
 				textStyle.fontWeight = settings.font_weight;
 			}
+			if (settings.font_family) { textStyle.fontFamily = settings.font_family; }
+			if (settings.text_transform && settings.text_transform !== 'none') { textStyle.textTransform = settings.text_transform; }
+			if (Number( settings.text_columns ) > 1) { textStyle.columns = Number( settings.text_columns ); textStyle.columnGap = `${ Number( settings.column_gap ) || 24 }px`; }
+			if (Number.isFinite( Number( settings.paragraph_spacing ) )) { textStyle['--xsb-text-paragraph-gap'] = `${ Number( settings.paragraph_spacing ) }px`; }
+			if (settings.blockquote_background) { textStyle.background = settings.blockquote_background; }
+			if (settings.blockquote_color) { textStyle.borderLeft = `${ Math.max( 2, Number( settings.border_width ) || 0 ) }px solid ${ settings.blockquote_color }`; }
 			if (settings.line_height !== undefined && settings.line_height !== '') {
 				textStyle.lineHeight = settings.line_height;
 			}
@@ -1306,7 +1374,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			}
 			const textAnim = settings.animation || 'none';
 			if (textAnim !== 'none') {
-				textStyle.animation = `xsb-${textAnim} ${Number(settings.animation_duration) || 600}ms ease both`;
+				textStyle.animation = `xsb-motion-${textAnim} ${Number(settings.animation_duration) || 600}ms ${settings.animation_easing || 'ease'} ${settings.animation_repeat || '1'} both`;
 				textStyle.animationDelay = `${Number(settings.animation_delay) || 0}ms`;
 			}
 			['top', 'right', 'bottom', 'left'].forEach((side) => {
@@ -1318,9 +1386,9 @@ function renderBlockBody(block, settings, meta, device = 'desktop') {
 			return (
 				<div className="xsb-bp gb-text">
 					<div className="xsb-bp-label-chip">{__('Text', 'xcodesol-page-builder')}</div>
-					<p className="xsb-bp-text" style={textStyle}>
-						{settings.content || __('Add your text here.', 'xcodesol-page-builder')}
-					</p>
+					<div className="xsb-bp-text" style={textStyle}>
+						{settings.drop_cap ? <span className="xsb-text-drop-cap">{( settings.content || __('Add your text here.', 'xcodesol-page-builder') ).charAt( 0 )}</span> : null}{settings.content || __('Add your text here.', 'xcodesol-page-builder')}
+					</div>
 				</div>
 			);
 		}
@@ -2073,14 +2141,20 @@ function DropGuideLine() {
  * alone in the middle of an empty drop target, and (compact) directly
  * under the last widget once the target already has children.
  */
-function DropHint({ compact = false, onClick }) {
+function DropHint({ compact = false, nested = false, onClick }) {
 	return (
-		<div
-			className={ `xsb-drop-hint${ compact ? ' xsb-drop-hint--end' : '' }` }
-			onClick={ onClick }
+		<button
+			type="button"
+			className={ `xsb-drop-hint${ compact ? ' xsb-drop-hint--end' : '' }${ nested ? ' xsb-drop-hint--nested' : '' }` }
+			onClick={ ( event ) => {
+				event.stopPropagation();
+				if ( onClick ) onClick( event );
+			} }
+			aria-label={ __( 'Add a widget here', 'xcodesol-page-builder' ) }
 		>
-			{ __( 'Drop widget here', 'xcodesol-page-builder' ) }
-		</div>
+			<span className="xsb-drop-hint-plus" aria-hidden="true"><IconPlus width={ 14 } height={ 14 } /></span>
+			<span className="xsb-drop-hint-label">{ __( 'Add a widget', 'xcodesol-page-builder' ) }</span>
+		</button>
 	);
 }
 
@@ -2105,11 +2179,15 @@ function NestedBlock({
 	onMoveNested,
 	onDuplicateNested,
 	onOpenStyleNested,
+	onOpenWidgetPanel,
 	isLastInColumn,
 	placementStyle,
+	dropGuide,
+	selectedNested,
 }) {
 	const meta = getBlockMeta(block.type);
 	const settings = { ...(meta.defaults || {}), ...(block.settings || {}) };
+	const isNestedContainer = [ 'xcopb/gb-container', 'xcopb/container', 'xcosb/gb-container' ].includes( block.type );
 	const bodySettings = device !== 'desktop'
 		? effectiveForDevice(settings, device)
 		: settings;
@@ -2123,10 +2201,19 @@ function NestedBlock({
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: `nested-${containerIndex}-${colIndex}-${blockIndex}`,
 	});
+	const widgetSpacing = widgetSpacingInlineCss( bodySettings );
+	// Container content padding belongs to its visual container element. The
+	// nested sortable wrapper only carries authored margin; duplicating padding
+	// here would stack it with NestedContainerPreview's own 20px inner padding.
+	if ( isNestedContainer ) {
+		delete widgetSpacing.padding;
+	}
 
 	const style = {
+		'--xsb-depth-color': nestingAccent(1),
 		transform: CSS.Transform.toString(transform),
 		transition,
+		...widgetSpacing,
 		...positionInlineCss(bodySettings),
 		...transformInlineCss(bodySettings),
 		...(placementStyle || {}),
@@ -2137,10 +2224,11 @@ function NestedBlock({
 			ref={setNodeRef}
 			style={style}
 			data-nested-id={`nested-${containerIndex}-${colIndex}-${blockIndex}`}
-			className={`xsb-nested-block${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}${isHiddenOnDevice ? ' is-hidden-on-device' : ''}`}
+			data-nesting-level="1"
+			className={`xsb-nested-block${isNestedContainer ? ' xsb-nested-block--container' : ''}${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}${isHiddenOnDevice ? ' is-hidden-on-device' : ''}`}
 			onClick={(e) => {
 				e.stopPropagation();
-				onSelect(containerIndex, colIndex, blockIndex, { x: e.clientX, y: e.clientY });
+				onSelect(containerIndex, colIndex, blockIndex, { x: e.clientX, y: e.clientY }, [ { cj: colIndex, bi: blockIndex } ]);
 			}}
 		>
 			{/* Floating Mini Action Toolbar */}
@@ -2209,7 +2297,19 @@ function NestedBlock({
 					{sprintf(__('Hidden on %s', 'xcodesol-page-builder'), device)}
 				</div>
 			)}
-			{renderBlockBody(block, bodySettings, meta, device)}
+			{renderBlockBody(block, bodySettings, meta, device, {
+					onAddWidget: () => {
+					onSelect(containerIndex, colIndex, blockIndex);
+					if ( onOpenWidgetPanel ) onOpenWidgetPanel();
+				},
+				containerIndex,
+				containerPath: isNestedContainer ? [ { cj: colIndex, bi: blockIndex } ] : null,
+				onSelectNested: onSelect,
+				selectedNested,
+				dropTarget: isNestedContainer ? { ci: containerIndex, path: [ { cj: colIndex, bi: blockIndex } ] } : null,
+				dropGuide,
+				depth: 1,
+			})}
 			{selected && stylePanel.open && hasStylePopover(block.type) && (
 				<StylePopover
 					type={block.type}
@@ -2239,10 +2339,10 @@ function ContainerPaddingHandles( { padding = {}, onChange } ) {
 		e.preventDefault();
 		const startX = e.clientX;
 		const startY = e.clientY;
-		const curTop = typeof padding === 'object' && padding !== null ? Number( padding.top ?? 20 ) : Number( padding || 20 );
-		const curRight = typeof padding === 'object' && padding !== null ? Number( padding.right ?? 20 ) : Number( padding || 20 );
-		const curBottom = typeof padding === 'object' && padding !== null ? Number( padding.bottom ?? 20 ) : Number( padding || 20 );
-		const curLeft = typeof padding === 'object' && padding !== null ? Number( padding.left ?? 20 ) : Number( padding || 20 );
+		const curTop = typeof padding === 'object' && padding !== null ? Number( padding.top ?? 0 ) : Number( padding || 0 );
+		const curRight = typeof padding === 'object' && padding !== null ? Number( padding.right ?? 0 ) : Number( padding || 0 );
+		const curBottom = typeof padding === 'object' && padding !== null ? Number( padding.bottom ?? 0 ) : Number( padding || 0 );
+		const curLeft = typeof padding === 'object' && padding !== null ? Number( padding.left ?? 0 ) : Number( padding || 0 );
 		const unit = ( typeof padding === 'object' && padding !== null ? padding.unit : null ) || 'px';
 
 		setDraggingEdge( edge );
@@ -2640,6 +2740,7 @@ function ContainerFlowZone({
 	onUpdateNested,
 	stylePanel,
 	onCloseStylePanel,
+	onOpenWidgetPanel,
 	device = 'desktop',
 	onStyleDevice,
 	onRemoveFromColumn,
@@ -2690,6 +2791,7 @@ function ContainerFlowZone({
 						if ( onSelectNested ) {
 							onSelectNested( containerIndex, 0, -1 );
 						}
+						if ( onOpenWidgetPanel ) onOpenWidgetPanel();
 					} }
 				/>
 			) }
@@ -2708,6 +2810,7 @@ function ContainerFlowZone({
 								selectedNested.cj === item.cj &&
 								selectedNested.bi === item.bi )
 						}
+						selectedNested={ selectedNested }
 						onSelect={ onSelectNested }
 						onRemove={ onRemoveFromColumn }
 						onUpdateSettings={ onUpdateNested }
@@ -2718,23 +2821,14 @@ function ContainerFlowZone({
 						onMoveNested={ onMoveNested }
 						onDuplicateNested={ onDuplicateNested }
 						onOpenStyleNested={ onOpenStyleNested }
+						onOpenWidgetPanel={ onOpenWidgetPanel }
+						dropGuide={ dropGuide }
 						isLastInColumn={ flatIndex === items.length - 1 }
 						placementStyle={ childPlacementStyle( item.block.settings || {}, layoutMode, itemWidth, viewSettings.scroll_snap_align ) }
 					/>
 				</Fragment>
 			) ) }
 			{ colGuide && items.length > 0 && guideAt === items.length && <DropGuideLine /> }
-			{ items.length > 0 && (
-				<DropHint
-					compact
-					onClick={ ( e ) => {
-						e.stopPropagation();
-						if ( onSelectNested ) {
-							onSelectNested( containerIndex, 0, -1 );
-						}
-					} }
-				/>
-			) }
 		</div>
 	);
 }
@@ -2744,7 +2838,13 @@ function ContainerFlowZone({
  * column. Deeper containers still need to be visible on the canvas, so they
  * render with the same layout rules as the top-level container preview.
  */
-function NestedContainerPreview({ block, settings, device = 'desktop' }) {
+function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidget, dropTarget, dropGuide, depth = 1, containerIndex, containerPath = [], onSelectNested, selectedNested }) {
+	const dropId = dropTarget ? `inner-${ dropTarget.ci }-${ dropTarget.path.map( ( step ) => `${ step.cj }.${ step.bi }` ).join( '_' ) }` : 'inner-container-disabled';
+	const { setNodeRef, isOver } = useDroppable( {
+		id: dropId,
+		data: { innerContainer: dropTarget },
+		disabled: ! dropTarget,
+	} );
 	const viewSettings = device !== 'desktop' ? effectiveForDevice( settings, device ) : settings;
 	const layoutMode =
 		viewSettings.layout_mode ||
@@ -2771,13 +2871,27 @@ function NestedContainerPreview({ block, settings, device = 'desktop' }) {
 			gap: gapCss,
 		};
 	} else {
-		modeStyles = { display: 'grid', gridTemplateColumns: `repeat(${ cols }, minmax(0, 1fr))`, gap: gapCss };
+		const widths = resolveColumnWidths( cols, viewSettings.column_widths );
+		modeStyles = { display: 'grid', gridTemplateColumns: widths.map( ( width ) => `minmax(0, ${ width }fr)` ).join( ' ' ), gap: gapCss };
 	}
 
 	const bg = viewSettings.bg_color || viewSettings.background || undefined;
+	const paddingSetting = viewSettings.padding;
+	const paddingUnit = paddingSetting && typeof paddingSetting === 'object' ? ( paddingSetting.unit || 'px' ) : 'px';
+	const defaultPadding = paddingSetting === undefined || paddingSetting === null || paddingSetting === '' ? 20 : Number( paddingSetting ) || 0;
+	const nestedPadding = [ 'top', 'right', 'bottom', 'left' ].map( ( side ) => {
+		const sideValue = viewSettings[ `padding_${ side }` ];
+		const value = sideValue !== undefined && sideValue !== ''
+			? Number( sideValue )
+			: paddingSetting && typeof paddingSetting === 'object'
+				? ( paddingSetting[ side ] ?? 20 )
+				: defaultPadding;
+		return `${ Number.isFinite( Number( value ) ) ? Number( value ) : 20 }${ paddingUnit }`;
+	} ).join( ' ' );
 	const boxStyle = {
 		width: '100%',
 		boxSizing: 'border-box',
+		padding: nestedPadding,
 		background: bg,
 		borderRadius: Number( viewSettings.border_radius ) > 0 ? `${ Number( viewSettings.border_radius ) }px` : undefined,
 		boxShadow: Array.isArray( viewSettings.box_shadow ) && viewSettings.box_shadow.length
@@ -2786,30 +2900,79 @@ function NestedContainerPreview({ block, settings, device = 'desktop' }) {
 				.join( ', ' )
 			: ( SHADOW_VALUES[ viewSettings.box_shadow ] || undefined ),
 	};
+	if ( viewSettings.content_width === 'boxed' ) {
+		boxStyle.maxWidth = cssDimension( viewSettings.max_width, '1200px' );
+		boxStyle.marginInline = 'auto';
+	}
 
 	const inner = Array.isArray( block.inner ) ? block.inner : [];
-	const flat = [];
-	inner.forEach( ( column ) => {
-		( Array.isArray( column ) ? column : [] ).forEach( ( nested ) => flat.push( nested ) );
-	} );
+	const indexedColumns = inner.map( ( column, cj ) => ( Array.isArray( column ) ? column : [] ).map( ( nested, bi ) => ( { nested, cj, bi } ) ) );
+	const flat = indexedColumns.flat();
+	const columnLayout = layoutMode === 'columns';
+	const renderedColumns = Array.from( { length: columnLayout ? Math.max( cols, inner.length, 1 ) : 1 }, ( _, columnIndex ) =>
+		columnLayout ? ( indexedColumns[ columnIndex ] || [] ) : flat
+	);
+	const renderNestedItems = ( items, columnIndex ) => {
+		const guideMatches = dropGuide?.kind === 'inner-container' && dropTarget?.path && JSON.stringify( dropGuide.path ) === JSON.stringify( dropTarget.path ) && Number( dropGuide.columnIndex || 0 ) === columnIndex;
+		return <>
+		{ items.map( ( entry, itemIndex ) => {
+		const { nested, cj, bi } = entry;
+		const nestedPath = [ ...containerPath, { cj, bi } ];
+		const isNestedSelected = selectedNested?.ci === containerIndex && Array.isArray( selectedNested.path ) && JSON.stringify( selectedNested.path ) === JSON.stringify( nestedPath );
+		const nestedDropTarget = dropTarget?.path ? { ci: dropTarget.ci, path: [ ...dropTarget.path, { cj, bi } ] } : null;
+		return (
+		<div
+			key={ `${ depth }-${ columnIndex }-${ itemIndex }` }
+			className={ `xsb-nested-container-item${ isNestedSelected ? ' is-selected' : '' }` }
+			data-nesting-level={ depth + 1 }
+			style={ { '--xsb-depth-color': nestingAccent( depth + 1 ) } }
+			aria-label={ getBlockMeta( nested.type ).label }
+			onClick={ ( event ) => {
+				e.stopPropagation();
+				if ( onSelectNested && Number.isInteger( containerIndex ) ) {
+					onSelectNested( containerIndex, nestedPath[ 0 ].cj, nestedPath[ 0 ].bi, { x: event.clientX, y: event.clientY }, nestedPath );
+				}
+			} }
+		>
+			<span className="xsb-nested-preview-popover" aria-hidden="true">{ getBlockMeta( nested.type ).label }</span>
+			{ guideMatches && dropGuide.slot === itemIndex && <DropGuideLine /> }
+			{ renderBlockBody(
+				nested,
+				{ ...( getBlockMeta( nested.type ).defaults || {} ), ...( nested.settings || {} ) },
+				getBlockMeta( nested.type ),
+				device,
+				{
+					depth: depth + 1,
+					onAddWidget,
+					containerIndex,
+					containerPath: nestedPath,
+					onSelectNested,
+					selectedNested,
+					dropGuide,
+					dropTarget: [ 'xcopb/gb-container', 'xcopb/container', 'xcosb/gb-container' ].includes( nested.type ) ? nestedDropTarget : null,
+				}
+			) }
+		</div>
+		);
+		} ) }
+		{ guideMatches && dropGuide.slot >= items.length && <DropGuideLine /> }
+	</>;
+	};
 
 	return (
-		<div className={ `xsb-live-block--nested-container xsb-layout--${ layoutMode }` } style={ { ...boxStyle, ...modeStyles } }>
+		<div ref={ setNodeRef } data-inner-container-id={ dropTarget ? dropTarget.path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '_' ) : undefined } data-inner-container-path={ dropTarget ? JSON.stringify( dropTarget ) : undefined } data-nesting-level={ depth } data-column-count={ columnLayout ? renderedColumns.length : undefined } className={ `xsb-live-block--nested-container xsb-layout--${ layoutMode }${ isOver ? ' is-over' : '' }` } style={ { ...boxStyle, ...modeStyles, '--xsb-depth-color': nestingAccent( depth ) } } onClick={ ( event ) => {
+			if ( event.target !== event.currentTarget ) return;
+			e.stopPropagation();
+			if ( onSelectNested && Number.isInteger( containerIndex ) && containerPath.length ) {
+				onSelectNested( containerIndex, containerPath[ 0 ].cj, containerPath[ 0 ].bi, { x: event.clientX, y: event.clientY }, containerPath );
+			}
+		} }>
 			{ flat.length === 0 ? (
-				<div className="xsb-nested-container-empty">
-					{ sprintf( __( '%s container', 'xcodesol-page-builder' ), layoutMode.toUpperCase() ) }
-				</div>
+				columnLayout ? renderedColumns.map( ( _, columnIndex ) => <div key={ `empty-${ depth }-${ columnIndex }` } className="xsb-nested-container-column xsb-nested-container-column--empty" aria-hidden="true">{ dropGuide?.kind === 'inner-container' && JSON.stringify( dropGuide.path ) === JSON.stringify( dropTarget?.path ) && Number( dropGuide.columnIndex || 0 ) === columnIndex && <DropGuideLine /> }</div> ) : <div className="xsb-nested-container-empty" aria-hidden="true">{ dropGuide?.kind === 'inner-container' && JSON.stringify( dropGuide.path ) === JSON.stringify( dropTarget?.path ) && <DropGuideLine /> }</div>
 			) : (
-				flat.map( ( nested, i ) => (
-					<div key={ i } className="xsb-nested-container-item">
-						{ renderBlockBody(
-							nested,
-							{ ...( getBlockMeta( nested.type ).defaults || {} ), ...( nested.settings || {} ) },
-							getBlockMeta( nested.type ),
-							device
-						) }
-					</div>
-				) )
+				columnLayout
+					? renderedColumns.map( ( column, columnIndex ) => <div key={ `column-${ depth }-${ columnIndex }` } className="xsb-nested-container-column">{ renderNestedItems( column, columnIndex ) }</div> )
+					: renderNestedItems( flat, 0 )
 			) }
 		</div>
 	);
@@ -2833,9 +2996,11 @@ function ContainerBlock({
 	stylePanel,
 	onCloseStylePanel,
 	onAddToColumn,
+	onOpenWidgetPanel,
 	onRemoveFromColumn,
 	dropGuide,
 	activeDragId,
+	showEmptyHint = true,
 	device = 'desktop',
 	onStyleDevice,
 	onMove,
@@ -2865,8 +3030,8 @@ function ContainerBlock({
 		: null;
 	const widths = rawWidths || resolveColumnWidths(cols, viewSettings.column_widths);
 	const usePercentWidths = widths.some((w) => !Number.isInteger(w));
-	const gap = Number(viewSettings.gap) || 20;
-	const uniformPad = Number(viewSettings.padding) || 20;
+	const gap = viewSettings.gap !== undefined && viewSettings.gap !== '' ? Number( viewSettings.gap ) : 20;
+	const uniformPad = viewSettings.padding === undefined || viewSettings.padding === null || viewSettings.padding === '' ? 20 : ( Number(viewSettings.padding) || 0 );
 	const pad = (side) =>
 		`${Number.isFinite(Number(viewSettings[`padding_${side}`])) ? Number(viewSettings[`padding_${side}`]) : uniformPad}px`;
 	const align = ['start', 'center', 'end'].includes(viewSettings.align) ? viewSettings.align : 'stretch';
@@ -2887,6 +3052,12 @@ function ContainerBlock({
 		...positionInlineCss(viewSettings),
 		...transformInlineCss(viewSettings),
 	};
+	if ( viewSettings.content_width === 'boxed' ) {
+		dragStyle.width = '100%';
+		dragStyle.maxWidth = cssDimension( viewSettings.max_width, '1200px' );
+		dragStyle.marginInline = 'auto';
+		dragStyle.boxSizing = 'border-box';
+	}
 
 	// Resolve padding (supports object dimensions or legacy number)
 	let resolvedPadding = `${pad('top')} ${pad('right')} ${pad('bottom')} ${pad('left')}`;
@@ -2920,9 +3091,14 @@ function ContainerBlock({
 	} else if ( viewSettings.bg_type === 'image' && viewSettings.bg_image ) {
 		const imgUrl = typeof viewSettings.bg_image === 'object' ? viewSettings.bg_image.url : viewSettings.bg_image;
 		if ( imgUrl ) {
-			resolvedBg = `url("${ imgUrl }") center / cover no-repeat`;
+			resolvedBg = `url("${ imgUrl }")`;
 		}
 	}
+	const overlayOpacity = Math.min( 100, Math.max( 0, Number( viewSettings.overlay_opacity ?? 100 ) ) ) / 100;
+	const hasBackgroundOverlay = Boolean( viewSettings.overlay_color ) && viewSettings.bg_type !== 'none' && overlayOpacity > 0;
+	const rawBgVideo = viewSettings.bg_video_url || viewSettings.bg_video || '';
+	const bgVideoUrl = typeof rawBgVideo === 'object' && rawBgVideo !== null ? rawBgVideo.url : rawBgVideo;
+	const hasBgVideo = viewSettings.bg_type === 'video' && Boolean( bgVideoUrl );
 
 	// Resolve multi-layer box shadows
 	let resolvedShadow = SHADOW_VALUES[viewSettings.box_shadow || 'none'] || undefined;
@@ -2950,7 +3126,7 @@ function ContainerBlock({
 	if ( layoutMode === 'list' ) {
 		modeStyles = {
 			display: 'flex',
-			flexDirection: viewSettings.flex_direction || 'column',
+			flexDirection: device === 'mobile' && viewSettings.column_reverse_mobile ? 'column-reverse' : ( viewSettings.flex_direction || 'column' ),
 			flexWrap: viewSettings.flex_wrap || 'nowrap',
 			justifyContent: viewSettings.justify_content || 'flex-start',
 			alignItems: viewSettings.equal_height ? 'stretch' : ( viewSettings.align_items || 'stretch' ),
@@ -2961,7 +3137,7 @@ function ContainerBlock({
 	} else if ( layoutMode === 'row' ) {
 		modeStyles = {
 			display: 'flex',
-			flexDirection: viewSettings.flex_direction || 'row',
+			flexDirection: device === 'mobile' && viewSettings.column_reverse_mobile ? 'row-reverse' : ( viewSettings.flex_direction || 'row' ),
 			flexWrap: viewSettings.flex_wrap || 'wrap',
 			justifyContent: viewSettings.justify_content || 'flex-start',
 			alignItems: viewSettings.equal_height ? 'stretch' : ( viewSettings.align_items || 'stretch' ),
@@ -3044,15 +3220,25 @@ function ContainerBlock({
 	const containerStyle = {
 		...( isColumnsMode ? modeStyles : {} ),
 		position: 'relative',
+		isolation: hasBgVideo ? 'isolate' : undefined,
 		padding: resolvedPadding,
 		borderRadius: resolvedRadius,
 		background: resolvedBg,
+		backgroundSize: viewSettings.bg_type === 'image' ? ( viewSettings.bg_size === 'custom' ? ( viewSettings.bg_size_custom || 'cover' ) : ( viewSettings.bg_size || 'cover' ) ) : undefined,
+		backgroundPosition: viewSettings.bg_type === 'image' ? ( viewSettings.bg_position === 'custom' ? ( viewSettings.bg_position_custom || 'center center' ) : ( viewSettings.bg_position || 'center center' ) ) : undefined,
+		backgroundRepeat: viewSettings.bg_type === 'image' ? ( viewSettings.bg_repeat || 'no-repeat' ) : undefined,
+		backgroundAttachment: viewSettings.bg_type === 'image' ? ( viewSettings.bg_attachment || 'scroll' ) : undefined,
+		backgroundOrigin: viewSettings.bg_type === 'image' ? ( viewSettings.bg_origin || 'padding-box' ) : undefined,
+		backgroundClip: viewSettings.bg_type === 'image' ? ( viewSettings.bg_clip || 'border-box' ) : undefined,
+		color: viewSettings.text_color || undefined,
+		textAlign: viewSettings.text_align || undefined,
 		boxShadow: resolvedShadow,
 		overflow: viewSettings.overflow && viewSettings.overflow !== 'visible' ? viewSettings.overflow : undefined,
 		aspectRatio: viewSettings.aspect_ratio && viewSettings.aspect_ratio !== 'auto' ? viewSettings.aspect_ratio : undefined,
 		opacity: viewSettings.opacity !== undefined && viewSettings.opacity !== '' ? String( viewSettings.opacity ) : undefined,
 		backdropFilter: viewSettings.backdrop_filter_blur ? `blur(${ viewSettings.backdrop_filter_blur }px)` : undefined,
 		WebkitBackdropFilter: viewSettings.backdrop_filter_blur ? `blur(${ viewSettings.backdrop_filter_blur }px)` : undefined,
+		filter: Number( viewSettings.filter_blur ) > 0 ? `blur(${ viewSettings.filter_blur }px)` : undefined,
 		containerType: viewSettings.container_queries ? 'inline-size' : undefined,
 		width: viewSettings.width !== undefined && viewSettings.width !== ''
 			? ( typeof viewSettings.width === 'object' && viewSettings.width !== null
@@ -3068,10 +3254,14 @@ function ContainerBlock({
 
 	// Whole-container placement (left / center / right) inside the template.
 	const position = viewSettings.position || 'full';
-	const maxWidth = Number(viewSettings.max_width) || 0;
-	if (['left', 'center', 'right'].includes(position) && maxWidth > 0) {
+	const maxWidth = cssDimension( viewSettings.max_width );
+	if ( viewSettings.content_width === 'boxed' ) {
 		containerStyle.width = '100%';
-		containerStyle.maxWidth = `${maxWidth}px`;
+		containerStyle.maxWidth = cssDimension( viewSettings.max_width, '1200px' );
+		containerStyle.marginInline = 'auto';
+	} else if (['left', 'center', 'right'].includes(position) && maxWidth) {
+		containerStyle.width = '100%';
+		containerStyle.maxWidth = maxWidth;
 		if ('center' === position) {
 			containerStyle.margin = '0 auto';
 		} else if ('right' === position) {
@@ -3079,12 +3269,6 @@ function ContainerBlock({
 		} else {
 			containerStyle.marginRight = 'auto';
 		}
-	} else if ( viewSettings.content_width === 'boxed' ) {
-		const boxMax = typeof viewSettings.max_width === 'object' && viewSettings.max_width !== null
-			? `${viewSettings.max_width.value ?? 1200}${viewSettings.max_width.unit || 'px'}`
-			: `${maxWidth || 1200}px`;
-		containerStyle.maxWidth = boxMax;
-		containerStyle.marginInline = 'auto';
 	}
 
 	// Advanced Spacing (Margin)
@@ -3143,8 +3327,9 @@ function ContainerBlock({
 	const anim = viewSettings.animation || 'none';
 	if (anim !== 'none') {
 		// Keyframes are namespaced (xsb-fade-in, xsb-slide-up, ...).
-		containerStyle.animation = `xsb-${anim} ${Number(viewSettings.animation_duration) || 600}ms ease both`;
+		containerStyle.animation = `xsb-motion-${anim} ${Number(viewSettings.animation_duration) || 600}ms ${viewSettings.animation_easing || 'ease'} ${viewSettings.animation_repeat || '1'} both`;
 		containerStyle.animationDelay = `${Number(viewSettings.animation_delay) || 0}ms`;
+		containerStyle.animationIterationCount = viewSettings.animation_repeat || '1';
 	}
 
 	const hoverAnimClass = ( viewSettings.hover_animation && viewSettings.hover_animation !== 'none' )
@@ -3184,9 +3369,9 @@ function ContainerBlock({
 				<div className="xsb-block-toolbar-badge" {...attributes} {...listeners} title={__('Drag container', 'xcodesol-page-builder')}>
 					<span className="xsb-toolbar-grip" aria-hidden="true">⠿</span>
 					{ layoutMode === 'grid' ? (
-						<IconLayoutGrid width={ 14 } height={ 14 } style={ { color: '#ffffff', opacity: 0.95 } } />
+						<IconLayoutGrid width={ 14 } height={ 14 } />
 					) : (
-						<IconLayoutFlex width={ 14 } height={ 14 } style={ { color: '#ffffff', opacity: 0.95 } } />
+						<IconLayoutFlex width={ 14 } height={ 14 } />
 					) }
 					<span className="xsb-block-toolbar-title">{sprintf(__('Container (%s)', 'xcodesol-page-builder'), layoutMode.toUpperCase())}</span>
 					{ layoutMode === 'columns' && <span className="xsb-block-toolbar-sub">{widths.map((w) => `${Math.round((w / 12) * 100)}%`).join(' | ')}</span> }
@@ -3251,7 +3436,9 @@ function ContainerBlock({
 					{sprintf(__('Hidden on %s', 'xcodesol-page-builder'), device)}
 				</div>
 			)}
-			<div className="xsb-container" style={containerStyle}>
+			<div className={`xsb-container${hasBgVideo ? ' xsb-container--has-video' : ''}${hasBackgroundOverlay ? ' xsb-container--has-overlay' : ''}`} style={containerStyle}>
+				{hasBgVideo && <video className="xsb-container-background-video" src={bgVideoUrl} muted loop autoPlay playsInline aria-hidden="true" />}
+				{hasBackgroundOverlay && <div className="xsb-container-background-overlay" style={ { backgroundColor: viewSettings.overlay_color, opacity: overlayOpacity, mixBlendMode: viewSettings.overlay_blend_mode || 'normal' } } aria-hidden="true" />}
 				{selected && !nestedActive && (
 					<ContainerPaddingHandles
 						padding={viewSettings.padding}
@@ -3296,6 +3483,7 @@ function ContainerBlock({
 								device={device}
 								onStyleDevice={onStyleDevice}
 								onAddToColumn={onAddToColumn}
+								onOpenWidgetPanel={onOpenWidgetPanel}
 								onRemoveFromColumn={onRemoveFromColumn}
 								dropGuide={dropGuide}
 								activeDragId={activeDragId}
@@ -3321,6 +3509,7 @@ function ContainerBlock({
 						onCloseStylePanel={onCloseStylePanel}
 						device={device}
 						onStyleDevice={onStyleDevice}
+						onOpenWidgetPanel={onOpenWidgetPanel}
 						onRemoveFromColumn={onRemoveFromColumn}
 						dropGuide={dropGuide}
 						activeDragId={activeDragId}
@@ -3440,6 +3629,7 @@ function ColumnDropZone({
 	stylePanel,
 	onCloseStylePanel,
 	onAddToColumn,
+	onOpenWidgetPanel,
 	onRemoveFromColumn,
 	dropGuide,
 	activeDragId,
@@ -3540,6 +3730,7 @@ function ColumnDropZone({
 						if (onSelectNested) {
 							onSelectNested(containerIndex, colIndex, -1);
 						}
+						if (onOpenWidgetPanel) onOpenWidgetPanel();
 					}}
 				/>
 			)}
@@ -3562,6 +3753,7 @@ function ColumnDropZone({
 									selectedNested.cj === colIndex &&
 									selectedNested.bi === blockIndex)
 							}
+							selectedNested={ selectedNested }
 							onSelect={onSelectNested}
 							onRemove={onRemoveFromColumn}
 							onUpdateSettings={onUpdateNested}
@@ -3572,6 +3764,8 @@ function ColumnDropZone({
 							onMoveNested={onMoveNested}
 							onDuplicateNested={onDuplicateNested}
 							onOpenStyleNested={onOpenStyleNested}
+							onOpenWidgetPanel={onOpenWidgetPanel}
+							dropGuide={dropGuide}
 							isLastInColumn={blockIndex === blocks.length - 1}
 							placementStyle={childPlacementStyle(block.settings || {}, 'columns')}
 						/>
@@ -3579,17 +3773,6 @@ function ColumnDropZone({
 				))}
 				{colGuide && blocks.length > 0 && guideAt === blocks.length && <DropGuideLine />}
 			</SortableContext>
-			{blocks.length > 0 && (
-				<DropHint
-					compact
-					onClick={(e) => {
-						e.stopPropagation();
-						if (onSelectNested) {
-							onSelectNested(containerIndex, colIndex, -1);
-						}
-					}}
-				/>
-			)}
 		</div>
 	);
 }
@@ -3666,6 +3849,7 @@ function BlockPreview({
 				device={device}
 				onStyleDevice={onStyleDevice}
 				onAddToColumn={callbacks.onAddToColumn}
+				onOpenWidgetPanel={callbacks.onOpenWidgetPanel}
 				onRemoveFromColumn={callbacks.onRemoveFromColumn}
 				dropGuide={dropGuide}
 				activeDragId={activeDragId}
@@ -3820,6 +4004,8 @@ function ZoneContainer({
 	callbacks,
 	dropGuide,
 	activeDragId,
+	showEmptyHint = true,
+	showEndHint = true,
 	device = 'desktop',
 	onStyleDevice,
 	onMove,
@@ -3853,14 +4039,14 @@ function ZoneContainer({
 		<div
 			ref={setNodeRef}
 			data-zone-root={zoneId}
-			className={`xsb-live-zone xsb-live-zone--${zoneId}${isOver ? ' is-over' : ''}${isActive ? ' is-active' : ''}`}
+			className={`xsb-live-zone xsb-live-zone--${zoneId}${showEmptyHint || showEndHint ? ' is-final-page-zone' : ''}${isOver ? ' is-over' : ''}${isActive ? ' is-active' : ''}`}
 		>
 			<div className="xsb-live-zone-label">
 				<span className="xsb-live-zone-label-text">{label}</span>
 				<span className="xsb-live-zone-label-count">{blocks.length}</span>
 			</div>
 			<div className="xsb-live-zone-body">
-				{blocks.length === 0 && <DropHint />}
+				{blocks.length === 0 && showEmptyHint && <DropHint onClick={ () => callbacks?.onOpenWidgetPanel && callbacks.onOpenWidgetPanel() } />}
 				{zoneGuide && blocks.length === 0 && <DropGuideLine />}
 				<SortableContext
 					items={blocks.map((entry) => `cv-${entry.index}`)}
@@ -3899,7 +4085,7 @@ function ZoneContainer({
 					))}
 					{zoneGuide && blocks.length > 0 && guideAt === blocks.length && <DropGuideLine />}
 				</SortableContext>
-				{blocks.length > 0 && <DropHint compact />}
+				{blocks.length > 0 && showEndHint && <DropHint compact onClick={ () => callbacks?.onOpenWidgetPanel && callbacks.onOpenWidgetPanel() } />}
 			</div>
 		</div>
 	);
@@ -3925,7 +4111,10 @@ function PreviewCanvas({
 	onCloseStylePanel,
 	dropGuide,
 	activeDragId,
+	showEmptyHint = true,
 	device = 'desktop',
+	pageSettings = {},
+	globalSettings = {},
 	onStyleDevice,
 	onMove,
 	onDuplicate,
@@ -3950,10 +4139,68 @@ function PreviewCanvas({
 	}
 
 	const cb = callbacks || {};
+	const pageStyle = {};
+	[ 'margin', 'padding' ].forEach( ( name ) => {
+		const box = pageSettings?.[ name ];
+		if ( ! box ) return;
+		const unit = box.unit || 'px';
+		[ 'top', 'right', 'bottom', 'left' ].forEach( ( side ) => {
+			const value = box[ side ] ?? box.values?.[ side ];
+			if ( value !== '' && value !== undefined && value !== null ) pageStyle[ `${ name }${ side[ 0 ].toUpperCase() }${ side.slice( 1 ) }` ] = `${ value }${ unit }`;
+		} );
+	} );
+	const extraClasses = String( pageSettings?.css_class || '' ).split( /\s+/ ).filter( ( value ) => /^[a-zA-Z0-9_-]+$/.test( value ) ).join( ' ' );
+	const pageCustomCss = String( pageSettings?.custom_css || '' ).replace( /<\/style/gi, '' ).replace( /\bselector\b/g, '.xsb-preview-canvas-live' );
+	const globalColors = globalSettings?.global_colors || {};
+	const globalFonts = globalSettings?.global_fonts || {};
+	const globalTypography = globalSettings?.typography || {};
+	const globalButtonStyle = globalSettings?.button_style || {};
+	const siteBackgroundImage = globalSettings?.background_image || {};
+	const siteBackgroundStyle = globalSettings?.background_image_style || {};
+	pageStyle.backgroundColor = globalColors.background || undefined;
+	if ( siteBackgroundImage.url ) {
+		const overlay = siteBackgroundStyle.overlay || '';
+		const opacity = Math.max( 0, Math.min( 100, Number( siteBackgroundStyle.overlay_opacity || 0 ) ) ) / 100;
+		const rgbaOverlay = ( color, alpha ) => {
+			const hex = color.match( /^#([\da-f]{3}|[\da-f]{6})$/i );
+			if ( hex ) { let value = hex[1]; if ( value.length === 3 ) value = value.split( '' ).map( ( digit ) => digit + digit ).join( '' ); return `rgba(${ parseInt( value.slice( 0, 2 ), 16 ) },${ parseInt( value.slice( 2, 4 ), 16 ) },${ parseInt( value.slice( 4, 6 ), 16 ) },${ alpha })`; }
+			const rgb = color.match( /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i );
+			return rgb ? `rgba(${ rgb[1] },${ rgb[2] },${ rgb[3] },${ alpha })` : '';
+		};
+		const overlayColor = opacity && overlay ? rgbaOverlay( overlay, opacity ) : '';
+		pageStyle.backgroundImage = `${ overlayColor ? `linear-gradient(${ overlayColor },${ overlayColor }),` : '' }url("${ String( siteBackgroundImage.url ).replace( /["\\]/g, '' ) }")`;
+		pageStyle.backgroundSize = siteBackgroundStyle.size || 'cover';
+		pageStyle.backgroundPosition = siteBackgroundStyle.position || 'center center';
+		pageStyle.backgroundRepeat = siteBackgroundStyle.repeat || 'no-repeat';
+		pageStyle.backgroundAttachment = siteBackgroundStyle.attachment || 'scroll';
+	}
+	pageStyle.color = globalColors.text || undefined;
+	pageStyle.fontFamily = globalFonts.body || undefined;
+	pageStyle.fontSize = globalTypography.body_size ? `${ globalTypography.body_size }px` : undefined;
+	pageStyle.fontWeight = globalTypography.body_weight || undefined;
+	pageStyle.lineHeight = globalTypography.line_height || undefined;
+	const rootVariables = { '--xcopb-primary': globalColors.primary || '#6c63ff', '--xcopb-secondary': globalColors.secondary || '#292d50', '--xcopb-text': globalColors.text || '#172033', '--xcopb-accent': globalColors.accent || '#18a0fb' };
+	( globalSettings?.custom_colors || [] ).forEach( ( color ) => { const slug = String( color?.name || '' ).toLowerCase().trim().replace( /[^a-z0-9_-]+/g, '-' ); if ( slug && color?.value ) rootVariables[ `--xcopb-custom-${ slug }` ] = color.value; } );
+	const cssGradient = ( gradient ) => gradient?.colorA && gradient?.colorB ? gradient.type === 'radial' ? `radial-gradient(circle,${ gradient.colorA } ${ gradient.posA ?? 0 }%,${ gradient.colorB } ${ gradient.posB ?? 100 }%)` : `linear-gradient(${ gradient.angle ?? 90 }deg,${ gradient.colorA } ${ gradient.posA ?? 0 }%,${ gradient.colorB } ${ gradient.posB ?? 100 }%)` : '';
+	const cssBox = ( value, fallback = 0 ) => typeof value === 'object' && value ? [ 'top', 'right', 'bottom', 'left' ].map( ( side ) => `${ Number( value[ side ] ?? fallback ) || 0 }px` ).join( ' ' ) : `${ Number( value ?? fallback ) || 0 }px`;
+	const buttonPadding = globalButtonStyle.padding && typeof globalButtonStyle.padding === 'object' ? `padding:${ cssBox( globalButtonStyle.padding ) }!important` : `padding:${ Number( globalButtonStyle.padding_y ?? 12 ) }px ${ Number( globalButtonStyle.padding_x ?? 24 ) }px!important`;
+	const buttonDeclarations = [ globalButtonStyle.text ? `color:${ globalButtonStyle.text }!important` : '', globalButtonStyle.background ? `background-color:${ globalButtonStyle.background }!important` : '', globalButtonStyle.gradient_enabled && cssGradient( globalButtonStyle.gradient ) ? `background-image:${ cssGradient( globalButtonStyle.gradient ) }!important` : '', `border-radius:${ cssBox( globalButtonStyle.radius, 6 ) }!important`, buttonPadding, globalButtonStyle.font_size !== undefined ? `font-size:${ globalButtonStyle.font_size }px!important` : '', `border-width:${ cssBox( globalButtonStyle.border_width ) }!important`, globalButtonStyle.border_style ? `border-style:${ globalButtonStyle.border_style }!important` : '', globalButtonStyle.border_color ? `border-color:${ globalButtonStyle.border_color }!important` : '', globalButtonStyle.shadow && globalButtonStyle.shadow !== 'none' ? `box-shadow:${ globalButtonStyle.shadow }!important` : '' ].filter( Boolean ).join( ';' );
+	const buttonHoverDeclarations = [ globalButtonStyle.hover_text ? `color:${ globalButtonStyle.hover_text }!important` : '', globalButtonStyle.hover_background ? `background-color:${ globalButtonStyle.hover_background }!important` : '', globalButtonStyle.hover_gradient_enabled && cssGradient( globalButtonStyle.hover_gradient ) ? `background-image:${ cssGradient( globalButtonStyle.hover_gradient ) }!important` : '' ].filter( Boolean ).join( ';' );
+	const sharedStyleRules = `${ buttonDeclarations ? `.xsb-preview-canvas-live .xsb-button,.xsb-preview-canvas-live .xcopb-button,.xsb-preview-canvas-live .wp-block-button__link{${ buttonDeclarations }}` : '' }${ buttonHoverDeclarations ? `.xsb-preview-canvas-live .xsb-button:hover,.xsb-preview-canvas-live .xcopb-button:hover,.xsb-preview-canvas-live .wp-block-button__link:hover{${ buttonHoverDeclarations }}` : '' }${ globalTypography.paragraph_spacing !== undefined ? `.xsb-preview-canvas-live p{margin-bottom:${ globalTypography.paragraph_spacing }px}` : '' }`;
+	const scopedGlobalCss = String( globalSettings?.custom_css || '' ).replace( /<\/style/gi, '' ).replace( /([^{}]+)\{([^{}]*)\}/g, ( rule, rawSelectors, declarations ) => {
+		const selectors = rawSelectors.trim();
+		if ( ! selectors || selectors.startsWith( '@' ) ) return rule;
+		return selectors.split( ',' ).map( ( selector ) => {
+			const clean = selector.trim().replace( /^(?:html|body|:root)\b/, '.xsb-preview-canvas-live' );
+			return `${ clean.startsWith( '.xsb-preview-canvas-live' ) ? '' : '.xsb-preview-canvas-live ' }${ clean }`;
+		} ).join( ', ' ) + `{${ declarations }}`;
+	} );
+	const pageRootProps = { id: pageSettings?.css_id || undefined, className: `${ cssClass }${ extraClasses ? ` ${ extraClasses }` : '' }`, style: { ...pageStyle, ...rootVariables } };
 
 	if (!hasStructure) {
 		return (
-			<div className={cssClass}>
+			<div { ...pageRootProps }>
+				{ ( pageCustomCss || scopedGlobalCss || globalFonts.heading || sharedStyleRules ) && <style>{ `${ scopedGlobalCss || '' }${ pageCustomCss || '' }${ globalFonts.heading ? `.xsb-preview-canvas-live h1,.xsb-preview-canvas-live h2,.xsb-preview-canvas-live h3,.xsb-preview-canvas-live h4,.xsb-preview-canvas-live h5,.xsb-preview-canvas-live h6{font-family:${ globalFonts.heading }}` : '' }${ sharedStyleRules }` }</style> }
 				{layout.length === 0 ? (
 					<div className="xsb-live-empty xsb-live-empty--rich">
 						<div className="xsb-empty-illustration" aria-hidden="true">
@@ -4110,8 +4357,9 @@ function PreviewCanvas({
 	});
 
 	return (
-		<div className={cssClass}>
-			{structure.zones.map((zone) => (
+		<div { ...pageRootProps }>
+			{ ( pageCustomCss || scopedGlobalCss || globalFonts.heading || sharedStyleRules ) && <style>{ `${ scopedGlobalCss || '' }${ pageCustomCss || '' }${ globalFonts.heading ? `.xsb-preview-canvas-live h1,.xsb-preview-canvas-live h2,.xsb-preview-canvas-live h3,.xsb-preview-canvas-live h4,.xsb-preview-canvas-live h5,.xsb-preview-canvas-live h6{font-family:${ globalFonts.heading }}` : '' }${ sharedStyleRules }` }</style> }
+			{structure.zones.map((zone, zoneIndex) => (
 				<ZoneContainer
 					key={zone.id}
 					zoneId={zone.id}
@@ -4132,6 +4380,8 @@ function PreviewCanvas({
 					callbacks={cb}
 					dropGuide={dropGuide}
 					activeDragId={activeDragId}
+					showEmptyHint={ zoneIndex === structure.zones.length - 1 }
+					showEndHint={ zoneIndex === structure.zones.length - 1 }
 					onMove={onMove}
 					onDuplicate={onDuplicate}
 					onOpenStyle={onOpenStyle}

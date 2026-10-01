@@ -31,7 +31,11 @@
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { renderControl, hasControl, UnitSelect } from './controls/index';
+import SharedColorControl from './controls/color';
+import SharedSpacingBoxControl from './controls/spacing-box';
+import CssEditor from './controls/css-editor';
 import { deviceKey, deviceLayer } from '../styles/responsive';
+import ResetButton from './reset-button';
 import {
 	IconAlignLeft,
 	IconAlignCenter,
@@ -144,6 +148,8 @@ export function CollapsibleSection( {
 	hint = null,
 	onReset,
 	children,
+	stateControls = null,
+	resetVersion = 0,
 } ) {
 	const storageKey = `xcopb_sec_${ id }`;
 	const [ isOpen, setIsOpen ] = useState( () => {
@@ -154,6 +160,12 @@ export function CollapsibleSection( {
 			return defaultOpen;
 		}
 	} );
+	useEffect( () => {
+		if ( resetVersion ) {
+			setIsOpen( !! defaultOpen );
+			try { localStorage.removeItem( storageKey ); } catch ( e ) {}
+		}
+	}, [ resetVersion ] );
 
 	const toggle = () => {
 		setIsOpen( ( prev ) => {
@@ -167,22 +179,15 @@ export function CollapsibleSection( {
 
 	return (
 		<div className={ `xsb-inspect-section${ isOpen ? ' is-open' : ' is-collapsed' }` }>
-			<button
-				type="button"
-				className="xsb-inspect-section__header"
-				onClick={ toggle }
-				aria-expanded={ isOpen }
-			>
-				<span className={ `xsb-inspect-section__arrow${ isOpen ? ' is-open' : '' }` } aria-hidden="true">
-					<IconChevronRight width={ 13 } height={ 13 } />
-				</span>
-				<span className="xsb-inspect-section__title">{ title }</span>
-				{ ! isOpen && hint && (
-					<span className="xsb-inspect-section__hint" title={ String( hint ) }>
-						{ hint }
-					</span>
-				) }
-			</button>
+			<div className="xsb-inspect-section__header">
+				<button type="button" className="xsb-inspect-section__toggle" onClick={ toggle } aria-expanded={ isOpen }>
+					<span className={ `xsb-inspect-section__arrow${ isOpen ? ' is-open' : '' }` } aria-hidden="true"><IconChevronRight width={ 13 } height={ 13 } /></span>
+					<span className="xsb-inspect-section__title">{ title }</span>
+					{ ! isOpen && hint && <span className="xsb-inspect-section__hint" title={ String( hint ) }>{ hint }</span> }
+				</button>
+				{ stateControls }
+				{ onReset && <ResetButton className="xsb-inspect-section__reset" onClick={ onReset } label={ __( 'Reset these settings', 'xcodesol-page-builder' ) } /> }
+			</div>
 			{ isOpen && <div className="xsb-inspect-section__body">{ children }</div> }
 		</div>
 	);
@@ -631,162 +636,13 @@ export function ColorPickerControl( {
 	onChange,
 	defaultColor = '#000000',
 	state = false,
+	showTokens = true,
+	inlinePopover = false,
+	customPalette = [],
 } ) {
-	const [ isOpen, setIsOpen ] = useState( false );
-	const [ isTokenOpen, setIsTokenOpen ] = useState( false );
-	const popoverRef = useRef( null );
-
 	const colorVal = value || '';
-	const isTokenValue = typeof colorVal === 'string' && colorVal.startsWith( 'var(' );
-
-	useEffect( () => {
-		if ( ! isOpen && ! isTokenOpen ) return;
-		function handleClickOutside( e ) {
-			if ( popoverRef.current && ! popoverRef.current.contains( e.target ) ) {
-				setIsOpen( false );
-				setIsTokenOpen( false );
-			}
-		}
-		document.addEventListener( 'mousedown', handleClickOutside );
-		return () => document.removeEventListener( 'mousedown', handleClickOutside );
-	}, [ isOpen, isTokenOpen ] );
-
-	const handleEyedropper = async () => {
-		if ( window.EyeDropper ) {
-			try {
-				const dropper = new window.EyeDropper();
-				const result = await dropper.open();
-				if ( result && result.sRGBHex ) {
-					onChange( result.sRGBHex );
-				}
-			} catch ( e ) {}
-		}
-	};
-
-	return (
-		<div className="xsb-control-field" ref={ popoverRef }>
-			{ label && <label className="xsb-control-label">{ label }</label> }
-			<div className="xsb-color-input-row">
-				<button
-					type="button"
-					className="xsb-color-swatch-btn"
-					onClick={ () => {
-						setIsOpen( ( v ) => ! v );
-						setIsTokenOpen( false );
-					} }
-					title={ __( 'Pick a color', 'xcodesol-page-builder' ) }
-					aria-label={ __( 'Pick a color', 'xcodesol-page-builder' ) }
-				>
-					<span
-						className="xsb-color-swatch-fill"
-						style={ { background: colorVal || 'transparent' } }
-					/>
-				</button>
-
-				<input
-					type="text"
-					className="xsb-text-input xsb-color-hex-input"
-					placeholder="#000000"
-					value={ colorVal }
-					onChange={ ( e ) => onChange( e.target.value ) }
-				/>
-
-				<button
-					type="button"
-					className={ `xsb-token-globe-btn${ isTokenValue ? ' is-active' : '' }` }
-					onClick={ () => {
-						setIsTokenOpen( ( v ) => ! v );
-						setIsOpen( false );
-					} }
-					title={ isTokenValue ? __( 'Bound to global token (click to change)', 'xcodesol-page-builder' ) : __( 'Bind to global color token', 'xcodesol-page-builder' ) }
-				>
-					<IconGlobe width={ 13 } height={ 13 } />
-				</button>
-
-				{ colorVal && (
-					<button
-						type="button"
-						className="xsb-color-clear-btn"
-						onClick={ () => onChange( '' ) }
-						title={ __( 'Clear color', 'xcodesol-page-builder' ) }
-					>
-						&times;
-					</button>
-				) }
-			</div>
-
-			{ isTokenOpen && (
-				<div className="xsb-token-picker-popover">
-					<div className="xsb-token-picker-header">
-						{ __( 'Theme Color Tokens', 'xcodesol-page-builder' ) }
-					</div>
-					<div className="xsb-token-list">
-						{ GLOBAL_THEME_COLOR_TOKENS.map( ( t ) => (
-							<button
-								key={ t.value }
-								type="button"
-								className="xsb-token-item"
-								onClick={ () => {
-									onChange( t.value );
-									setIsTokenOpen( false );
-								} }
-							>
-								<span className="xsb-token-swatch" style={ { background: t.color } } />
-								<span>{ t.label }</span>
-							</button>
-						) ) }
-					</div>
-				</div>
-			) }
-
-			{ isOpen && (
-				<div className="xsb-color-popover">
-					<div className="xsb-color-popover__picker-wrap">
-						<input
-							type="color"
-							className="xsb-color-native-picker"
-							value={ colorVal.startsWith( '#' ) && colorVal.length === 7 ? colorVal : defaultColor }
-							onChange={ ( e ) => onChange( e.target.value ) }
-						/>
-						{ window.EyeDropper && (
-							<button
-								type="button"
-								className="xsb-btn xsb-btn--sm xsb-eyedropper-btn"
-								onClick={ handleEyedropper }
-								title={ __( 'Eyedropper tool', 'xcodesol-page-builder' ) }
-							>
-								<IconPipette width={ 13 } height={ 13 } />
-								<span>{ __( 'Pick from screen', 'xcodesol-page-builder' ) }</span>
-							</button>
-						) }
-					</div>
-
-					<div className="xsb-color-popover__palette">
-						<span className="xsb-color-popover__palette-title">{ __( 'Palette', 'xcodesol-page-builder' ) }</span>
-						<div className="xsb-color-swatch-grid">
-							{ SAVED_PALETTE.map( ( c ) => (
-								<button
-									key={ c }
-									type="button"
-									className={ `xsb-swatch-chip${ colorVal.toLowerCase() === c.toLowerCase() ? ' is-selected' : '' }` }
-									style={ { background: c } }
-									onClick={ () => {
-										onChange( c );
-										setIsOpen( false );
-									} }
-									title={ c }
-								>
-									{ colorVal.toLowerCase() === c.toLowerCase() && (
-										<IconCheck width={ 10 } height={ 10 } style={ { color: c === '#ffffff' ? '#000' : '#fff' } } />
-									) }
-								</button>
-							) ) }
-						</div>
-					</div>
-				</div>
-			) }
-		</div>
-	);
+	const palette = [ ...new Set( [ ...customPalette.map( ( item ) => typeof item === 'string' ? item : item?.value ), ...SAVED_PALETTE ].filter( ( item ) => typeof item === 'string' && item ) ) ];
+	return <SharedColorControl config={ { id: `inspector-color-${ String( label || 'color' ).toLowerCase().replace( /[^a-z0-9]+/g, '-' ) }`, label, default: defaultColor } } value={ colorVal } onChange={ onChange } customPalette={ palette } overlayPopover={ inlinePopover } />;
 }
 
 export const ColorControl = ColorPickerControl;
@@ -887,6 +743,7 @@ export function MediaPickerControl( {
 	allowedTypes = 'image',
 } ) {
 	const current = typeof value === 'object' && value !== null ? value : { url: value || '' };
+	const isVideo = typeof current.mime === 'string' && current.mime.startsWith( 'video/' );
 
 	const openMediaModal = () => {
 		if ( typeof window.wp !== 'undefined' && window.wp.media ) {
@@ -894,7 +751,7 @@ export function MediaPickerControl( {
 				title: __( 'Select or Upload Media', 'xcodesol-page-builder' ),
 				button: { text: __( 'Use this media', 'xcodesol-page-builder' ) },
 				multiple: false,
-				library: { type: allowedTypes },
+					library: { type: Array.isArray( allowedTypes ) && allowedTypes.length === 1 ? allowedTypes[ 0 ] : allowedTypes },
 			} );
 			frame.on( 'select', () => {
 				const attachment = frame.state().get( 'selection' ).first().toJSON();
@@ -902,6 +759,7 @@ export function MediaPickerControl( {
 					id: attachment.id,
 					url: attachment.url,
 					alt: attachment.alt || attachment.title || '',
+					mime: attachment.mime || '',
 					width: attachment.width,
 					height: attachment.height,
 				} );
@@ -920,11 +778,7 @@ export function MediaPickerControl( {
 			<label className="xsb-control-label">{ label }</label>
 			{ current.url ? (
 				<div className="xsb-media-preview-wrap" style={ { position: 'relative', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--xsb-line)', background: 'var(--xsb-canvas)' } }>
-					<img
-						src={ current.url }
-						alt={ current.alt || '' }
-						style={ { width: '100%', height: '110px', objectFit: 'cover', display: 'block' } }
-					/>
+					{ isVideo ? <video src={ current.url } controls muted style={ { width: '100%', maxHeight: '140px', display: 'block' } } /> : <img src={ current.url } alt={ current.alt || '' } style={ { width: '100%', height: '110px', objectFit: 'cover', display: 'block' } } /> }
 					<div style={ { display: 'flex', gap: '4px', padding: '6px 8px', background: 'var(--xsb-panel)', borderTop: '1px solid var(--xsb-line)' } }>
 						<button
 							type="button"
@@ -965,8 +819,8 @@ export function MediaPickerControl( {
 						transition: 'all 150ms ease',
 					} }
 				>
-					<IconImage width={ 20 } height={ 20 } />
-					<span style={ { fontSize: '11.5px', fontWeight: 500 } }>{ __( 'Choose Image', 'xcodesol-page-builder' ) }</span>
+					{ String( allowedTypes ).includes( 'video' ) ? <IconVideo width={ 20 } height={ 20 } /> : <IconImage width={ 20 } height={ 20 } /> }
+					<span style={ { fontSize: '11.5px', fontWeight: 500 } }>{ String( allowedTypes ).includes( 'video' ) ? __( 'Choose Video', 'xcodesol-page-builder' ) : __( 'Choose Image', 'xcodesol-page-builder' ) }</span>
 				</button>
 			) }
 		</div>
@@ -976,7 +830,7 @@ export function MediaPickerControl( {
 /**
  * 12. Dimensions Control (4 Sides / Row-Col linked)
  */
-export function DimensionsControl( {
+function LegacyDimensionsControl( {
 	label = __( 'Dimensions', 'xcodesol-page-builder' ),
 	value = { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true },
 	onChange,
@@ -1126,7 +980,8 @@ export function DimensionsControl( {
 	);
 }
 
-export const BoxModelSpacingControl = DimensionsControl;
+export const DimensionsControl = SharedSpacingBoxControl;
+export const BoxModelSpacingControl = SharedSpacingBoxControl;
 
 /**
  * 13. Box Shadow Group Control (Multi-layer + Presets)
@@ -1509,23 +1364,7 @@ export function CodeEditorControl( {
 	onChange,
 	placeholder = 'selector {\n  /* Custom CSS */\n}',
 } ) {
-	return (
-		<div className="xsb-control-field xsb-code-field">
-			<label className="xsb-control-label">{ label }</label>
-			<textarea
-				className="xsb-text-input xsb-code-input"
-				rows={ 5 }
-				value={ value || '' }
-				placeholder={ placeholder }
-				onChange={ ( e ) => onChange( e.target.value ) }
-				style={ {
-					fontFamily: 'var(--xsb-font-mono, monospace)',
-					fontSize: '11.5px',
-					lineHeight: 1.4,
-				} }
-			/>
-		</div>
-	);
+	return <div className="xsb-control-field xsb-code-field"><CssEditor label={ label } value={ value } onChange={ onChange } placeholder={ placeholder } rows={ 9 } /></div>;
 }
 
 /**
@@ -1576,6 +1415,7 @@ export function DynamicControlRenderer( {
 	onUpdate,
 	manifest,
 	sectionStateful = false,
+	sectionActiveState = 'default',
 } ) {
 	if ( ! control || ! control.id ) return null;
 
@@ -1583,10 +1423,12 @@ export function DynamicControlRenderer( {
 	// state layer. Sections marked `stateful` in a schema opt every control
 	// they own into the state tabs, matching the per-section semantics the
 	// two engines already use (states → pseudo-selectors).
-	const stateScoped =
-		( control.state && control.state !== 'default' ) ||
-		( sectionStateful && activeState !== 'default' );
-	const activeStateKey = control.state && control.state !== 'default' ? control.state : activeState;
+	const explicitState = typeof control.state === 'string' && control.state !== 'default'
+		? control.state
+		: null;
+	const supportsActiveState = sectionActiveState === 'focus' ? !! control.supportsFocus : !! control.supportsHover;
+	const stateScoped = Boolean( explicitState ) || ( ( control.state || sectionStateful ) && supportsActiveState && sectionActiveState !== 'default' && ( control.supportsHover || control.supportsFocus ) );
+	const activeStateKey = explicitState || ( stateScoped ? sectionActiveState : 'default' );
 
 	// Storage keys follow the plugin-wide flat convention:
 	//   base              → <id>            (desktop / normal)
@@ -1629,6 +1471,17 @@ export function DynamicControlRenderer( {
 	}
 
 	const handleValueChange = ( nextVal ) => {
+		// Content width and max width describe one choice in the inspector:
+		// changing modes should immediately update both the control value and
+		// the canvas, rather than leaving a stale boxed width behind.
+		if ( control.id === 'content_width' && ! stateScoped ) {
+			onUpdate( {
+				content_width: nextVal,
+				max_width: nextVal === 'full' ? { value: 100, unit: '%' } : { value: 1200, unit: 'px' },
+			} );
+			return;
+		}
+
 		if ( stateScoped ) {
 			onUpdate( storeKey, nextVal );
 			return;
@@ -1667,6 +1520,12 @@ export function DynamicControlRenderer( {
 			next.__responsive = { ...next.__responsive, [ activeDevice ]: layer };
 		}
 
+		onUpdate( next );
+	};
+
+	const resetKey = ( key ) => {
+		const next = { ...settings };
+		delete next[ key ];
 		onUpdate( next );
 	};
 
@@ -1721,10 +1580,12 @@ export function DynamicControlRenderer( {
 					onAddColumn: () => changeColumnCount( 1 ),
 					onRemoveColumn: () => changeColumnCount( -1 ),
 			  }
-			: control;
+			: control.type === 'animation'
+				? { ...control, duration: settings.animation_duration ?? 600, delay: settings.animation_delay ?? 0, easing: settings.animation_easing || 'ease' }
+				: control;
 
 	if ( hasControl( control.type ) ) {
-		return renderControl(
+		return <div className="xsb-schema-control"><div className="xsb-schema-control__field">{ renderControl(
 			control.type,
 			{
 				config: controlConfig,
@@ -1736,7 +1597,7 @@ export function DynamicControlRenderer( {
 				onReset: handleResetDevice,
 			},
 			manifest
-		);
+		) }</div>{ control.help && <p className="xsb-schema-control__help">{ control.help }</p> }</div>;
 	}
 
 	const commonProps = {
@@ -1750,13 +1611,14 @@ export function DynamicControlRenderer( {
 		onResetDevice: handleResetDevice,
 	};
 
+	let field = null;
 	switch ( control.type ) {
 		case 'text':
-			return <TextControl { ...commonProps } placeholder={ control.placeholder } />;
+			field = <TextControl { ...commonProps } placeholder={ control.placeholder } />; break;
 		case 'textarea':
-			return <TextareaControl { ...commonProps } rows={ control.rows } placeholder={ control.placeholder } />;
+			field = <TextareaControl { ...commonProps } rows={ control.rows } placeholder={ control.placeholder } />; break;
 		case 'number':
-			return (
+			field = (
 				<NumberScrubberControl
 					{ ...commonProps }
 					min={ control.min }
@@ -1764,10 +1626,12 @@ export function DynamicControlRenderer( {
 					step={ control.step }
 					unit={ control.unit }
 					units={ control.units || [ 'px' ] }
+					responsive={ !! control.responsive }
+					activeDevice={ activeDevice }
 				/>
-			);
+			); break;
 		case 'slider':
-			return (
+			field = (
 				<SliderScrubberControl
 					{ ...commonProps }
 					min={ control.min }
@@ -1776,41 +1640,44 @@ export function DynamicControlRenderer( {
 					unit={ control.unit }
 					units={ control.units || [ 'px' ] }
 				/>
-			);
+			); break;
 		case 'select':
-			return <SelectControl { ...commonProps } options={ control.options || [] } />;
+			field = <SelectControl { ...commonProps } options={ control.options || [] } />; break;
+		case 'animation':
+			field = <div className="xsb-motion-control"><label className="xsb-control-label">{ control.label }</label><select className="xsb-select-input" value={ val || 'none' } onChange={ ( e ) => handleValueChange( e.target.value ) }><option value="none">{ __( 'No animation', 'xcodesol-page-builder' ) }</option>{ ( control.options || [] ).filter( ( option ) => option.value !== 'none' ).map( ( option ) => <option key={ option.value } value={ option.value }>{ option.label }</option> ) }</select>{ val && val !== 'none' && <><div className="xsb-motion-options"><label>{ __( 'Timing', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ settings.animation_easing || 'ease' } onChange={ ( e ) => onUpdate( { animation_easing: e.target.value } ) }><option value="ease">Ease</option><option value="ease-in">Ease in</option><option value="ease-out">Ease out</option><option value="ease-in-out">Ease in out</option><option value="linear">Linear</option></select></label><label>{ __( 'Repeat', 'xcodesol-page-builder' ) }<select className="xsb-select-input" value={ settings.animation_repeat || '1' } onChange={ ( e ) => onUpdate( { animation_repeat: e.target.value } ) }><option value="1">Once</option><option value="2">2 times</option><option value="3">3 times</option><option value="infinite">Loop</option></select></label></div><div className="xsb-motion-preview-card"><div key={ `${ val }-${ settings.animation_duration || 600 }-${ settings.animation_delay || 0 }-${ settings.animation_easing || 'ease' }` } className="xsb-motion-preview" style={ { animationName: `xsb-motion-${ val }`, animationDuration: `${ Number( settings.animation_duration ) || 600 }ms`, animationDelay: `${ Number( settings.animation_delay ) || 0 }ms`, animationTimingFunction: settings.animation_easing || 'ease', animationFillMode: 'both', animationIterationCount: settings.animation_repeat || '1' } }><span className="xsb-motion-preview__spark" aria-hidden="true">✦</span><span>{ __( 'Live preview', 'xcodesol-page-builder' ) }</span></div><span className="xsb-motion-preview-card__caption">{ __( 'This sample previews the selected effect.', 'xcodesol-page-builder' ) }</span></div></>}</div>; break;
 		case 'choose':
-			return <ChooseSegmentedControl { ...commonProps } options={ control.options || [] } />;
+			field = <ChooseSegmentedControl { ...commonProps } options={ control.options || [] } />; break;
 		case 'toggle':
-			return <ToggleControl { ...commonProps } help={ control.help } />;
+			field = <ToggleControl { ...commonProps } help={ control.help } />; break;
 		case 'color':
-			return <ColorPickerControl { ...commonProps } defaultColor={ control.default } />;
+			field = <ColorPickerControl { ...commonProps } defaultColor={ control.default } />; break;
 		case 'gradient':
-			return <GradientControl { ...commonProps } />;
+			field = <GradientControl { ...commonProps } />; break;
 		case 'media':
-			return <MediaPickerControl { ...commonProps } allowedTypes={ control.allowedTypes } />;
+			field = <MediaPickerControl { ...commonProps } label={ control.label } allowedTypes={ control.allowedTypes } />; break;
 		case 'dimensions':
-			return (
+			field = (
 				<DimensionsControl
 					{ ...commonProps }
 					units={ control.units || [ 'px', '%', 'em', 'rem' ] }
 					allowNegative={ control.allowNegative }
 					mode={ control.mode || 'sides' }
 				/>
-			);
+			); break;
 		case 'box_shadow':
-			return <BoxShadowGroup { ...commonProps } />;
+			field = <BoxShadowGroup { ...commonProps } />; break;
 		case 'border':
-			return <BorderGroup { ...commonProps } />;
+			field = <BorderGroup { ...commonProps } />; break;
 		case 'typography':
-			return <TypographyGroup { ...commonProps } />;
+			field = <TypographyGroup { ...commonProps } />; break;
 		case 'repeater':
-			return <RepeaterControl { ...commonProps } itemSchema={ control.itemSchema } addLabel={ control.addLabel } />;
+			field = <RepeaterControl { ...commonProps } itemSchema={ control.itemSchema } addLabel={ control.addLabel } />; break;
 		case 'code':
-			return <CodeEditorControl { ...commonProps } placeholder={ control.placeholder } />;
+			field = <CodeEditorControl { ...commonProps } placeholder={ control.placeholder } />; break;
 		default:
-			return <TextControl { ...commonProps } />;
+			return null;
 	}
+	return <div className="xsb-schema-control"><div className="xsb-schema-control__field">{ field }</div>{ control.help && control.type !== 'toggle' && <p className="xsb-schema-control__help">{ control.help }</p> }</div>;
 }
 
 /**
@@ -1820,11 +1687,16 @@ export function SchemaInspectorRenderer( {
 	schema,
 	manifest,
 	settings = {},
+	context = {},
 	onUpdateSetting,
 	activeTab = 'content',
 	activeDevice = 'desktop',
 	activeState = 'default',
 	searchQuery = '',
+	sectionStates = {},
+	setSectionStates,
+	resetVersion = 0,
+	blockType = '',
 } ) {
 	if ( ! schema || ! Array.isArray( schema.sections ) || ! Array.isArray( schema.controls ) ) {
 		return null;
@@ -1833,7 +1705,8 @@ export function SchemaInspectorRenderer( {
 	const evaluateCondition = ( condition ) => {
 		if ( ! condition ) return true;
 		return Object.entries( condition ).every( ( [ key, expected ] ) => {
-			const current = settings[ key ];
+			const current = key === 'type' ? blockType : ( key in context ? context[ key ] : settings[ key ] );
+			if ( typeof expected === 'function' ) return !! expected( current, settings, context );
 			if ( Array.isArray( expected ) ) {
 				return expected.includes( current );
 			}
@@ -1841,10 +1714,15 @@ export function SchemaInspectorRenderer( {
 		} );
 	};
 
-	const currentSections = schema.sections.filter( ( s ) => s.tab === activeTab );
+	const normalizedQuery = searchQuery.trim().toLowerCase();
+	const matchingControls = normalizedQuery ? schema.controls.filter( control => evaluateCondition( control.condition ) && String( control.label || control.id || '' ).toLowerCase().includes( normalizedQuery ) ) : null;
+	const resultTabs = matchingControls ? [ ...new Set( matchingControls.map( control => control.tab ) ) ] : [ activeTab ];
+	const currentSections = schema.sections.filter( section => resultTabs.includes( section.tab ) );
+	const hasSearchMatch = ! normalizedQuery || matchingControls.length > 0;
 
 	return (
 		<div className="xsb-schema-inspector-wrap">
+			{ ! hasSearchMatch && <p className="xsb-inspector-search-empty">{ __( 'No settings match your search.', 'xcodesol-page-builder' ) }</p> }
 			{ currentSections.map( ( section ) => {
 				if ( ! evaluateCondition( section.condition ) ) return null;
 
@@ -1852,13 +1730,16 @@ export function SchemaInspectorRenderer( {
 					( c ) => c.section === section.id && evaluateCondition( c.condition )
 				);
 
-				const filteredControls = searchQuery
+				const filteredControls = normalizedQuery
 					? sectionControls.filter( ( c ) =>
-							c.label.toLowerCase().includes( searchQuery.toLowerCase() )
+							String( c.label || c.id || '' ).toLowerCase().includes( normalizedQuery )
 					  )
 					: sectionControls;
+				const visibleControls = section.stateful && ( sectionStates?.[ section.id ] || 'default' ) !== 'default'
+					? filteredControls.filter( control => ( sectionStates[ section.id ] === 'focus' ? control.supportsFocus : control.supportsHover ) )
+					: filteredControls;
 
-				if ( filteredControls.length === 0 ) return null;
+				if ( visibleControls.length === 0 ) return null;
 
 				return (
 					<CollapsibleSection
@@ -1866,15 +1747,30 @@ export function SchemaInspectorRenderer( {
 						id={ section.id }
 						title={ section.title || section.label }
 						defaultOpen={ section.defaultOpen }
+						resetVersion={ resetVersion }
+							onReset={ () => {
+							const patch = {};
+							sectionControls.forEach( control => {
+								const keys = [ control.id, `hover_${ control.id }`, `focus_${ control.id }`, `hover_${ control.id }_tablet`, `hover_${ control.id }_mobile`, `focus_${ control.id }_tablet`, `focus_${ control.id }_mobile`, ...[ 'tablet', 'mobile' ].map( device => `${ device }_${ control.id }` ) ];
+								keys.forEach( key => { patch[ key ] = undefined; } );
+								if ( control.id === 'url' && typeof settings.url === 'object' ) { patch.url = null; }
+							} );
+							setSectionStates?.( prev => ( { ...prev, [ section.id ]: 'default' } ) );
+							const next = { ...settings, ...patch };
+							Object.keys( next ).forEach( key => { if ( next[ key ] === undefined ) delete next[ key ]; } );
+							onUpdateSetting( next );
+						} }
+						stateControls={ section.stateful && section.tab === 'style' && sectionControls.some( control => control.supportsHover || control.supportsFocus ) ? <div className="xsb-section-state-tabs" role="group" aria-label={ __( 'Style state', 'xcodesol-page-builder' ) }>{ [ [ 'default', __( 'Normal', 'xcodesol-page-builder' ) ], ...( sectionControls.some( c => c.supportsHover ) ? [ [ 'hover', __( 'Hover', 'xcodesol-page-builder' ) ] ] : [] ), ...( sectionControls.some( c => c.supportsFocus ) ? [ [ 'focus', __( 'Focus', 'xcodesol-page-builder' ) ] ] : [] ) ].map( ( [ state, label ] ) => <button key={ state } type="button" className={ ( sectionStates?.[ section.id ] || 'default' ) === state ? 'is-active' : '' } onClick={ () => setSectionStates?.( prev => ( { ...prev, [ section.id ]: state } ) ) }>{ label }</button> ) }</div> : null }
 					>
-						{ filteredControls.map( ( control ) => (
+						{ visibleControls.map( ( control ) => (
 							<DynamicControlRenderer
-								key={ control.id }
+								key={ `${ control.id }-${ control.condition?.type?.join?.( '-' ) || control.condition?.type || '' }` }
 								control={ control }
 								settings={ settings }
 								activeDevice={ activeDevice }
 								activeState={ activeState }
 								sectionStateful={ !! section.stateful }
+								sectionActiveState={ sectionStates?.[ section.id ] || 'default' }
 								onUpdate={ onUpdateSetting }
 								manifest={ manifest || schema?.manifest }
 							/>

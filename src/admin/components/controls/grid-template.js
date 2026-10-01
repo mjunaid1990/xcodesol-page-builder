@@ -5,16 +5,16 @@
  * @package Xcodesol_Page_Builder
  */
 
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import ControlBase from './control-base';
 
 export const GRID_PRESETS = [
-	{ label: 'Auto-fit (240px)', value: 'repeat(auto-fit, minmax(240px, 1fr))' },
-	{ label: '12-Column', value: 'repeat(12, 1fr)' },
-	{ label: 'Sidebar Left', value: '280px 1fr' },
-	{ label: 'Sidebar Right', value: '1fr 280px' },
-	{ label: 'Holy Grail', value: '200px 1fr 200px' },
-	{ label: '3 Equal Cols', value: 'repeat(3, 1fr)' },
+	{ label: 'Auto-fit', value: 'repeat(auto-fit, minmax(240px, 1fr))', preview: 'auto' },
+	{ label: '12 columns', value: 'repeat(12, 1fr)', preview: 'twelve' },
+	{ label: 'Sidebar left', value: '280px 1fr', preview: 'left' },
+	{ label: 'Sidebar right', value: '1fr 280px', preview: 'right' },
+	{ label: 'Main with rails', value: '200px 1fr 200px', preview: 'rails' },
+	{ label: '3 equal columns', value: 'repeat(3, 1fr)', preview: 'three' },
 ];
 
 export default function GridTemplateControl( {
@@ -29,14 +29,14 @@ export default function GridTemplateControl( {
 		label = __( 'Grid Template & Tracks', 'xcodesol-page-builder' ),
 	} = config;
 
-	const columns = value?.columns || 'repeat(3, 1fr)';
+	const columns = typeof value === 'string' ? value : ( value?.columns || 'repeat(3, 1fr)' );
 	const rows = value?.rows || 'auto';
 	const autoFlow = value?.auto_flow || 'row';
 	const autoRows = value?.auto_rows || 'auto';
 
 	const update = ( key, val ) => {
 		onChange( {
-			...value,
+			...( typeof value === 'object' && value !== null ? value : {} ),
 			[ key ]: val,
 		} );
 	};
@@ -51,18 +51,22 @@ export default function GridTemplateControl( {
 		>
 			<div className="xsb-grid-template-builder">
 				{/* Presets */}
-				<div className="xsb-control-sub-row">
-					<label className="xsb-sub-label">{ __( 'Grid Presets', 'xcodesol-page-builder' ) }</label>
-					<div className="xsb-preset-chips">
+				<div className="xsb-grid-presets-field">
+					<label className="xsb-sub-label">{ __( 'Start with a layout', 'xcodesol-page-builder' ) }</label>
+					<div className="xsb-grid-presets">
 						{ GRID_PRESETS.map( ( p ) => (
 							<button
 								key={ p.value }
 								type="button"
-								className={ `xsb-chip-btn${ columns === p.value ? ' is-active' : '' }` }
+								className={ `xsb-grid-preset${ columns === p.value ? ' is-active' : '' }` }
 								onClick={ () => update( 'columns', p.value ) }
-								title={ p.value }
+								aria-label={ sprintf( __( 'Use %s grid layout', 'xcodesol-page-builder' ), p.label ) }
+								title={ p.label }
 							>
-								{ p.label }
+								<span className={ `xsb-grid-preset__preview is-${ p.preview }` } aria-hidden="true">
+									{ Array.from( { length: p.preview === 'twelve' ? 12 : p.preview === 'auto' ? 6 : p.preview === 'rails' ? 9 : p.preview === 'three' ? 6 : p.preview === 'left' || p.preview === 'right' ? 3 : 4 }, ( _, index ) => <i key={ index } /> ) }
+								</span>
+								<span className="xsb-grid-preset__label">{ p.label }</span>
 							</button>
 						) ) }
 					</div>

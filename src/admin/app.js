@@ -14,6 +14,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { Button, Notice, Dropdown, MenuGroup, MenuItem } from '@wordpress/components';
+import apiFetch from '@wordpress/api-fetch';
 import { __, sprintf } from '@wordpress/i18n';
 import {
 	DndContext,
@@ -28,6 +29,7 @@ import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 
 import BlockPalette, { getBlocksForView, BASIC_BLOCKS, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS, WIDGET_BLOCKS } from './components/block-palette';
 import PreviewCanvas from './components/preview-canvas';
+import Navigator from './components/navigator';
 import Inspector from './components/inspector';
 import { getStructureById, getDefaultStructureId, structureBelongsToView } from './data/structures';
 import { computeDropGuide } from './lib/dropguide';
@@ -51,7 +53,10 @@ import {
 	IconCheck,
 	IconChevronLeft,
 	IconChevronRight,
+	IconChevronDown,
 	IconGridGuides,
+	IconLayers,
+	IconPalette,
 } from './components/icons';
 import CommandPalette from './components/command-palette';
 import ShortcutsModal from './components/shortcuts-modal';
@@ -158,6 +163,14 @@ function isContainerType( type ) {
 		type === 'xcopb/container'    ||
 		type === 'xcosb/container'
 	);
+}
+
+function cloneBlockTree( block ) {
+	return {
+		...block,
+		settings: { ...( block.settings || {} ) },
+		...( Array.isArray( block.inner ) ? { inner: block.inner.map( ( column ) => ( Array.isArray( column ) ? column.map( cloneBlockTree ) : [] ) ) } : {} ),
+	};
 }
 
 /**
@@ -287,11 +300,20 @@ function Editor( { config, structure: savedStructure } ) {
 	const [ dropGuide, setDropGuide ] = useState( null );
 	const dropGuideRef = useRef( null );
 	const previewWrapRef = useRef( null );
-	const [ inspectorOpen, setInspectorOpen ] = useState( true );
-	const [ sidebarOpen, setSidebarOpen ] = useState( true );
+	const [ inspectorOpen, setInspectorOpen ] = useState( false );
+	const [ sidebarOpen, setSidebarOpen ] = useState( false );
+	const [ sidebarPinned, setSidebarPinned ] = useState( false );
+	const openWidgetPanel = useCallback( () => {
+		setSidebarPinned( true );
+		setSidebarOpen( true );
+	}, [] );
 	// Template-level rules (view type, settings, conditions) panel toggled
 	// from the topbar gear icon. When on, the right inspector shows the
 	const [ templateSettingsOpen, setTemplateSettingsOpen ] = useState( false );
+	const [ pageSettingsOpen, setPageSettingsOpen ] = useState( false );
+	const [ pageSettings, setPageSettings ] = useState( {} );
+	const [ globalSettingsOpen, setGlobalSettingsOpen ] = useState( false );
+	const [ globalSettings, setGlobalSettings ] = useState( config.siteSettings || {} );
 	const [ previewDevice, setPreviewDevice ] = useState( 'desktop' );
 
 	// Modern UI & workspace states:
@@ -318,6 +340,7 @@ function Editor( { config, structure: savedStructure } ) {
 
 	const [ zoom, setZoom ] = useState( 100 );
 	const [ showGuides, setShowGuides ] = useState( false );
+	const [ navigatorOpen, setNavigatorOpen ] = useState( false );
 	const [ shortcutsOpen, setShortcutsOpen ] = useState( false );
 	const [ commandPaletteOpen, setCommandPaletteOpen ] = useState( false );
 	const [ toasts, setToasts ] = useState( [] );
@@ -375,18 +398,31 @@ function Editor( { config, structure: savedStructure } ) {
 		setSelectedIndex( index );
 		setSelectedNested( null );
 		setTemplateSettingsOpen( false );
+		setPageSettingsOpen( false );
+		setGlobalSettingsOpen( false );
 		if ( index !== null && index !== undefined ) {
 			setInspectorOpen( true );
 		}
 		closeStylePanel();
 	}, [ closeStylePanel ] );
 
-	const selectNestedBlock = useCallback( ( ci, cj, bi, point ) => {
-		setSelectedNested( { ci, cj, bi } );
+	const selectNestedBlock = useCallback( ( ci, cj, bi, point, path ) => {
+		const selectedPath = Array.isArray( path ) && path.length ? path : [ { cj, bi } ];
+		setSelectedNested( { ci, cj: selectedPath[ 0 ].cj, bi: selectedPath[ 0 ].bi, path: selectedPath } );
 		setTemplateSettingsOpen( false );
+		setPageSettingsOpen( false );
+		setGlobalSettingsOpen( false );
 		setInspectorOpen( true );
 		closeStylePanel();
 	}, [ closeStylePanel ] );
+
+	const handleCanvasSelectNested = useCallback( ( ci, cj, bi, point ) => {
+		if ( ci === null || ci === undefined ) {
+			setSelectedNested( null );
+			return;
+		}
+		selectNestedBlock( ci, cj, bi, point );
+	}, [ selectNestedBlock ] );
 
 	const handleAddPreset = useCallback( ( blocks ) => {
 		if ( ! Array.isArray( blocks ) || blocks.length === 0 ) return;
@@ -491,6 +527,88 @@ function Editor( { config, structure: savedStructure } ) {
 		setSelectedNested( { ci, cj, bi: targetBi } );
 	}, [ layout, setLayout ] );
 
+	const reorderNavigatorItem = useCallback( ( source, target ) => {
+		if ( ! source || ! target ) return;
+		if ( source.kind === 'root' && source.index !== target.index ) {
+			if ( ( target.kind === 'nested' || target.kind === 'root' ) && target.container ) {
+				const next = layout.map( cloneBlockTree );
+				const moving = next[ source.index ];
+				const targetRootIndex = target.kind === 'root' ? target.index : target.ci;
+				let targetContainer = next[ targetRootIndex ];
+				for ( const step of target.path || [] ) targetContainer = targetContainer?.inner?.[ step.cj ]?.[ step.bi ];
+				if ( ! moving || ! targetContainer || ! isContainerType( targetContainer.type ) ) return;
+				if ( targetRootIndex === source.index ) return; // A root cannot be moved into its own subtree.
+				const destination = targetContainer;
+				const nextZones = [ ...zoneMap ];
+				next.splice( source.index, 1 );
+				nextZones.splice( source.index, 1 );
+				destination.inner = Array.isArray( destination.inner ) ? destination.inner.map( ( column ) => [ ...column ] ) : [ [] ];
+				if ( ! destination.inner[ 0 ] ) destination.inner[ 0 ] = [];
+				destination.inner[ 0 ].push( moving );
+				setLayoutAndZoneMap( next, nextZones );
+				setSelectedNested( null );
+				return;
+			}
+			if ( target.kind !== 'root' ) return;
+			const from = source.index;
+			const to = target.index;
+			if ( ( zoneMap[ from ] || '' ) !== ( zoneMap[ to ] || '' ) ) return;
+			setLayoutAndZoneMap( arrayMove( layout, from, to ), arrayMove( zoneMap, from, to ) );
+			setSelectedIndex( to );
+			return;
+		}
+		if ( source.kind === 'nested' && target.kind === 'nested' && Array.isArray( source.path ) && Array.isArray( target.path ) && source.path.length && target.path.length ) {
+			const sourceParentPath = source.path.slice( 0, -1 );
+			const targetParentPath = target.path.slice( 0, -1 );
+			const sourceAddress = source.path[ source.path.length - 1 ];
+			const targetAddress = target.path[ target.path.length - 1 ];
+			const sameParent = source.ci === target.ci && JSON.stringify( sourceParentPath ) === JSON.stringify( targetParentPath ) && sourceAddress.cj === targetAddress.cj;
+			if ( sameParent ) {
+				if ( sourceAddress.bi === targetAddress.bi ) return;
+				const next = layout.map( cloneBlockTree );
+				let parent = next[ source.ci ];
+				for ( const step of sourceParentPath ) parent = parent?.inner?.[ step.cj ]?.[ step.bi ];
+				const column = parent?.inner?.[ sourceAddress.cj ];
+				if ( ! Array.isArray( column ) ) return;
+				parent.inner[ sourceAddress.cj ] = arrayMove( column, sourceAddress.bi, targetAddress.bi );
+				setLayout( next );
+				setSelectedNested( { ci: source.ci, cj: source.path[ 0 ].cj, bi: source.path[ 0 ].bi } );
+				return;
+			}
+			if ( ! target.container ) return;
+			// Prevent a container from being dropped into itself or any descendant.
+			if ( source.ci === target.ci && target.path.length >= source.path.length && source.path.every( ( step, index ) => step.cj === target.path[ index ]?.cj && step.bi === target.path[ index ]?.bi ) ) return;
+			const next = layout.map( cloneBlockTree );
+			let movingParent = next[ source.ci ];
+			for ( const step of sourceParentPath ) movingParent = movingParent?.inner?.[ step.cj ]?.[ step.bi ];
+			const movingColumn = movingParent?.inner?.[ sourceAddress.cj ];
+			const moving = movingColumn?.[ sourceAddress.bi ];
+			let targetContainer = next[ target.ci ];
+			for ( const step of target.path ) targetContainer = targetContainer?.inner?.[ step.cj ]?.[ step.bi ];
+			if ( ! Array.isArray( movingColumn ) || ! moving || ! targetContainer || ! isContainerType( targetContainer.type ) ) return;
+			movingColumn.splice( sourceAddress.bi, 1 );
+			targetContainer.inner = Array.isArray( targetContainer.inner ) ? targetContainer.inner.map( ( column ) => [ ...column ] ) : [ [] ];
+			if ( ! targetContainer.inner[ 0 ] ) targetContainer.inner[ 0 ] = [];
+			targetContainer.inner[ 0 ].push( moving );
+			setLayout( next );
+		}
+		if ( source.kind === 'nested' && target.kind === 'root' && target.container && Array.isArray( source.path ) && source.path.length ) {
+			const next = layout.map( cloneBlockTree );
+			const sourceAddress = source.path[ source.path.length - 1 ];
+			let sourceParent = next[ source.ci ];
+			for ( const step of source.path.slice( 0, -1 ) ) sourceParent = sourceParent?.inner?.[ step.cj ]?.[ step.bi ];
+			const sourceColumn = sourceParent?.inner?.[ sourceAddress.cj ];
+			const moving = sourceColumn?.[ sourceAddress.bi ];
+			const destination = next[ target.index ];
+			if ( ! Array.isArray( sourceColumn ) || ! moving || ! destination || ! isContainerType( destination.type ) ) return;
+			sourceColumn.splice( sourceAddress.bi, 1 );
+			destination.inner = Array.isArray( destination.inner ) ? destination.inner.map( ( column ) => [ ...column ] ) : [ [] ];
+			if ( ! destination.inner[ 0 ] ) destination.inner[ 0 ] = [];
+			destination.inner[ 0 ].push( moving );
+			setLayout( next );
+		}
+	}, [ layout, zoneMap, setLayout, setLayoutAndZoneMap ] );
+
 	// Duplicate a nested widget within its column.
 	const duplicateNestedBlock = useCallback( ( ci, cj, bi ) => {
 		const container = layout[ ci ];
@@ -516,12 +634,18 @@ function Editor( { config, structure: savedStructure } ) {
 	const openStylePanel = useCallback( ( index, point ) => {
 		setSelectedIndex( index );
 		setSelectedNested( null );
+		setPageSettingsOpen( false );
+		setGlobalSettingsOpen( false );
+		setTemplateSettingsOpen( false );
 		setStylePanel( { open: true, point: point || null } );
 	}, [] );
 
 	// Open the style popover for a nested widget.
 	const openStylePanelForNested = useCallback( ( ci, cj, bi, point ) => {
 		setSelectedNested( { ci, cj, bi } );
+		setPageSettingsOpen( false );
+		setGlobalSettingsOpen( false );
+		setTemplateSettingsOpen( false );
 		setStylePanel( { open: true, point: point || null } );
 	}, [] );
 
@@ -544,25 +668,27 @@ function Editor( { config, structure: savedStructure } ) {
 	}
 
 	// Patch a nested widget's settings inside a container column.
-	function updateNestedSettings( ci, cj, bi, key, value ) {
-		const next = [ ...layout ];
-		const container = next[ ci ];
-		if ( ! container || ! isContainerType( container.type ) ) {
-			return;
+	function updateNestedSettings( ci, cj, bi, key, value, path ) {
+		const address = Array.isArray( path ) && path.length ? path : [ { cj, bi } ];
+		const next = layout.map( cloneBlockTree );
+		let parent = next[ ci ];
+		if ( ! parent || ! isContainerType( parent.type ) ) return;
+		for ( let stepIndex = 0; stepIndex < address.length - 1; stepIndex++ ) {
+			const step = address[ stepIndex ];
+			parent = parent.inner?.[ Number( step.cj ) ]?.[ Number( step.bi ) ];
+			if ( ! parent || ! isContainerType( parent.type ) ) return;
 		}
-		const inner = Array.isArray( container.inner ) ? container.inner.map( ( c ) => [ ...c ] ) : [];
-		if ( ! inner[ cj ] || ! inner[ cj ][ bi ] ) {
-			return;
-		}
+		const target = address[ address.length - 1 ];
+		const nestedBlock = parent.inner?.[ Number( target.cj ) ]?.[ Number( target.bi ) ];
+		if ( ! nestedBlock ) return;
 		const patch = key && typeof key === 'object' && ! Array.isArray( key ) ? key : { [ key ]: value };
-		inner[ cj ][ bi ] = {
-			...inner[ cj ][ bi ],
+		parent.inner[ Number( target.cj ) ][ Number( target.bi ) ] = {
+			...nestedBlock,
 			settings: {
-				...( inner[ cj ][ bi ].settings || {} ),
+				...( nestedBlock.settings || {} ),
 				...patch,
 			},
 		};
-		container.inner = inner;
 		setLayout( next, { debounce: true } );
 	}
 
@@ -616,6 +742,9 @@ function Editor( { config, structure: savedStructure } ) {
 			disable_on_mobile: template.settings?.disable_on_mobile || false,
 			respect_theme_templates: template.settings?.respect_theme_templates ?? true,
 		} );
+		if ( template.page_settings ) {
+			setPageSettings( template.page_settings );
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ template ] );
 
@@ -631,13 +760,24 @@ function Editor( { config, structure: savedStructure } ) {
 			conditions,
 			priority: Number( priority ) || 10,
 			settings,
+			...( config.isWordPressPage ? { page_settings: pageSettings } : {} ),
 		} );
 		if ( result ) {
 			setSaveSuccess( true );
 			addToast( __( 'Template saved successfully!', 'xcodesol-page-builder' ), 'success' );
 			setTimeout( () => setSaveSuccess( false ), 2500 );
 		}
-	}, [ clearNotice, saveTemplate, templateId, title, viewType, layout, structure, zoneMap, conditions, priority, settings, addToast ] );
+	}, [ clearNotice, saveTemplate, templateId, title, viewType, layout, structure, zoneMap, conditions, priority, settings, pageSettings, config.isWordPressPage, addToast ] );
+
+	const handleSaveGlobalSettings = useCallback( async () => {
+		try {
+			const saved = await apiFetch( { path: '/xcopb/v1/site-settings', method: 'POST', data: globalSettings } );
+			setGlobalSettings( saved );
+			addToast( __( 'Site settings saved.', 'xcodesol-page-builder' ), 'success' );
+		} catch ( error ) {
+			addToast( error?.message || __( 'Could not save site settings.', 'xcodesol-page-builder' ), 'error' );
+		}
+	}, [ globalSettings, addToast ] );
 
 	// Keyboard shortcuts listener (Save, Undo, Redo, Duplicate, Delete, Esc).
 	useEffect( () => {
@@ -835,6 +975,7 @@ function Editor( { config, structure: savedStructure } ) {
 			return undefined;
 		}
 		const onPointerMove = ( event ) => {
+			if ( activeDrag.data?.current?.navigatorMove ) return;
 			const rootEl = previewWrapRef.current;
 			if ( ! rootEl ) {
 				return;
@@ -855,6 +996,13 @@ function Editor( { config, structure: savedStructure } ) {
 
 	function handleDragEnd( { active, over } ) {
 		setActiveDrag( null );
+		const navigatorSource = active.data.current?.navigatorMove;
+		const navigatorTarget = over?.data?.current?.navigatorMove;
+		if ( navigatorSource ) {
+			if ( navigatorTarget ) reorderNavigatorItem( navigatorSource, navigatorTarget );
+			updateDropGuide( null );
+			return;
+		}
 
 		// Pointer drags commit at the exact slot the insertion line showed;
 		// keyboard / outline-panel drags keep the dnd-kit `over` logic below.
@@ -868,11 +1016,21 @@ function Editor( { config, structure: savedStructure } ) {
 		const fromPalette = active.data.current?.fromPalette;
 		const block = active.data.current?.block;
 
-		// ---- Dropping a new block from palette ----
+			// ---- Dropping a new block from palette ----
 		if ( fromPalette && block ) {
 			const newBlock = { type: block.type, settings: { ...block.defaults } };
 			const next = [ ...layout ];
 			const nextZone = [ ...zoneMap ];
+			const innerTarget = over?.data?.current?.innerContainer;
+			if ( innerTarget && Array.isArray( innerTarget.path ) ) {
+				addBlockToNestedContainerPath( innerTarget, block );
+				return;
+			}
+			if ( typeof over?.id === 'string' && over.id.startsWith( 'inner-' ) ) {
+				const [ ci, cj, bi ] = over.id.slice( 6 ).split( '-' ).map( Number );
+				if ( [ ci, cj, bi ].every( Number.isInteger ) ) addBlockToNestedContainer( ci, cj, bi, block );
+				return;
+			}
 
 			// Was the block dropped into a container column (dropzone or a widget inside it)?
 			if ( typeof over?.id === 'string' && ( over.id.startsWith( 'col-' ) || over.id.startsWith( 'nested-' ) ) ) {
@@ -889,6 +1047,10 @@ function Editor( { config, structure: savedStructure } ) {
 				}
 				return;
 			}
+
+			// When a container is selected, palette drops outside a specific
+			// column still go into that container rather than escaping to the page.
+			if ( addToSelectedContainer( block ) ) return;
 
 			// Was the block dropped over a live canvas zone container?
 			const zoneDrop = (() => {
@@ -939,7 +1101,7 @@ function Editor( { config, structure: savedStructure } ) {
 
 			if ( overIndex >= 0 && overIndex < next.length ) {
 				// If dropped directly onto a container block, insert inside its first column
-				if ( isContainerType( next[ overIndex ].type ) && ! isContainerType( block.type ) ) {
+				if ( isContainerType( next[ overIndex ].type ) ) {
 					addBlockToColumn( overIndex, 0, block );
 					return;
 				}
@@ -1003,6 +1165,11 @@ function Editor( { config, structure: savedStructure } ) {
 		const block = data.block;
 
 		if ( data.fromPalette && block ) {
+			if ( 'inner-container' === guide.kind ) {
+				if ( Array.isArray( guide.path ) ) addBlockToNestedContainerPath( guide, block, guide.slot );
+				else addBlockToNestedContainer( guide.ci, guide.cj, guide.bi, block, guide.slot );
+				return;
+			}
 			if ( 'col' === guide.kind ) {
 				const targetContainer = layout[ guide.ci ];
 				// Flow modes (list/row/grid/masonry/scroll-row) render every stored
@@ -1020,6 +1187,7 @@ function Editor( { config, structure: savedStructure } ) {
 				return;
 			}
 			if ( 'top' === guide.kind ) {
+				if ( addToSelectedContainer( block ) ) return;
 				// Mirror the zone allow-list used by the over-based drop path.
 				const alwaysAllowed = isContainerType( block.type ) || block.type.startsWith( 'xcopb/gb-' ) || block.type.startsWith( 'xcosb/gb-' );
 				const zoneDef = structure?.zones?.find( ( z ) => z.id === guide.zoneId ) || null;
@@ -1226,7 +1394,7 @@ function Editor( { config, structure: savedStructure } ) {
 	// Add a widget (from palette) into a container column, optionally at a
 	// precise slot (the Elementor-style drop position).
 	function addBlockToColumn( containerIndex, colIndex, block, insertSlot ) {
-		const next = [ ...layout ];
+		const next = layout.map( cloneBlockTree );
 		const container = next[ containerIndex ];
 		if ( ! container || ! isContainerType( container.type ) ) {
 			return;
@@ -1248,6 +1416,66 @@ function Editor( { config, structure: savedStructure } ) {
 		setLayout( next );
 		setSelectedIndex( containerIndex );
 		setSelectedNested( { ci: containerIndex, cj: colIndex, bi: at } );
+		setInspectorOpen( true );
+	}
+
+	// A selected container remains the insertion target if the user drops
+	// outside its visible columns. Explicitly dropping on another column still
+	// takes priority in the handlers above.
+	function addToSelectedContainer( block ) {
+		if ( selectedNested ) {
+			const { ci, cj, bi } = selectedNested;
+			const child = layout[ ci ]?.inner?.[ cj ]?.[ bi ];
+			if ( child && isContainerType( child.type ) ) {
+				addBlockToNestedContainer( ci, cj, bi, block );
+				return true;
+			}
+			if ( layout[ ci ] && isContainerType( layout[ ci ].type ) ) {
+				addBlockToColumn( ci, cj, block );
+				return true;
+			}
+		}
+		if ( selectedIndex !== null && layout[ selectedIndex ] && isContainerType( layout[ selectedIndex ].type ) ) {
+			addBlockToColumn( selectedIndex, 0, block );
+			return true;
+		}
+		return false;
+	}
+
+	// Add to the selected nested container itself. The selectedNested address
+	// identifies its parent column and widget, while this helper edits that
+	// child container's own first column without flattening it onto the page.
+	function addBlockToNestedContainer( containerIndex, colIndex, blockIndex, block, insertSlot ) {
+		addBlockToNestedContainerPath( { ci: containerIndex, path: [ { cj: colIndex, bi: blockIndex } ] }, block, insertSlot );
+	}
+
+	function addBlockToNestedContainerPath( target, block, insertSlot ) {
+		const ci = Number( target?.ci );
+		const path = Array.isArray( target?.path ) ? target.path : [];
+		if ( ! Number.isInteger( ci ) || ! path.length ) return;
+		const next = layout.map( cloneBlockTree );
+		let child = next[ ci ];
+		for ( const step of path ) {
+			child = child?.inner?.[ Number( step.cj ) ]?.[ Number( step.bi ) ];
+			if ( ! child || ! isContainerType( child.type ) ) return;
+		}
+		child.inner = Array.isArray( child.inner ) ? child.inner.map( ( column ) => [ ...column ] ) : [ [] ];
+		const inner = child.inner;
+		const newBlock = {
+			type: block.type,
+			settings: { ...block.defaults },
+			...( isContainerType( block.type ) ? { inner: [ [] ] } : {} ),
+		};
+		const columnIndex = Math.max( 0, Number( target?.columnIndex ) || 0 );
+		while ( inner.length <= columnIndex ) inner.push( [] );
+		const at = typeof insertSlot === 'number' && insertSlot >= 0
+			? Math.min( insertSlot, inner[ columnIndex ].length )
+			: inner[ columnIndex ].length;
+		inner[ columnIndex ].splice( at, 0, newBlock );
+		child.inner = inner;
+		setLayout( next );
+		setSelectedIndex( ci );
+		setSelectedNested( path.length ? { ci, cj: path[ 0 ].cj, bi: path[ 0 ].bi } : null );
 		setInspectorOpen( true );
 	}
 
@@ -1397,9 +1625,12 @@ function Editor( { config, structure: savedStructure } ) {
 
 	let activeNestedBlock = null;
 	let activeNestedMeta = null;
-	if ( selectedNested && layout[ selectedNested.ci ]?.inner?.[ selectedNested.cj ]?.[ selectedNested.bi ] ) {
-		activeNestedBlock = layout[ selectedNested.ci ].inner[ selectedNested.cj ][ selectedNested.bi ];
-		activeNestedMeta = getBlockInfo( activeNestedBlock.type );
+	if ( selectedNested && layout[ selectedNested.ci ] ) {
+		const path = Array.isArray( selectedNested.path ) && selectedNested.path.length ? selectedNested.path : [ selectedNested ];
+		let current = layout[ selectedNested.ci ];
+		for ( const step of path ) current = current?.inner?.[ Number( step.cj ) ]?.[ Number( step.bi ) ];
+		activeNestedBlock = current || null;
+		activeNestedMeta = activeNestedBlock ? getBlockInfo( activeNestedBlock.type ) : null;
 	}
 
 	return (
@@ -1410,7 +1641,7 @@ function Editor( { config, structure: savedStructure } ) {
 			onDragEnd={ handleDragEnd }
 			onDragCancel={ handleDragCancel }
 		>
-			<div className="xsb-app xsb-app--editor">
+			<div className="xsb-app xsb-app--editor" style={ { '--xcopb-primary': globalSettings.global_colors?.primary || '#6c63ff', '--xcopb-secondary': globalSettings.global_colors?.secondary || '#292d50', '--xcopb-text': globalSettings.global_colors?.text || '#172033', '--xcopb-accent': globalSettings.global_colors?.accent || '#18a0fb', '--xcopb-background': globalSettings.global_colors?.background || '#ffffff' } }>
 				<header className="xsb-topbar">
 					{/* Left cluster: Back, Title, Undo/Redo */}
 					<div className="xsb-topbar-cluster xsb-topbar-cluster--left">
@@ -1461,35 +1692,39 @@ function Editor( { config, structure: savedStructure } ) {
 
 					{/* Center cluster: Device switcher & Zoom */}
 					<div className="xsb-topbar-cluster xsb-topbar-cluster--center">
-						<div className="xsb-device-switcher" role="group" aria-label={ __( 'Preview device', 'xcodesol-page-builder' ) }>
-							<button
-								type="button"
-								className={ `xsb-device-btn${ previewDevice === 'desktop' ? ' is-active' : '' }` }
-								onClick={ () => setPreviewDevice( 'desktop' ) }
-								title={ __( 'Desktop view (100%)', 'xcodesol-page-builder' ) }
-							>
-								<IconDesktop width={ 15 } height={ 15 } />
-								<span className="xsb-device-label">{ __( 'Desktop', 'xcodesol-page-builder' ) }</span>
-							</button>
-							<button
-								type="button"
-								className={ `xsb-device-btn${ previewDevice === 'tablet' ? ' is-active' : '' }` }
-								onClick={ () => setPreviewDevice( 'tablet' ) }
-								title={ __( 'Tablet view (768px)', 'xcodesol-page-builder' ) }
-							>
-								<IconTablet width={ 15 } height={ 15 } />
-								<span className="xsb-device-label">{ __( 'Tablet', 'xcodesol-page-builder' ) }</span>
-							</button>
-							<button
-								type="button"
-								className={ `xsb-device-btn${ previewDevice === 'mobile' ? ' is-active' : '' }` }
-								onClick={ () => setPreviewDevice( 'mobile' ) }
-								title={ __( 'Mobile view (375px)', 'xcodesol-page-builder' ) }
-							>
-								<IconMobile width={ 15 } height={ 15 } />
-								<span className="xsb-device-label">{ __( 'Mobile', 'xcodesol-page-builder' ) }</span>
-							</button>
-						</div>
+						<Dropdown
+							popoverProps={ { placement: 'bottom', className: 'xsb-device-popover' } }
+							renderToggle={ ( { isOpen, onToggle } ) => (
+								<button
+									type="button"
+									className="xsb-device-menu-toggle"
+									aria-haspopup="menu"
+									aria-expanded={ isOpen }
+									aria-label={ sprintf( __( 'Preview device: %s', 'xcodesol-page-builder' ), previewDevice ) }
+									title={ __( 'Choose preview device', 'xcodesol-page-builder' ) }
+									onClick={ onToggle }
+								>
+									{ previewDevice === 'tablet' ? <IconTablet width={ 17 } height={ 17 } /> : previewDevice === 'mobile' ? <IconMobile width={ 17 } height={ 17 } /> : <IconDesktop width={ 17 } height={ 17 } /> }
+									<span className="xsb-device-menu-toggle__label">{ previewDevice === 'tablet' ? __( 'Tablet', 'xcodesol-page-builder' ) : previewDevice === 'mobile' ? __( 'Mobile', 'xcodesol-page-builder' ) : __( 'Desktop', 'xcodesol-page-builder' ) }</span>
+									<IconChevronDown width={ 12 } height={ 12 } />
+								</button>
+							) }
+							renderContent={ ( { onClose } ) => (
+								<div className="xsb-device-menu" role="menu" aria-label={ __( 'Preview device', 'xcodesol-page-builder' ) }>
+									{ [
+										{ id: 'desktop', label: __( 'Desktop', 'xcodesol-page-builder' ), width: __( 'Full width', 'xcodesol-page-builder' ), Icon: IconDesktop },
+										{ id: 'tablet', label: __( 'Tablet', 'xcodesol-page-builder' ), width: '768px', Icon: IconTablet },
+										{ id: 'mobile', label: __( 'Mobile', 'xcodesol-page-builder' ), width: '375px', Icon: IconMobile },
+									].map( ( item ) => (
+										<button key={ item.id } type="button" role="menuitemradio" aria-checked={ previewDevice === item.id } className={ `xsb-device-menu__item${ previewDevice === item.id ? ' is-active' : '' }` } onClick={ () => { setPreviewDevice( item.id ); onClose(); } }>
+											<span className="xsb-device-menu__icon"><item.Icon width={ 16 } height={ 16 } /></span>
+											<span className="xsb-device-menu__name">{ item.label }</span>
+											<span className="xsb-device-menu__width">{ item.width }</span>
+										</button>
+									) ) }
+								</div>
+							) }
+						/>
 
 						{/* Zoom Controls */}
 						<div className="xsb-zoom-controls">
@@ -1528,14 +1763,34 @@ function Editor( { config, structure: savedStructure } ) {
 
 					{/* Right cluster: Command Palette, Theme, Shortcuts, Preview, Save */}
 					<div className="xsb-topbar-cluster xsb-topbar-cluster--right">
-						<button
-							type="button"
-							className={ `xsb-topbar-icon-btn${ showGuides ? ' is-active' : '' }` }
+						<Dropdown
+							popoverProps={ { placement: 'bottom-end', className: 'xsb-topbar-menu' } }
+							renderToggle={ ( { isOpen, onToggle } ) => <button type="button" className={ `xsb-topbar-icon-btn${ isOpen || pageSettingsOpen || templateSettingsOpen ? ' is-active' : '' }` } title={ __( 'Settings', 'xcodesol-page-builder' ) } aria-label={ __( 'Settings', 'xcodesol-page-builder' ) } aria-expanded={ isOpen } onClick={ onToggle }><IconSettings width={ 15 } height={ 15 } /></button> }
+							renderContent={ ( { onClose } ) => <MenuGroup label={ __( 'Editor Settings', 'xcodesol-page-builder' ) }>
+								{ config.isWordPressPage ? <MenuItem icon="admin-page" onClick={ () => { onClose(); setPageSettingsOpen( true ); setGlobalSettingsOpen( false ); setTemplateSettingsOpen( false ); setInspectorOpen( true ); } }>{ __( 'Page Settings', 'xcodesol-page-builder' ) }</MenuItem> : <MenuItem icon="admin-generic" onClick={ () => { onClose(); setTemplateSettingsOpen( true ); setPageSettingsOpen( false ); setGlobalSettingsOpen( false ); setInspectorOpen( true ); } }>{ __( 'Template Rules & Settings', 'xcodesol-page-builder' ) }</MenuItem> }
+								{ config.canManageSiteSettings && <MenuItem icon="admin-appearance" onClick={ () => { onClose(); setGlobalSettingsOpen( true ); setPageSettingsOpen( false ); setTemplateSettingsOpen( false ); setInspectorOpen( true ); } }>{ __( 'Site Settings', 'xcodesol-page-builder' ) }</MenuItem> }
+							</MenuGroup> }
+						/>
+						{ config.canManageSiteSettings && <button type="button" className={ `xsb-topbar-icon-btn${ globalSettingsOpen ? ' is-active' : '' }` } title={ __( 'Global Styles', 'xcodesol-page-builder' ) } aria-label={ __( 'Global Styles', 'xcodesol-page-builder' ) } onClick={ () => { setGlobalSettingsOpen( true ); setPageSettingsOpen( false ); setTemplateSettingsOpen( false ); setInspectorOpen( true ); } }><IconPalette width={ 15 } height={ 15 } /></button> }
+						{ /* Template display conditions and advanced template behavior. */ }
+		<button
+			type="button"
+			className={ `xsb-topbar-icon-btn${ showGuides ? ' is-active' : '' }` }
 							onClick={ () => setShowGuides( ( v ) => ! v ) }
 							title={ __( 'Toggle grid layout guides', 'xcodesol-page-builder' ) }
 						>
-							<IconGridGuides width={ 15 } height={ 15 } />
-						</button>
+			<IconGridGuides width={ 15 } height={ 15 } />
+		</button>
+		<button
+			type="button"
+			className={ `xsb-topbar-icon-btn${ navigatorOpen ? ' is-active' : '' }` }
+			onClick={ () => setNavigatorOpen( ( open ) => ! open ) }
+			title={ __( 'Navigator', 'xcodesol-page-builder' ) }
+			aria-label={ __( 'Navigator', 'xcodesol-page-builder' ) }
+			aria-expanded={ navigatorOpen }
+		>
+			<IconLayers width={ 15 } height={ 15 } />
+		</button>
 
 						<button
 							type="button"
@@ -1619,17 +1874,6 @@ function Editor( { config, structure: savedStructure } ) {
 							} }
 						/>
 
-						<button
-							type="button"
-							className={ `xsb-topbar-icon-btn${ templateSettingsOpen ? ' is-active' : '' }` }
-							title={ __( 'Template Rules & Settings', 'xcodesol-page-builder' ) }
-							onClick={ () => {
-								setTemplateSettingsOpen( ( v ) => ! v );
-								setInspectorOpen( true );
-							} }
-						>
-							<IconSettings width={ 15 } height={ 15 } />
-						</button>
 
 						<button
 							type="button"
@@ -1669,15 +1913,19 @@ function Editor( { config, structure: savedStructure } ) {
 					<button
 						type="button"
 						className={ `xsb-edge-toggle xsb-edge-toggle--left${ sidebarOpen ? ' is-collapsed' : ' is-expanded' }` }
-						onClick={ () => setSidebarOpen( ( v ) => ! v ) }
+						onClick={ () => { setSidebarPinned( false ); setSidebarOpen( ( v ) => ! v ); } }
 						title={ __( 'Toggle left panel', 'xcodesol-page-builder' ) }
 						aria-label={ __( 'Toggle left panel', 'xcodesol-page-builder' ) }
 					>
 						{ sidebarOpen ? <IconChevronLeft size={ 14 } /> : <IconChevronRight size={ 14 } /> }
 					</button>
 
-					{ sidebarOpen && (
-						<aside className="xsb-sidebar">
+					<aside
+						className={ `xsb-sidebar${ sidebarOpen ? ' is-expanded' : ' is-rail' }` }
+						onMouseEnter={ () => setSidebarOpen( true ) }
+						onMouseLeave={ () => { if ( ! sidebarPinned ) setSidebarOpen( false ); } }
+						onFocusCapture={ () => setSidebarOpen( true ) }
+					>
 							<BlockPalette
 								viewType={ viewType }
 								structure={ structure }
@@ -1690,16 +1938,23 @@ function Editor( { config, structure: savedStructure } ) {
 								onMoveBlockIndex={ moveBlock }
 								onDeleteBlockIndex={ removeBlockAtIndex }
 								onAdd={ ( block ) => {
-									// If a nested column slot is active, insert inside it
-									if ( selectedNested && ! isContainerType( block.type ) ) {
+									// If a nested container itself is active, add inside that
+									// container. Otherwise add alongside the selected child in its
+									// parent column. Containers follow the same nesting rule.
+									if ( selectedNested ) {
 										const { ci, cj } = selectedNested;
+										const selectedChild = layout[ ci ]?.inner?.[ cj ]?.[ selectedNested.bi ];
+											if ( selectedChild && isContainerType( selectedChild.type ) ) {
+											addBlockToNestedContainer( ci, cj, selectedNested.bi, block );
+											return;
+										}
 										if ( layout[ ci ] && isContainerType( layout[ ci ].type ) ) {
 											addBlockToColumn( ci, cj, block );
 											return;
 										}
 									}
 									// If a container itself is selected, insert into its first column
-									if ( selectedIndex !== null && layout[ selectedIndex ] && isContainerType( layout[ selectedIndex ].type ) && ! isContainerType( block.type ) ) {
+									if ( selectedIndex !== null && layout[ selectedIndex ] && isContainerType( layout[ selectedIndex ].type ) ) {
 										addBlockToColumn( selectedIndex, 0, block );
 										return;
 									}
@@ -1717,10 +1972,9 @@ function Editor( { config, structure: savedStructure } ) {
 								} }
 								onAddPreset={ handleAddPreset }
 							/>
-						</aside>
-					) }
+					</aside>
 
-					<main className={ `xsb-canvas${ showGuides ? ' has-guides-overlay' : '' }` }>
+					<main className={ `xsb-canvas${ showGuides ? ' has-guides-overlay' : '' }${ previewDevice !== 'desktop' ? ' xsb-canvas--responsive' : '' }` }>
 						<div className={ `xsb-preview xsb-preview--live xsb-preview--device-${ previewDevice }` }>
 							<div
 								className="xsb-preview-frame-wrap"
@@ -1733,8 +1987,9 @@ function Editor( { config, structure: savedStructure } ) {
 							>
 								{ previewDevice === 'mobile' ? (
 									<div className="xsb-device-mockup xsb-device-mockup--mobile">
-										<div className="xsb-device-mockup__notch"><span /></div>
 										<PreviewCanvas
+											pageSettings={ pageSettings }
+											globalSettings={ globalSettings }
 											structure={ structure }
 											layout={ layout }
 											zoneMap={ zoneMap }
@@ -1758,16 +2013,19 @@ function Editor( { config, structure: savedStructure } ) {
 											onDuplicateNested={ duplicateNestedBlock }
 											onOpenStyle={ openStylePanel }
 											onOpenStyleNested={ openStylePanelForNested }
-											callbacks={ {
-												onAddToColumn: addBlockToColumn,
-												onRemoveFromColumn: removeBlockFromColumn,
-												onAddPreset: handleAddPreset,
-											} }
+							callbacks={ {
+								onAddToColumn: addBlockToColumn,
+								onRemoveFromColumn: removeBlockFromColumn,
+								onAddPreset: handleAddPreset,
+														onOpenWidgetPanel: openWidgetPanel,
+							} }
 										/>
 									</div>
 								) : previewDevice === 'tablet' ? (
 									<div className="xsb-device-mockup xsb-device-mockup--tablet">
 										<PreviewCanvas
+											pageSettings={ pageSettings }
+											globalSettings={ globalSettings }
 											structure={ structure }
 											layout={ layout }
 											zoneMap={ zoneMap }
@@ -1791,15 +2049,18 @@ function Editor( { config, structure: savedStructure } ) {
 											onDuplicateNested={ duplicateNestedBlock }
 											onOpenStyle={ openStylePanel }
 											onOpenStyleNested={ openStylePanelForNested }
-											callbacks={ {
-												onAddToColumn: addBlockToColumn,
-												onRemoveFromColumn: removeBlockFromColumn,
-												onAddPreset: handleAddPreset,
-											} }
+							callbacks={ {
+								onAddToColumn: addBlockToColumn,
+								onRemoveFromColumn: removeBlockFromColumn,
+								onAddPreset: handleAddPreset,
+														onOpenWidgetPanel: openWidgetPanel,
+							} }
 										/>
 									</div>
 								) : (
 									<PreviewCanvas
+										pageSettings={ pageSettings }
+										globalSettings={ globalSettings }
 										structure={ structure }
 										layout={ layout }
 										zoneMap={ zoneMap }
@@ -1823,15 +2084,30 @@ function Editor( { config, structure: savedStructure } ) {
 										onDuplicateNested={ duplicateNestedBlock }
 										onOpenStyle={ openStylePanel }
 										onOpenStyleNested={ openStylePanelForNested }
-										callbacks={ {
-											onAddToColumn: addBlockToColumn,
-											onRemoveFromColumn: removeBlockFromColumn,
-											onAddPreset: handleAddPreset,
-										} }
+						callbacks={ {
+							onAddToColumn: addBlockToColumn,
+							onRemoveFromColumn: removeBlockFromColumn,
+							onAddPreset: handleAddPreset,
+														onOpenWidgetPanel: openWidgetPanel,
+						} }
 									/>
 								) }
 							</div>
 						</div>
+						{ navigatorOpen && (
+							<Navigator
+								layout={ layout }
+								selectedIndex={ selectedIndex }
+								selectedNested={ selectedNested }
+								onSelect={ selectBlock }
+								onSelectNested={ selectNestedBlock }
+								onAddContainerInside={ ( ci, path ) => path?.length ? addBlockToNestedContainerPath( { ci, path }, CONTAINER_BLOCKS[ 0 ] ) : addBlockToColumn( ci, 0, CONTAINER_BLOCKS[ 0 ] ) }
+								 onMoveBlock={ moveBlock }
+								 onMoveNested={ moveNestedBlock }
+								 onReorder={ reorderNavigatorItem }
+								onClose={ () => setNavigatorOpen( false ) }
+							/>
+						) }
 					</main>
 
 					<Inspector
@@ -1841,7 +2117,7 @@ function Editor( { config, structure: savedStructure } ) {
 						setLayout={ setLayout }
 						onUpdateNested={ updateNestedSettings }
 						onSelectBlock={ selectBlock }
-						onSelectNested={ setSelectedNested }
+						onSelectNested={ handleCanvasSelectNested }
 						onDuplicate={ ( selectedIndex !== null || selectedNested !== null ) ? duplicateBlock : null }
 						onDelete={ ( selectedIndex !== null || selectedNested !== null ) ? () => {
 							if ( selectedNested ) {
@@ -1853,6 +2129,18 @@ function Editor( { config, structure: savedStructure } ) {
 						viewOptions={ viewOptions }
 						viewType={ viewType }
 						showTemplateSettings={ templateSettingsOpen }
+						showPageSettings={ pageSettingsOpen && !! config.isWordPressPage }
+						showGlobalSettings={ globalSettingsOpen }
+						globalSettings={ globalSettings }
+						customPalette={ ( globalSettings.custom_colors || [] ).map( ( color ) => color.value ) }
+						setGlobalSettings={ setGlobalSettings }
+						globalFontOptions={ config.fontOptions || [] }
+						onSaveGlobalSettings={ handleSaveGlobalSettings }
+						pageSettings={ pageSettings }
+						setPageSettings={ setPageSettings }
+						pageTemplateOptions={ config.pageTemplateOptions || [] }
+						title={ title }
+						setTitle={ setTitle }
 						setViewType={ handleViewTypeChange }
 						structure={ structure }
 						open={ inspectorOpen }
@@ -1955,7 +2243,9 @@ function Editor( { config, structure: savedStructure } ) {
 				isDark={ isDark }
 				onSetDevice={ setPreviewDevice }
 				onOpenSettings={ () => {
-					setTemplateSettingsOpen( true );
+					setPageSettingsOpen( !! config.isWordPressPage );
+					setTemplateSettingsOpen( ! config.isWordPressPage );
+					setGlobalSettingsOpen( false );
 					setInspectorOpen( true );
 				} }
 			/>

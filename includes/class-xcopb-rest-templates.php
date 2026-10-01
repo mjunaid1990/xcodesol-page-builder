@@ -80,6 +80,10 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	}
 
 	public function register_routes() {
+		register_rest_route( $this->namespace, '/site-settings', array(
+			array( 'methods' => WP_REST_Server::READABLE, 'callback' => array( $this, 'get_site_settings' ), 'permission_callback' => array( $this, 'check_site_settings_permissions' ) ),
+			array( 'methods' => WP_REST_Server::EDITABLE, 'callback' => array( $this, 'update_site_settings' ), 'permission_callback' => array( $this, 'check_site_settings_permissions' ) ),
+		) );
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,
@@ -156,6 +160,132 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			}
 		}
 		return current_user_can( 'edit_pages' ) || current_user_can( 'edit_posts' ) || current_user_can( 'manage_options' );
+	}
+
+	public function check_site_settings_permissions() { return current_user_can( 'manage_options' ); }
+
+	public function get_site_settings() {
+		$theme = function_exists( 'wp_get_global_settings' ) ? wp_get_global_settings() : array();
+		$theme_styles = function_exists( 'wp_get_global_styles' ) ? wp_get_global_styles() : array();
+		$theme_colors = isset( $theme['color']['palette']['theme'] ) && is_array( $theme['color']['palette']['theme'] ) ? $theme['color']['palette']['theme'] : array();
+		$pick = static function ( $needles, $fallback ) use ( $theme_colors ) { foreach ( $theme_colors as $item ) { $name = strtolower( isset( $item['slug'] ) ? $item['slug'] : ( isset( $item['name'] ) ? $item['name'] : '' ) ); if ( $name && false !== array_filter( $needles, static function ( $needle ) use ( $name ) { return false !== strpos( $name, $needle ); } ) && ! empty( $item['color'] ) ) { return $item['color']; } } return $fallback; };
+		$body_font = isset( $theme_styles['typography']['fontFamily'] ) ? $theme_styles['typography']['fontFamily'] : ( isset( $theme['typography']['fontFamilies']['theme'][0]['fontFamily'] ) ? $theme['typography']['fontFamilies']['theme'][0]['fontFamily'] : 'system-ui' );
+		$heading_font = isset( $theme_styles['elements']['heading']['typography']['fontFamily'] ) ? $theme_styles['elements']['heading']['typography']['fontFamily'] : $body_font;
+		$theme_text = isset( $theme_styles['color']['text'] ) ? $theme_styles['color']['text'] : ( get_theme_mod( 'body_text_color', get_theme_mod( 'text_color', '#172033' ) ) );
+		$theme_background = isset( $theme_styles['color']['background'] ) ? $theme_styles['color']['background'] : ( get_theme_mod( 'background_color', '#ffffff' ) ?: '#ffffff' );
+		$theme_type = isset( $theme_styles['typography'] ) && is_array( $theme_styles['typography'] ) ? $theme_styles['typography'] : array();
+		$theme_button = isset( $theme_styles['elements']['button'] ) && is_array( $theme_styles['elements']['button'] ) ? $theme_styles['elements']['button'] : array();
+		$theme_body_px = isset( $theme_type['fontSize'] ) ? (float) $theme_type['fontSize'] : 16;
+		if ( $theme_body_px < 10 || $theme_body_px > 48 ) { $theme_body_px = 16; }
+		$theme_button_text = isset( $theme_button['color']['text'] ) ? $theme_button['color']['text'] : '#ffffff';
+		$theme_button_background = isset( $theme_button['color']['background'] ) ? $theme_button['color']['background'] : $pick( array( 'primary', 'accent' ), '#6c63ff' );
+		$defaults = array(
+			'global_colors' => array( 'primary' => $pick( array( 'primary', 'accent' ), get_theme_mod( 'primary_color', get_theme_mod( 'accent_color', '#6c63ff' ) ) ), 'secondary' => $pick( array( 'secondary' ), get_theme_mod( 'secondary_color', '#292d50' ) ), 'text' => $theme_text, 'accent' => $pick( array( 'accent', 'tertiary' ), get_theme_mod( 'accent_color', '#18a0fb' ) ), 'background' => $theme_background ),
+			'global_fonts' => array( 'body' => $body_font, 'heading' => $heading_font ),
+			'typography' => array( 'body_size' => $theme_body_px, 'body_weight' => isset( $theme_type['fontWeight'] ) ? (string) $theme_type['fontWeight'] : '400', 'line_height' => isset( $theme_type['lineHeight'] ) ? (float) $theme_type['lineHeight'] : 1.6, 'paragraph_spacing' => 16 ),
+			'button_style' => array( 'text' => $theme_button_text, 'background' => $theme_button_background, 'hover_text' => '#ffffff', 'hover_background' => '#5148d8', 'gradient_enabled' => false, 'hover_gradient_enabled' => false, 'gradient' => array(), 'hover_gradient' => array(), 'size' => 'medium', 'font_size' => 16, 'radius' => array( 'top' => isset( $theme_button['border']['radius'] ) && is_numeric( $theme_button['border']['radius'] ) ? (float) $theme_button['border']['radius'] : 6, 'right' => isset( $theme_button['border']['radius'] ) && is_numeric( $theme_button['border']['radius'] ) ? (float) $theme_button['border']['radius'] : 6, 'bottom' => isset( $theme_button['border']['radius'] ) && is_numeric( $theme_button['border']['radius'] ) ? (float) $theme_button['border']['radius'] : 6, 'left' => isset( $theme_button['border']['radius'] ) && is_numeric( $theme_button['border']['radius'] ) ? (float) $theme_button['border']['radius'] : 6, 'unit' => 'px', 'isLinked' => true ), 'border_width' => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0, 'unit' => 'px', 'isLinked' => true ), 'border_style' => 'solid', 'border_color' => '', 'padding' => array( 'top' => 12, 'right' => 24, 'bottom' => 12, 'left' => 24, 'unit' => 'px', 'isLinked' => false ), 'padding_y' => 12, 'padding_x' => 24, 'shadow_preset' => 'none', 'shadow' => 'none' ),
+			'background_image' => array(), 'background_image_style' => array( 'size' => 'cover', 'repeat' => 'no-repeat', 'position' => 'center center', 'attachment' => 'scroll', 'overlay' => '', 'overlay_opacity' => 0 ),
+			'custom_colors' => array(), 'custom_css' => '',
+		);
+		$saved = get_option( 'xcopb_site_settings', array() );
+		return rest_ensure_response( is_array( $saved ) ? array_replace_recursive( $defaults, $saved ) : $defaults );
+	}
+
+	public function update_site_settings( WP_REST_Request $request ) {
+		$incoming = $request->get_json_params();
+		if ( ! is_array( $incoming ) ) { $incoming = array(); }
+		$current = $this->get_site_settings()->get_data();
+		$colors = isset( $incoming['global_colors'] ) && is_array( $incoming['global_colors'] ) ? $incoming['global_colors'] : array();
+		$fonts = isset( $incoming['global_fonts'] ) && is_array( $incoming['global_fonts'] ) ? $incoming['global_fonts'] : array();
+		foreach ( array( 'primary', 'secondary', 'text', 'accent', 'background' ) as $key ) {
+			if ( isset( $colors[ $key ] ) ) { $current['global_colors'][ $key ] = $this->sanitize_builder_color( $colors[ $key ] ) ?: $current['global_colors'][ $key ]; }
+		}
+		foreach ( array( 'body', 'heading' ) as $key ) {
+			if ( isset( $fonts[ $key ] ) ) { $current['global_fonts'][ $key ] = substr( sanitize_text_field( $fonts[ $key ] ), 0, 120 ); }
+		}
+		if ( isset( $incoming['custom_colors'] ) && is_array( $incoming['custom_colors'] ) ) {
+			$current['custom_colors'] = array();
+			foreach ( array_slice( $incoming['custom_colors'], 0, 40 ) as $item ) {
+				if ( ! is_array( $item ) ) { continue; }
+				$name = sanitize_text_field( isset( $item['name'] ) ? $item['name'] : '' );
+				$value = $this->sanitize_builder_color( isset( $item['value'] ) ? $item['value'] : '' );
+				if ( '' === $name || ! $value ) { continue; }
+				$id = sanitize_key( isset( $item['id'] ) ? $item['id'] : '' );
+				$current['custom_colors'][] = array( 'id' => $id ? $id : 'color-' . wp_generate_password( 8, false ), 'name' => substr( $name, 0, 60 ), 'value' => $value );
+			}
+		}
+		if ( isset( $incoming['typography'] ) && is_array( $incoming['typography'] ) ) {
+			foreach ( array( 'body_size' => array( 10, 48 ), 'line_height' => array( 1, 3 ), 'paragraph_spacing' => array( 0, 100 ) ) as $key => $range ) {
+				if ( isset( $incoming['typography'][ $key ] ) && is_numeric( $incoming['typography'][ $key ] ) ) { $current['typography'][ $key ] = min( $range[1], max( $range[0], (float) $incoming['typography'][ $key ] ) ); }
+			}
+			if ( isset( $incoming['typography']['body_weight'] ) && in_array( (string) $incoming['typography']['body_weight'], array( '300', '400', '500', '600', '700' ), true ) ) { $current['typography']['body_weight'] = (string) $incoming['typography']['body_weight']; }
+		}
+		if ( isset( $incoming['button_style'] ) && is_array( $incoming['button_style'] ) ) {
+			foreach ( array( 'text', 'background', 'hover_text', 'hover_background' ) as $key ) { if ( isset( $incoming['button_style'][ $key ] ) && ( $color = $this->sanitize_builder_color( $incoming['button_style'][ $key ] ) ) ) { $current['button_style'][ $key ] = $color; } }
+			foreach ( array( 'border_color' ) as $key ) { if ( isset( $incoming['button_style'][ $key ] ) ) { $current['button_style'][ $key ] = $this->sanitize_builder_color( $incoming['button_style'][ $key ] ); } }
+			foreach ( array( 'radius' => array( 0, 100 ), 'border_width' => array( 0, 20 ), 'padding' => array( 0, 120 ) ) as $key => $range ) { if ( isset( $incoming['button_style'][ $key ] ) ) { $current['button_style'][ $key ] = $this->sanitize_site_box_values( $incoming['button_style'][ $key ], $range, $current['button_style'][ $key ] ?? 0 ); } }
+			foreach ( array( 'padding_y' => array( 0, 80 ), 'padding_x' => array( 0, 120 ), 'font_size' => array( 8, 48 ) ) as $key => $range ) { if ( isset( $incoming['button_style'][ $key ] ) && is_numeric( $incoming['button_style'][ $key ] ) ) { $current['button_style'][ $key ] = min( $range[1], max( $range[0], (float) $incoming['button_style'][ $key ] ) ); } }
+			foreach ( array( 'gradient_enabled', 'hover_gradient_enabled' ) as $key ) { if ( isset( $incoming['button_style'][ $key ] ) ) { $current['button_style'][ $key ] = (bool) $incoming['button_style'][ $key ]; } }
+			if ( isset( $incoming['button_style']['size'] ) && in_array( $incoming['button_style']['size'], array( 'xs', 'small', 'medium', 'large', 'xl', 'custom' ), true ) ) { $current['button_style']['size'] = $incoming['button_style']['size']; }
+			if ( isset( $incoming['button_style']['border_style'] ) && in_array( $incoming['button_style']['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ) { $current['button_style']['border_style'] = $incoming['button_style']['border_style']; }
+			if ( isset( $incoming['button_style']['shadow_preset'] ) && in_array( $incoming['button_style']['shadow_preset'], array( 'none', 'soft', 'medium', 'strong', 'custom' ), true ) ) { $current['button_style']['shadow_preset'] = $incoming['button_style']['shadow_preset']; }
+			if ( isset( $incoming['button_style']['shadow'] ) && ( $shadow = $this->sanitize_site_box_shadow( $incoming['button_style']['shadow'] ) ) !== false ) { $current['button_style']['shadow'] = $shadow; }
+			foreach ( array( 'gradient', 'hover_gradient' ) as $key ) { if ( isset( $incoming['button_style'][ $key ] ) && is_array( $incoming['button_style'][ $key ] ) ) { $current['button_style'][ $key ] = $this->sanitize_site_gradient( $incoming['button_style'][ $key ] ); } }
+		}
+		if ( isset( $incoming['background_image'] ) ) { $current['background_image'] = $this->sanitize_site_background_image( $incoming['background_image'] ); }
+		if ( isset( $incoming['background_image_style'] ) && is_array( $incoming['background_image_style'] ) ) {
+			$style = $incoming['background_image_style'];
+			foreach ( array( 'size' => array( 'cover', 'contain', 'auto' ), 'repeat' => array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y' ), 'position' => array( 'center center', 'center top', 'center bottom', 'left center', 'right center', 'left top', 'right top', 'left bottom', 'right bottom' ), 'attachment' => array( 'scroll', 'fixed' ) ) as $key => $allowed ) { if ( isset( $style[ $key ] ) && in_array( $style[ $key ], $allowed, true ) ) { $current['background_image_style'][ $key ] = $style[ $key ]; } }
+			if ( isset( $style['overlay'] ) && ( $overlay = $this->sanitize_builder_color( $style['overlay'] ) ) ) { $current['background_image_style']['overlay'] = $overlay; }
+			if ( isset( $style['overlay_opacity'] ) && is_numeric( $style['overlay_opacity'] ) ) { $current['background_image_style']['overlay_opacity'] = min( 100, max( 0, (int) $style['overlay_opacity'] ) ); }
+		}
+		if ( isset( $incoming['custom_css'] ) ) {
+			$current['custom_css'] = substr( wp_strip_all_tags( str_ireplace( '</style', '', (string) $incoming['custom_css'] ) ), 0, 30000 );
+		}
+		update_option( 'xcopb_site_settings', $current, false );
+		return rest_ensure_response( $current );
+	}
+
+	private function sanitize_builder_color( $value ) {
+		$value = trim( (string) $value );
+		$hex = sanitize_hex_color( $value );
+		if ( $hex ) { return $hex; }
+		if ( preg_match( '/^(?:rgba?|hsla?)\(\s*[0-9.%+\-\s,\/]+\)$/i', $value ) || preg_match( '/^(?:transparent|currentcolor|[a-z]{3,20})$/i', $value ) ) { return $value; }
+		return '';
+	}
+
+	private function sanitize_site_gradient( $gradient ) {
+		$type = isset( $gradient['type'] ) && 'radial' === $gradient['type'] ? 'radial' : 'linear';
+		$color_a = $this->sanitize_builder_color( isset( $gradient['colorA'] ) ? $gradient['colorA'] : '' );
+		$color_b = $this->sanitize_builder_color( isset( $gradient['colorB'] ) ? $gradient['colorB'] : '' );
+		if ( ! $color_a || ! $color_b ) { return array(); }
+		return array( 'type' => $type, 'angle' => isset( $gradient['angle'] ) && is_numeric( $gradient['angle'] ) ? min( 360, max( 0, (int) $gradient['angle'] ) ) : 90, 'colorA' => $color_a, 'colorB' => $color_b, 'posA' => isset( $gradient['posA'] ) && is_numeric( $gradient['posA'] ) ? min( 100, max( 0, (int) $gradient['posA'] ) ) : 0, 'posB' => isset( $gradient['posB'] ) && is_numeric( $gradient['posB'] ) ? min( 100, max( 0, (int) $gradient['posB'] ) ) : 100 );
+	}
+
+	private function sanitize_site_box_shadow( $shadow ) {
+		$shadow = trim( (string) $shadow );
+		if ( 'none' === $shadow || '' === $shadow ) { return $shadow; }
+		if ( strlen( $shadow ) > 180 || preg_match( '/[;{}<>]|url\s*\(|var\s*\(/i', $shadow ) || ! preg_match( '/^[\w\s#(),.%+\/-]+$/', $shadow ) ) { return false; }
+		return $shadow;
+	}
+
+	private function sanitize_site_box_values( $value, $range, $fallback = 0 ) {
+		$previous = is_array( $fallback ) ? $fallback : array( 'top' => $fallback, 'right' => $fallback, 'bottom' => $fallback, 'left' => $fallback, 'unit' => 'px', 'isLinked' => true );
+		if ( is_numeric( $value ) ) { $number = min( $range[1], max( $range[0], (float) $value ) ); return array( 'top' => $number, 'right' => $number, 'bottom' => $number, 'left' => $number, 'unit' => 'px', 'isLinked' => true ); }
+		if ( ! is_array( $value ) ) { return $previous; }
+		$clean = array();
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) { $raw = $value[ $side ] ?? $previous[ $side ] ?? 0; $clean[ $side ] = is_numeric( $raw ) ? min( $range[1], max( $range[0], (float) $raw ) ) : 0; }
+		$clean['unit'] = 'px';
+		$clean['isLinked'] = isset( $value['isLinked'] ) ? (bool) $value['isLinked'] : ( $previous['isLinked'] ?? false );
+		return $clean;
+	}
+
+	private function sanitize_site_background_image( $image ) {
+		if ( ! is_array( $image ) ) { return array(); }
+		$id = isset( $image['id'] ) ? absint( $image['id'] ) : 0;
+		$url = $id && wp_attachment_is_image( $id ) ? wp_get_attachment_image_url( $id, 'full' ) : ( isset( $image['url'] ) ? esc_url_raw( $image['url'] ) : '' );
+		if ( ! $url ) { return array(); }
+		return array( 'id' => $id, 'url' => $url, 'thumbnail' => $id ? wp_get_attachment_image_url( $id, 'medium' ) : $url, 'alt' => sanitize_text_field( isset( $image['alt'] ) ? $image['alt'] : '' ) );
 	}
 
 	/**
@@ -276,6 +406,10 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 				'ID'         => $id,
 				'post_title' => sanitize_text_field( $request->get_param( 'title' ) ),
 			) );
+		}
+
+		if ( 'page' === $post->post_type && $request->has_param( 'page_settings' ) ) {
+			$this->apply_page_settings( $id, $request->get_param( 'page_settings' ) );
 		}
 
 		$this->apply_fields_to_post( $id, $request );
@@ -516,6 +650,88 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	}
 
 	/**
+	 * Save WordPress page-level settings separately from display-condition templates.
+	 *
+	 * @param int   $post_id Page ID.
+	 * @param mixed $settings Page settings from the editor.
+	 * @return void
+	 */
+	private function apply_page_settings( $post_id, $settings ) {
+		$post = get_post( $post_id );
+		if ( ! $post || 'page' !== $post->post_type || ! is_array( $settings ) ) {
+			return;
+		}
+
+		$update = array( 'ID' => $post_id );
+		$has_post_update = false;
+
+		if ( isset( $settings['status'] ) ) {
+			$status = sanitize_key( $settings['status'] );
+			$allowed_statuses = array( 'publish', 'draft', 'pending', 'private' );
+			$can_publish = current_user_can( 'publish_pages' ) || current_user_can( 'publish_post', $post_id );
+			if ( in_array( $status, $allowed_statuses, true ) && ( ! in_array( $status, array( 'publish', 'private' ), true ) || $can_publish ) ) {
+				$update['post_status'] = $status;
+				$has_post_update = true;
+			}
+		}
+
+		if ( isset( $settings['order'] ) ) {
+			$update['menu_order'] = max( -32768, min( 32767, (int) $settings['order'] ) );
+			$has_post_update = true;
+		}
+
+		if ( isset( $settings['comments'] ) ) {
+			$update['comment_status'] = $settings['comments'] ? 'open' : 'closed';
+			$has_post_update = true;
+		}
+
+		if ( $has_post_update ) {
+			wp_update_post( $update );
+		}
+
+		if ( array_key_exists( 'featured_image_id', $settings ) ) {
+			$image_id = absint( $settings['featured_image_id'] );
+			if ( $image_id && wp_attachment_is_image( $image_id ) ) {
+				set_post_thumbnail( $post_id, $image_id );
+			} elseif ( ! $image_id ) {
+				delete_post_thumbnail( $post_id );
+			}
+		}
+
+		if ( isset( $settings['page_template'] ) ) {
+			$page_template = sanitize_text_field( $settings['page_template'] );
+			$available = function_exists( 'get_page_templates' ) ? get_page_templates( $post ) : array();
+			$available[''] = __( 'Default', 'xcodesol-page-builder' );
+			if ( array_key_exists( $page_template, $available ) ) {
+				update_post_meta( $post_id, '_wp_page_template', $page_template );
+			}
+		}
+
+		if ( array_key_exists( 'hide_title', $settings ) ) {
+			update_post_meta( $post_id, '_xcopb_hide_title', $settings['hide_title'] ? '1' : '0' );
+		}
+		$style_settings = array();
+		foreach ( array( 'margin', 'padding' ) as $box ) {
+			if ( isset( $settings[ $box ] ) && is_array( $settings[ $box ] ) ) {
+				$value = $settings[ $box ];
+				$unit = isset( $value['unit'] ) && in_array( $value['unit'], array( 'px', '%', 'em', 'rem', 'vw', 'vh' ), true ) ? $value['unit'] : 'px';
+				$sides = isset( $value['values'] ) && is_array( $value['values'] ) ? $value['values'] : $value;
+				$clean_sides = array();
+				foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+					$raw = isset( $sides[ $side ] ) ? $sides[ $side ] : '';
+					$clean_sides[ $side ] = is_numeric( $raw ) ? max( 'margin' === $box ? -500 : 0, min( 2000, (float) $raw ) ) : '';
+				}
+				$style_settings[ $box ] = array( 'values' => $clean_sides, 'unit' => $unit, 'linked' => ! empty( $value['linked'] ) );
+			}
+		}
+		foreach ( array( 'css_id', 'css_class' ) as $key ) {
+			if ( isset( $settings[ $key ] ) ) { $style_settings[ $key ] = 'css_id' === $key ? sanitize_html_class( $settings[ $key ] ) : sanitize_text_field( $settings[ $key ] ); }
+		}
+		if ( isset( $settings['custom_css'] ) ) { $style_settings['custom_css'] = substr( wp_strip_all_tags( str_ireplace( '</style', '', (string) $settings['custom_css'] ) ), 0, 20000 ); }
+		update_post_meta( $post_id, '_xcopb_page_settings', $style_settings );
+	}
+
+	/**
 	 * Prepare template data for a REST response.
 	 *
 	 * @param int $post_id Post ID.
@@ -552,9 +768,31 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 				$default_view = 'page';
 			}
 		}
-		$view_type = XCOPB_Registrar::get_field( $post_id, '_xcopb_view_type', $default_view );
+		$view_type = $post && in_array( $post->post_type, array( 'page', 'post' ), true )
+			? $default_view
+			: XCOPB_Registrar::get_field( $post_id, '_xcopb_view_type', $default_view );
 		if ( empty( $view_type ) ) {
 			$view_type = $default_view;
+		}
+
+		$page_settings = array();
+		if ( $post && 'page' === $post->post_type ) {
+			$thumbnail_id = get_post_thumbnail_id( $post_id );
+			$saved_page_settings = get_post_meta( $post_id, '_xcopb_page_settings', true );
+			if ( ! is_array( $saved_page_settings ) ) { $saved_page_settings = array(); }
+			$current_page_template = get_page_template_slug( $post_id );
+			if ( 'xcopb_canvas' === $current_page_template ) { $current_page_template = 'elementor_canvas'; }
+			if ( 'xcopb_full_width' === $current_page_template ) { $current_page_template = 'elementor_header_footer'; }
+			$page_settings = array(
+				'status'            => $post->post_status,
+				'featured_image_id' => $thumbnail_id ? (int) $thumbnail_id : 0,
+				'featured_image_url'=> $thumbnail_id ? ( wp_get_attachment_image_url( $thumbnail_id, 'medium' ) ?: wp_get_attachment_url( $thumbnail_id ) ) : '',
+				'order'             => (int) $post->menu_order,
+				'comments'          => 'open' === $post->comment_status,
+				'hide_title'        => '1' === (string) get_post_meta( $post_id, '_xcopb_hide_title', true ),
+				'page_template'     => $current_page_template,
+			);
+			$page_settings = array_merge( $saved_page_settings, $page_settings );
 		}
 
 		return array(
@@ -569,6 +807,8 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			'settings'       => $settings,
 			'is_active'      => $is_active,
 			'applied_preset' => $applied_preset ? sanitize_title( $applied_preset ) : '',
+			'post_type'      => $post ? $post->post_type : '',
+			'page_settings'  => $page_settings,
 		);
 	}
 
@@ -578,8 +818,11 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	 * @param array $layout Layout array.
 	 * @return array
 	 */
-	private function sanitize_layout( $layout ) {
+	private function sanitize_layout( $layout, $depth = 0 ) {
 		$clean = array();
+		if ( $depth > 5 ) {
+			return $clean;
+		}
 
 		foreach ( $layout as $block ) {
 			if ( ! is_array( $block ) || empty( $block['type'] ) ) {
@@ -597,8 +840,8 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 				'settings' => isset( $block['settings'] ) && is_array( $block['settings'] ) ? $this->sanitize_block_settings( $type, $block['settings'] ) : array(),
 			);
 
-			if ( 'xcosb/gb-container' === $type && isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
-				$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'] );
+			if ( 'xcosb/gb-container' === $this->canonical_block_type( $type ) && isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
+				$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'], $depth + 1 );
 			}
 
 			$clean[] = $clean_block;
@@ -618,15 +861,18 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	}
 
 	/**
-	 * Sanitize a container's nested columns (single-level nesting).
+	 * Sanitize nested container columns, with a bounded nesting depth.
 	 *
-	 * Each column is an array of nested, non-container blocks.
+	 * Each column is an array of nested widgets or containers.
 	 *
 	 * @param array $inner Raw inner columns.
 	 * @return array
 	 */
-	private function sanitize_container_inner( $inner ) {
+	private function sanitize_container_inner( $inner, $depth = 0 ) {
 		$clean_inner = array();
+		if ( $depth > 5 ) {
+			return $clean_inner;
+		}
 
 		foreach ( $inner as $column ) {
 			if ( ! is_array( $column ) ) {
@@ -643,19 +889,18 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 
 				$type = sanitize_text_field( $block['type'] );
 
-				// Single-level only: never allow a container inside a container.
-				if ( 'xcosb/gb-container' === $type ) {
-					continue;
-				}
-
 				if ( ! XCOPB_Block_Registry::instance()->is_registered( $type ) ) {
 					continue;
 				}
 
-				$clean_column[] = array(
+				$clean_block = array(
 					'type'     => $type,
 					'settings' => isset( $block['settings'] ) && is_array( $block['settings'] ) ? $this->sanitize_block_settings( $type, $block['settings'] ) : array(),
 				);
+				if ( 'xcosb/gb-container' === $this->canonical_block_type( $type ) && isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
+					$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'], $depth + 1 );
+				}
+				$clean_column[] = $clean_block;
 			}
 
 			$clean_inner[] = $clean_column;
@@ -696,15 +941,165 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			$settings = array();
 		}
 
+		$type_for_sanitizer = $this->canonical_block_type( $type );
 		$sanitized = array_merge(
-			$this->sanitize_block_type_settings( $type, $settings ),
+			$this->sanitize_block_type_settings( $type_for_sanitizer, $settings ),
 			$this->sanitize_advanced_keys( $settings ),
 			$this->sanitize_position_keys( $type, $settings ),
 			$this->sanitize_transform_keys( $settings ),
 			$this->sanitize_visibility_keys( $settings )
 		);
 
-		return $this->expand_responsive_variants( $type, $settings, $sanitized );
+		$sanitized = $this->expand_responsive_variants( $type_for_sanitizer, $settings, $sanitized );
+		$sanitized = $this->sanitize_widget_state_variants( $type_for_sanitizer, $settings, $sanitized );
+
+		// Preserve current inspector controls even when an older, widget-specific
+		// sanitizer does not know their keys yet. Every value still passes through
+		// a type-aware sanitizer before it reaches post meta or front-end output.
+		if ( 'xcosb/gb-container' === $type_for_sanitizer && class_exists( 'XCOPB_Sanitizer' ) ) {
+			$container_settings = XCOPB_Sanitizer::sanitize_container_settings( $settings );
+			$sanitized = array_merge( $sanitized, $container_settings );
+			foreach ( $settings as $key => $value ) {
+				if ( in_array( $key, array( 'column_styles', 'column_widths', 'tablet_column_widths', 'mobile_column_widths' ), true ) && array_key_exists( $key, $container_settings ) ) {
+					continue;
+				}
+				$container_value = XCOPB_Sanitizer::sanitize_container_value( $key, $value );
+				$clean_value = null !== $container_value ? $container_value : $this->sanitize_control_value( $key, $value );
+				if ( null !== $clean_value ) {
+					$sanitized[ $key ] = $clean_value;
+				} else {
+					unset( $sanitized[ $key ] );
+				}
+			}
+		}
+		foreach ( $settings as $key => $value ) {
+			$is_color_value = is_string( $value ) && class_exists( 'XCOPB_Sanitizer' ) && ( preg_match( '/color|colour/i', (string) $key ) || 'background' === $key ) && '' !== XCOPB_Sanitizer::sanitize_color( $value );
+			if ( array_key_exists( $key, $sanitized ) && ! $is_color_value ) {
+				continue;
+			}
+			$clean_value = $this->sanitize_control_value( $key, $value );
+			if ( null !== $clean_value ) {
+				$sanitized[ $key ] = $clean_value;
+			}
+		}
+
+		return $sanitized;
+	}
+
+	/** Normalize current and legacy block namespaces for shared sanitizers. */
+	private function canonical_block_type( $type ) {
+		return 0 === strpos( $type, 'xcopb/' ) ? 'xcosb/' . substr( $type, 6 ) : $type;
+	}
+
+	/**
+	 * Sanitize a control value not yet covered by a widget-specific sanitizer.
+	 *
+	 * @param string $key   Control key.
+	 * @param mixed  $value Raw control value.
+	 * @param int    $depth Recursion depth.
+	 * @return mixed|null Safe value, or null when unsupported.
+	 */
+	private function sanitize_control_value( $key, $value, $depth = 0 ) {
+		if ( $depth > 6 ) {
+			return null;
+		}
+		$key = (string) $key;
+		if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
+			return $value;
+		}
+		if ( is_array( $value ) ) {
+			if ( preg_match( '/color|colour/i', $key ) ) {
+				return $this->sanitize_control_value( 'gradient', $value, $depth + 1 );
+			}
+			$clean = array();
+			foreach ( array_slice( $value, 0, 100, true ) as $child_key => $child_value ) {
+				$clean_key = is_int( $child_key ) ? $child_key : sanitize_key( $child_key );
+				$child = $this->sanitize_control_value( (string) $child_key, $child_value, $depth + 1 );
+				if ( null !== $child ) {
+					$clean[ $clean_key ] = $child;
+				}
+			}
+			return $clean;
+		}
+		if ( ! is_string( $value ) ) {
+			return null;
+		}
+		$value = trim( $value );
+		if ( preg_match( '/(?:^|_)(?:url|src|href|image|video|poster)$/i', $key ) || preg_match( '/(?:_url|_src)$/i', $key ) ) {
+			return esc_url_raw( $value );
+		}
+		if ( preg_match( '/(?:color|colour)/i', $key ) ) {
+			return class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $value ) : ( sanitize_hex_color( $value ) ?: '' );
+		}
+		if ( 'background' === $key && class_exists( 'XCOPB_Sanitizer' ) ) {
+			$background_color = XCOPB_Sanitizer::sanitize_color( $value );
+			if ( '' !== $background_color ) {
+				return $background_color;
+			}
+		}
+		if ( in_array( $key, array( 'content', 'html', 'custom_html' ), true ) ) {
+			return wp_kses_post( $value );
+		}
+		if ( 'custom_css' === $key || 'css' === $key ) {
+			$value = preg_replace( '#</?style[^>]*>#i', '', $value );
+			if ( preg_match( '/expression\s*\(|javascript:|vbscript:|@import/i', $value ) ) {
+				return '';
+			}
+			return sanitize_textarea_field( $value );
+		}
+		if ( class_exists( 'XCOPB_Sanitizer' ) && preg_match( '/^(?:font_family|font_weight|font_size|font_style|line_height|letter_spacing|text_transform|text_decoration|text_shadow|box_shadow|shadow|width|height|min_width|max_width|min_height|max_height|margin(?:_(?:top|right|bottom|left))?|padding(?:_(?:top|right|bottom|left))?|gap|border_(?:width|style|radius)|object_(?:fit|position)|transform|background_position|background_size)$/', $key ) ) {
+			return XCOPB_Sanitizer::sanitize_css_fragment( $value );
+		}
+		return sanitize_text_field( $value );
+	}
+
+	/**
+	 * Keep supported interactive widget hover/focus overrides through REST save.
+	 *
+	 * @param string $type      Block type.
+	 * @param array  $raw       Raw settings.
+	 * @param array  $sanitized Sanitized settings.
+	 * @return array
+	 */
+	private function sanitize_widget_state_variants( $type, $raw, $sanitized ) {
+		$targets = array(
+			'xcosb/gb-heading' => array( 'color', 'text_shadow', 'text_decoration' ),
+			'xcosb/gb-button' => array( 'bg_color', 'text_color', 'border_color', 'border_radius', 'box_shadow', 'opacity' ),
+			'xcosb/gb-image' => array( 'border_radius', 'box_shadow', 'grayscale', 'opacity' ),
+			'xcosb/gb-text' => array( 'color', 'link_color', 'blockquote_background' ),
+			'xcosb/gb-divider' => array( 'color' ),
+		);
+		$type = str_replace( 'xcopb/', 'xcosb/', $type );
+		if ( ! isset( $targets[ $type ] ) ) {
+			return $sanitized;
+		}
+		$validators = array(
+			'color' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_color( $value ); },
+			'bg_color' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_color( $value ); },
+			'text_color' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_color( $value ); },
+			'border_color' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_color( $value ); },
+			'link_color' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_color( $value ); },
+			'blockquote_background' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_color( $value ); },
+			'text_shadow' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_css_fragment( $value ); },
+			'text_decoration' => static function ( $value ) { return in_array( $value, array( 'none', 'underline', 'overline', 'line-through' ), true ) ? $value : ''; },
+			'border_radius' => static function ( $value ) { return min( 500, max( 0, absint( $value ) ) ); },
+			'box_shadow' => static function ( $value ) { return XCOPB_Sanitizer::sanitize_box_shadow( $value ); },
+			'opacity' => static function ( $value ) { return min( 100, max( 0, absint( $value ) ) ); },
+			'grayscale' => static function ( $value ) { return min( 100, max( 0, absint( $value ) ) ); },
+		);
+		foreach ( array( 'hover', 'focus' ) as $state ) {
+			foreach ( $targets[ $type ] as $key ) {
+				$variant = $state . '_' . $key;
+				if ( ! array_key_exists( $variant, $raw ) || ! isset( $validators[ $key ] ) ) {
+					continue;
+				}
+				$clean = $validators[ $key ]( $raw[ $variant ] );
+				if ( '' !== $clean && null !== $clean ) {
+					$sanitized[ $variant ] = $clean;
+				}
+			}
+		}
+		return $sanitized;
 	}
 
 	/**
@@ -1076,7 +1471,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			'gradient_radial_shape' => array( 'circle', 'ellipse' ),
 			'gradient_position'    => array( 'center', 'top', 'bottom', 'left', 'right', 'top left', 'top right', 'bottom left', 'bottom right' ),
 			'box_shadow'           => array( 'none', 'soft', 'medium', 'strong' ),
-			'animation'            => array( 'none', 'fade-in', 'slide-up', 'slide-down', 'zoom-in' ),
+			'animation'            => XCOPB_Motion_Presets::ids(),
 			'bg_size'              => array( 'cover', 'contain', 'auto' ),
 			'bg_position'          => array( 'center center', 'top center', 'bottom center', 'center left', 'center right' ),
 			'bg_repeat'            => array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y' ),
@@ -1096,8 +1491,10 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			$clean[ $key ] = isset( $settings[ $key ] ) ? sanitize_text_field( $settings[ $key ] ) : '';
 		}
 
-		foreach ( array( 'link', 'bg_image', 'bg_video' ) as $key ) {
-			$clean[ $key ] = isset( $settings[ $key ] ) ? esc_url_raw( $settings[ $key ] ) : '';
+		foreach ( array( 'link', 'bg_image', 'bg_video', 'bg_video_url' ) as $key ) {
+			$media_value = $settings[ $key ] ?? '';
+			$media_url   = is_array( $media_value ) ? ( $media_value['url'] ?? '' ) : $media_value;
+			$clean[ $key ] = esc_url_raw( $media_url );
 		}
 
 		foreach ( array( 'bg_color', 'overlay_color', 'title_color', 'subtitle_color', 'button_bg_color', 'button_text_color', 'button_border_color', 'gradient_color_a', 'gradient_color_b' ) as $key ) {
@@ -1224,9 +1621,11 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		$clean['border_radius'] = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 0;
 
 		$clean['animation'] = isset( $settings['animation'] ) ? sanitize_text_field( $settings['animation'] ) : 'none';
-		$clean['animation'] = in_array( $clean['animation'], array( 'none', 'fade-in', 'slide-up', 'slide-down', 'zoom-in' ), true ) ? $clean['animation'] : 'none';
+		$clean['animation'] = in_array( $clean['animation'], XCOPB_Motion_Presets::ids(), true ) ? $clean['animation'] : 'none';
 		$clean['animation_duration'] = isset( $settings['animation_duration'] ) ? min( 3000, max( 100, absint( $settings['animation_duration'] ) ) ) : 600;
 		$clean['animation_delay'] = isset( $settings['animation_delay'] ) ? min( 3000, absint( $settings['animation_delay'] ) ) : 0;
+		$clean['animation_easing'] = isset( $settings['animation_easing'] ) && in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'cubic-bezier(0.16,1,0.3,1)' ), true ) ? $settings['animation_easing'] : 'ease';
+		$clean['animation_repeat'] = isset( $settings['animation_repeat'] ) && in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? (string) $settings['animation_repeat'] : '1';
 
 		return array_merge( $clean, $this->sanitize_text_style_keys( $settings ) );
 	}
@@ -1978,13 +2377,15 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 
 		$clean['box_shadow'] = in_array( $clean['box_shadow'], array( 'none', 'soft', 'medium', 'strong' ), true ) ? $clean['box_shadow'] : 'none';
 		$clean['border_style'] = in_array( $clean['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ? $clean['border_style'] : 'solid';
-		$clean['animation'] = in_array( $clean['animation'], array( 'none', 'fade-in', 'slide-up', 'slide-down', 'zoom-in' ), true ) ? $clean['animation'] : 'none';
+		$clean['animation'] = in_array( $clean['animation'], XCOPB_Motion_Presets::ids(), true ) ? $clean['animation'] : 'none';
 
 		$border_color = isset( $settings['border_color'] ) ? sanitize_hex_color( $settings['border_color'] ) : '';
 		$clean['border_color'] = $border_color ? $border_color : '';
 
 		$clean['animation_duration'] = isset( $settings['animation_duration'] ) ? min( 3000, absint( $settings['animation_duration'] ) ) : 600;
 		$clean['animation_delay'] = isset( $settings['animation_delay'] ) ? min( 3000, absint( $settings['animation_delay'] ) ) : 0;
+		$clean['animation_easing'] = isset( $settings['animation_easing'] ) && in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'cubic-bezier(0.16,1,0.3,1)' ), true ) ? $settings['animation_easing'] : 'ease';
+		$clean['animation_repeat'] = isset( $settings['animation_repeat'] ) && in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? (string) $settings['animation_repeat'] : '1';
 
 		$clean['align'] = in_array( $clean['align'], array( 'stretch', 'start', 'center', 'end' ), true ) ? $clean['align'] : 'stretch';
 		$clean['position'] = in_array( $clean['position'], array( 'full', 'left', 'center', 'right' ), true ) ? $clean['position'] : 'full';
@@ -2228,6 +2629,10 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 				'required'          => false,
 			),
 			'settings'   => array(
+				'type'              => 'object',
+				'required'          => false,
+			),
+			'page_settings' => array(
 				'type'              => 'object',
 				'required'          => false,
 			),

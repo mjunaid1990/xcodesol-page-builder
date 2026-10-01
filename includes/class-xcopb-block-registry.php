@@ -109,6 +109,18 @@ class XCOPB_Block_Registry {
 				'transition-timing-function',
 				'order',
 				'text-shadow',
+				'object-fit',
+				'object-position',
+				'filter',
+				'columns',
+				'column-gap',
+				'initial-letter',
+				'overflow-wrap',
+				'-webkit-line-clamp',
+				'-webkit-box-orient',
+				'font-family',
+				'letter-spacing',
+				'text-transform',
 				'place-items',
 				'grid-auto-flow',
 				'grid-template-rows',
@@ -221,6 +233,14 @@ class XCOPB_Block_Registry {
 		$allowed['fieldset'] = array_merge( $global, array( 'disabled' => true, 'form' => true, 'name' => true ) );
 		$allowed['legend']   = $global;
 		$allowed['output']   = array_merge( $global, array( 'for' => true, 'form' => true, 'name' => true ) );
+		$allowed['video'] = array_merge(
+			$global,
+			array(
+				'src' => true, 'poster' => true, 'preload' => true, 'autoplay' => true,
+				'muted' => true, 'loop' => true, 'playsinline' => true, 'controls' => true,
+				'width' => true, 'height' => true,
+			)
+		);
 
 		// Block-list helpers print a <noscript> fallback for JS-only controls.
 		if ( ! isset( $allowed['noscript'] ) ) {
@@ -424,6 +444,7 @@ class XCOPB_Block_Registry {
 			'max_width'          => 'px',
 			'align'              => 'raw',     // text-align for text widgets; placement for cart/checkout/container.
 			'opacity'            => 'float',
+			'height'             => 'px',
 			'align_v'            => 'raw',
 			'align_h'            => 'raw',
 		);
@@ -1838,6 +1859,7 @@ class XCOPB_Block_Registry {
 			'max_width'      => 'max-width',
 			'align'          => 'text-align',       // generic text-align; cart/checkout/container override elsewhere
 			'opacity'        => 'opacity',
+			'height'         => 'height',
 			'align_v'        => 'align-items',
 			'align_h'        => 'justify-content',
 		);
@@ -1990,7 +2012,8 @@ class XCOPB_Block_Registry {
 			'animation_duration' => 600,
 			'animation_delay'    => 0,
 			'position'      => 'full',
-			'max_width'     => 0,
+			'content_width' => 'boxed',
+			'max_width'     => 1200,
 		) );
 
 		// Heading (Elementor-style)
@@ -2454,8 +2477,20 @@ class XCOPB_Block_Registry {
 		$hide_m  = ! empty( $settings['hide_on_mobile'] );
 		$btn_hbg = ! empty( $settings['button_hover_bg'] ) ? $settings['button_hover_bg'] : '';
 		$btn_hfg = ! empty( $settings['button_hover_color'] ) ? $settings['button_hover_color'] : '';
+		$button_hover_bg = ! empty( $settings['hover_bg_color'] ) ? $settings['hover_bg_color'] : '';
+		$button_hover_fg = ! empty( $settings['hover_text_color'] ) ? $settings['hover_text_color'] : '';
+		$button_focus_bg = ! empty( $settings['focus_bg_color'] ) ? $settings['focus_bg_color'] : '';
+		$button_focus_fg = ! empty( $settings['focus_text_color'] ) ? $settings['focus_text_color'] : '';
+		$button_hover_border = ! empty( $settings['hover_border_color'] ) ? $settings['hover_border_color'] : '';
+		$button_focus_border = ! empty( $settings['focus_border_color'] ) ? $settings['focus_border_color'] : '';
+		$widget_hover_bg = ! empty( $settings['hover_bg_color'] ) ? $settings['hover_bg_color'] : '';
+		$widget_hover_fg = ! empty( $settings['hover_text_color'] ) ? $settings['hover_text_color'] : '';
+		$widget_focus_bg = ! empty( $settings['focus_bg_color'] ) ? $settings['focus_bg_color'] : '';
+		$widget_focus_fg = ! empty( $settings['focus_text_color'] ) ? $settings['focus_text_color'] : '';
+		$widget_hover_border = ! empty( $settings['hover_border_color'] ) ? $settings['hover_border_color'] : '';
+		$widget_focus_border = ! empty( $settings['focus_border_color'] ) ? $settings['focus_border_color'] : '';
 
-		if ( '' === $hover && ! $hide_d && ! $hide_t && ! $hide_m && '' === $btn_hbg && '' === $btn_hfg ) {
+		if ( '' === $hover && ! $hide_d && ! $hide_t && ! $hide_m && '' === $btn_hbg && '' === $btn_hfg && '' === $button_hover_bg && '' === $button_hover_fg && '' === $button_focus_bg && '' === $button_focus_fg && '' === $button_hover_border && '' === $button_focus_border && '' === $widget_hover_bg && '' === $widget_hover_fg && '' === $widget_focus_bg && '' === $widget_focus_fg && '' === $widget_hover_border && '' === $widget_focus_border ) {
 			return $html;
 		}
 
@@ -2473,6 +2508,49 @@ class XCOPB_Block_Registry {
 
 		$sel = '[data-xsb-r="' . esc_attr( $token ) . '"]';
 		$css = '';
+		$widget_targets = array(
+			'xcopb/gb-heading' => ' .xsb-heading',
+			'xcopb/gb-button' => ' .xsb-button',
+			'xcopb/gb-image' => ' img',
+			'xcopb/gb-text' => '',
+			'xcopb/gb-divider' => ' .xsb-divider',
+			'xcopb/gb-container' => '',
+		);
+		$widget_target = isset( $widget_targets[ $type ] ) ? $sel . $widget_targets[ $type ] : '';
+		if ( '' !== $widget_target && ( '' !== $widget_hover_bg || '' !== $widget_hover_fg || '' !== $widget_hover_border ) ) {
+			$decls = array();
+			if ( '' !== $widget_hover_bg ) { $decls[] = 'background:' . $widget_hover_bg . ' !important'; }
+			if ( '' !== $widget_hover_fg ) { $decls[] = 'color:' . $widget_hover_fg . ' !important'; }
+			if ( '' !== $widget_hover_border ) { $decls[] = 'border-color:' . $widget_hover_border . ' !important'; }
+			$css .= $widget_target . ':hover{' . implode( ';', $decls ) . ';}';
+		}
+		if ( '' !== $widget_target && ( '' !== $widget_focus_bg || '' !== $widget_focus_fg || '' !== $widget_focus_border ) ) {
+			$decls = array();
+			if ( '' !== $widget_focus_bg ) { $decls[] = 'background:' . $widget_focus_bg . ' !important'; }
+			if ( '' !== $widget_focus_fg ) { $decls[] = 'color:' . $widget_focus_fg . ' !important'; }
+			if ( '' !== $widget_focus_border ) { $decls[] = 'border-color:' . $widget_focus_border . ' !important'; }
+			$css .= $widget_target . ':focus-visible{' . implode( ';', $decls ) . ';outline:2px solid currentColor;outline-offset:2px;}';
+		}
+		if ( isset( $settings['hover_box_shadow'] ) && '' !== $widget_target ) {
+			$hover_shadow = $settings['hover_box_shadow'];
+			if ( is_string( $hover_shadow ) && isset( array( 'soft' => '0 4px 14px rgba(0,0,0,.12)', 'medium' => '0 10px 28px rgba(0,0,0,.18)', 'strong' => '0 18px 50px rgba(0,0,0,.28)' )[ $hover_shadow ] ) ) {
+				$css .= $widget_target . ':hover{box-shadow:' . array( 'soft' => '0 4px 14px rgba(0,0,0,.12)', 'medium' => '0 10px 28px rgba(0,0,0,.18)', 'strong' => '0 18px 50px rgba(0,0,0,.28)' )[ $hover_shadow ] . ' !important;}';
+			}
+		}
+		if ( '' !== $widget_target && '' !== $widget_focus_border ) {
+			$css .= $widget_target . ':focus-visible{border-color:' . esc_attr( $widget_focus_border ) . ' !important;}';
+		}
+		$state_targets = array( 'xcopb/gb-heading' => '.xsb-heading', 'xcopb/gb-button' => '.xsb-button', 'xcopb/gb-image' => ' img', 'xcopb/gb-text' => '', 'xcopb/gb-divider' => ' .xsb-divider' );
+		if ( isset( $state_targets[ $type ] ) ) {
+			$state_selector = $sel . $state_targets[ $type ];
+			$radius = isset( $settings['hover_border_radius'] ) ? max( 0, (float) $settings['hover_border_radius'] ) : null;
+			if ( null !== $radius ) { $css .= $state_selector . ':hover{border-radius:' . $radius . 'px !important;}'; }
+			$shadow_map = array( 'soft' => '0 4px 14px rgba(0,0,0,.12)', 'medium' => '0 10px 28px rgba(0,0,0,.18)', 'strong' => '0 18px 50px rgba(0,0,0,.28)' );
+			if ( ! empty( $settings['hover_box_shadow'] ) && isset( $shadow_map[ $settings['hover_box_shadow'] ] ) ) { $css .= $state_selector . ':hover{box-shadow:' . $shadow_map[ $settings['hover_box_shadow'] ] . ' !important;}'; }
+			if ( isset( $settings['hover_opacity'] ) ) { $css .= $state_selector . ':hover{opacity:' . ( min( 100, max( 0, (float) $settings['hover_opacity'] ) ) / 100 ) . ' !important;}'; }
+			if ( 'xcopb/gb-image' === $type && isset( $settings['hover_grayscale'] ) ) { $css .= $state_selector . ':hover{filter:grayscale(' . min( 100, max( 0, (float) $settings['hover_grayscale'] ) ) . '%) !important;}'; }
+			if ( 'xcopb/gb-image' === $type && isset( $settings['grayscale'] ) ) { $css .= $state_selector . '{filter:grayscale(' . min( 100, max( 0, (float) $settings['grayscale'] ) ) . '%);}'; }
+		}
 
 		if ( '' !== $hover ) {
 			$css .= $sel . ':hover,' . $sel . ':hover a{color:' . $hover . ' !important;}';
@@ -2486,16 +2564,28 @@ class XCOPB_Block_Registry {
 		if ( $hide_m ) {
 			$css .= '@media (max-width:480px){' . $sel . '{display:none !important;}}';
 		}
-		if ( '' !== $btn_hbg || '' !== $btn_hfg ) {
+		if ( '' !== $btn_hbg || '' !== $btn_hfg || '' !== $button_hover_bg || '' !== $button_hover_fg || '' !== $button_hover_border ) {
 			$btn_sel = $sel . ' .button:hover,' . $sel . ' button:hover,' . $sel . ' .single_add_to_cart_button:hover,' . $sel . ' .xsb-woo-search-button:hover';
 			$decls   = array();
-			if ( '' !== $btn_hbg ) {
-				$decls[] = 'background-color:' . $btn_hbg . ' !important';
+			$hover_bg_value = '' !== $button_hover_bg ? $button_hover_bg : $btn_hbg;
+			$hover_fg_value = '' !== $button_hover_fg ? $button_hover_fg : $btn_hfg;
+			if ( '' !== $hover_bg_value ) {
+				$decls[] = 'background-color:' . $hover_bg_value . ' !important';
 			}
-			if ( '' !== $btn_hfg ) {
-				$decls[] = 'color:' . $btn_hfg . ' !important';
+			if ( '' !== $hover_fg_value ) {
+				$decls[] = 'color:' . $hover_fg_value . ' !important';
 			}
-			$css .= $btn_sel . '{' . implode( ';', $decls ) . ';}';
+			if ( '' !== $button_hover_border ) { $decls[] = 'border-color:' . $button_hover_border . ' !important'; }
+			if ( 'xcopb/gb-button' === $type ) { $css .= $widget_target . ':hover{' . implode( ';', $decls ) . ';}'; }
+			else { $css .= $btn_sel . '{' . implode( ';', $decls ) . ';}'; }
+		}
+		if ( '' !== $button_focus_bg || '' !== $button_focus_fg || '' !== $button_focus_border ) {
+			$decls = array();
+			if ( '' !== $button_focus_bg ) { $decls[] = 'background-color:' . $button_focus_bg . ' !important'; }
+			if ( '' !== $button_focus_fg ) { $decls[] = 'color:' . $button_focus_fg . ' !important'; }
+			if ( '' !== $button_focus_border ) { $decls[] = 'border-color:' . $button_focus_border . ' !important'; }
+			if ( 'xcopb/gb-button' === $type ) { $css .= $widget_target . ':focus-visible{' . implode( ';', $decls ) . ';outline:2px solid currentColor;outline-offset:2px;}'; }
+			else { $css .= $sel . ' a:focus-visible,' . $sel . ' button:focus-visible,' . $sel . ' .button:focus-visible{' . implode( ';', $decls ) . ';outline:2px solid currentColor;outline-offset:2px;}'; }
 		}
 
 		self::enqueue_dynamic_css( $css );

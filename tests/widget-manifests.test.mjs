@@ -80,6 +80,11 @@ const SCHEMA_FILES = [
 	'schemas/image-schema.js',
 	'schemas/text-schema.js',
 	'schemas/divider-schema.js',
+	'schemas/banner-schema.js',
+	'schemas/shortcode-schema.js',
+	'schemas/breadcrumb-schema.js',
+	'schemas/html-schema.js',
+	'schemas/dynamic-schema.js',
 ];
 
 const manifests = [];
@@ -102,13 +107,21 @@ async function loadRegistry() {
 		byBase.set( base, manifests.find( ( m ) => m.rel === rel ).manifest );
 	} );
 
-	const code = read( 'src/admin/schemas/index.js' ).replace(
-		/import\s*\{\s*manifest\s+as\s+(\w+)\s*\}\s*from\s*'\.\/([\w-]+)'\s*;/g,
-		( match, name, base ) => {
+	const schemas = new Map();
+	for ( const rel of SCHEMA_FILES ) {
+		const base = rel.split( '/' ).pop().replace( /\.js$/, '' );
+		const mod = await loadModule( `src/admin/${ rel }`, { '@wordpress/i18n': 'const __ = ( s ) => s; const sprintf = ( s ) => s;' } );
+		schemas.set( base, mod );
+	}
+	const code = read( 'src/admin/schemas/index.js' )
+		.replace( /import\s*\{\s*(\w+)\s*\}\s*from\s*'\.\/([\w-]+)'\s*;/g, ( match, name, base ) => {
+			const schema = schemas.get( base )?.[ name ];
+			return schema ? `const ${ name } = ${ JSON.stringify( schema ) };` : match;
+		} )
+		.replace( /import\s*\{\s*manifest\s+as\s+(\w+)\s*\}\s*from\s*'\.\/([\w-]+)'\s*;/g, ( match, name, base ) => {
 			const manifest = byBase.get( base );
 			return manifest ? `const ${ name } = ${ JSON.stringify( manifest ) };` : match;
-		}
-	);
+		} );
 
 	return import( dataUrl( code ) );
 }
@@ -168,7 +181,7 @@ console.log( '== block types are unique ==' );
 	} );
 	check( `no block type claimed twice${ clashes.length ? `: ${ clashes.join( ', ' ) }` : '' }`, clashes.length === 0 );
 	check( 'every widget answers for its current prefix', manifests.every( ( { manifest } ) => ( manifest?.type || '' ).startsWith( 'xcopb/' ) ) );
-	check( 'every widget also answers for the legacy prefix', manifests.every( ( { manifest } ) => ( manifest?.aliases || [] ).some( ( a ) => a.startsWith( 'xcosb/' ) ) ) );
+	check( 'every general widget answers for a legacy prefix', manifests.filter( ( { manifest } ) => ! [ 'dynamic-template' ].includes( manifest?.widget ) ).every( ( { manifest } ) => ( manifest?.aliases || [] ).some( ( a ) => a.startsWith( 'xcosb/' ) ) ) );
 }
 
 console.log( '== required minimum control sets ==' );
@@ -215,7 +228,30 @@ console.log( '== lookup + audit (schemas/index.js) ==' );
 		auditManifests( knownTypes ).forEach( ( p ) => console.error( `        ${ p }` ) );
 	}
 	check( 'audit flags a typo', auditManifests( [ 'color' ] ).some( ( p ) => p.includes( 'unknown controls' ) ) );
-	check( 'audit runs against a registry object too', auditManifests( { color: 1, typography: 1 } ).length > 0 );
+check( 'audit runs against a registry object too', auditManifests( { color: 1, typography: 1 } ).length > 0 );
+	check( 'dynamic post title resolves to the shared template schema', registry.schemaFor( 'xcopb/post-title' )?.manifest.widget === 'dynamic-template' );
+	check( 'dynamic archive posts resolves to the shared template schema', registry.schemaFor( 'xcopb/archive-posts' )?.manifest.widget === 'dynamic-template' );
+}
+
+console.log( '== inspector settings map to renderers ==' );
+{
+	const source = ( file ) => read( file );
+	const dynamic = source( 'src/admin/schemas/dynamic-schema.js' );
+	const button = source( 'src/admin/schemas/button-schema.js' );
+	const image = source( 'src/admin/schemas/image-schema.js' );
+	const headingRenderer = source( 'blocks/general/heading.php' );
+	const buttonRenderer = source( 'blocks/general/button.php' );
+	const imageRenderer = source( 'blocks/general/image.php' );
+	const dividerRenderer = source( 'blocks/general/divider.php' );
+	const interaction = source( 'includes/class-xcopb-block-registry.php' );
+	check( 'dynamic controls use concrete selected-block type conditions', dynamic.includes( "const current = key === 'type' ? blockType : settings[ key ];" ) || source( 'src/admin/components/inspector-controls.js' ).includes( "key === 'type' ? blockType : ( key in context ? context[ key ] : settings[ key ] )" ) );
+	check( 'button size presets drive preset padding and font size', buttonRenderer.includes( '$size_map' ) && buttonRenderer.includes( '$size_values[0]' ) );
+	check( 'heading text style controls reach rendered CSS', [ 'font_family', 'letter_spacing', 'text_transform', 'text_shadow', 'text_decoration', 'text_overflow_lines', 'word_break' ].every( key => headingRenderer.includes( `$settings['${ key }']` ) ) );
+	check( 'image crop controls reach the image element', imageRenderer.includes( "object-fit:' . $object_fit" ) && imageRenderer.includes( "object-position:' . esc_attr( $object_position )" ) );
+	check( 'image max width zero falls back to available width', imageRenderer.includes( "(float) $settings['max_width'] > 0 ? $settings['max_width'] : '100%'" ) );
+	check( 'divider width, alignment, label and gradient have render paths', dividerRenderer.includes( "'width:' . $width . '%" ) && dividerRenderer.includes( "' . esc_attr( $align ) . '" ) && dividerRenderer.includes( "if ( '' !== $label )" ) && dividerRenderer.includes( "'gradient' === $style" ) );
+	check( 'interactive state renderer targets page-builder widget roots', interaction.includes( "'xcopb/gb-button' => ' .xsb-button'" ) && interaction.includes( ":focus-visible" ) && interaction.includes( "'hover_grayscale'" ) );
+	check( 'dynamic archive grid controls reach preview output', source( 'src/admin/components/preview-canvas.js' ).includes( 'settings.show_excerpt !== false' ) && source( 'src/admin/components/preview-canvas.js' ).includes( 'settings.button_text ||' ) );
 }
 
 console.log( `\n${ passed } passed, ${ failed } failed` );

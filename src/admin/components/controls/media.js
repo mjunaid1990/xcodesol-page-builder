@@ -20,9 +20,12 @@ export default function MediaPickerControl( {
 		description,
 		allowedTypes = [ 'image' ],
 	} = config;
+	const normalizedTypes = Array.isArray( allowedTypes ) ? allowedTypes : [ allowedTypes ];
+	const isVideo = normalizedTypes.includes( 'video' );
 
 	const mediaUrl = typeof value === 'object' && value !== null ? ( value.url || '' ) : ( value || '' );
 	const isModified = Boolean( mediaUrl );
+	const previewUrl = typeof value === 'object' && value !== null && value.thumbnail ? value.thumbnail : mediaUrl;
 
 	const openMediaFrame = () => {
 		if ( typeof window === 'undefined' || ! window.wp || ! window.wp.media ) {
@@ -32,7 +35,7 @@ export default function MediaPickerControl( {
 		const frame = window.wp.media( {
 			title: __( 'Select or Upload Media', 'xcodesol-page-builder' ),
 			button: { text: __( 'Use this media', 'xcodesol-page-builder' ) },
-			library: { type: allowedTypes },
+			library: { type: normalizedTypes },
 			multiple: false,
 		} );
 
@@ -43,8 +46,10 @@ export default function MediaPickerControl( {
 					id: attachment.id,
 					url: attachment.url,
 					alt: attachment.alt || '',
+					thumbnail: attachment.image?.src || '',
 					width: attachment.width,
 					height: attachment.height,
+					mime: attachment.mime || '',
 				} );
 			}
 		} );
@@ -70,14 +75,19 @@ export default function MediaPickerControl( {
 		>
 			<div className="xsb-media-control-box">
 				{ mediaUrl ? (
-					<div className="xsb-media-preview-card" onClick={ openMediaFrame }>
-						<img src={ mediaUrl } alt="" className="xsb-media-preview-img" />
+					<div className="xsb-media-preview-card">
+						{ isVideo ? (
+							<video src={ previewUrl } className="xsb-media-preview-img" muted controls playsInline preload="metadata" />
+						) : (
+							<img src={ previewUrl } alt="" className="xsb-media-preview-img" />
+						) }
 						<div className="xsb-media-preview-actions">
 							<button
 								type="button"
 								className="xsb-tb-btn"
 								onClick={ openMediaFrame }
 								title={ __( 'Change media', 'xcodesol-page-builder' ) }
+								aria-label={ __( 'Change media', 'xcodesol-page-builder' ) }
 							>
 								<span className="dashicons dashicons-edit" aria-hidden="true" />
 							</button>
@@ -86,6 +96,7 @@ export default function MediaPickerControl( {
 								className="xsb-tb-btn xsb-tb-btn--remove"
 								onClick={ handleRemove }
 								title={ __( 'Remove media', 'xcodesol-page-builder' ) }
+								aria-label={ __( 'Remove media', 'xcodesol-page-builder' ) }
 							>
 								<span className="dashicons dashicons-trash" aria-hidden="true" />
 							</button>
@@ -98,7 +109,7 @@ export default function MediaPickerControl( {
 						onClick={ openMediaFrame }
 					>
 						<span className="dashicons dashicons-upload" aria-hidden="true" />
-						<span>{ __( 'Choose Image', 'xcodesol-page-builder' ) }</span>
+						<span>{ isVideo ? __( 'Choose Video', 'xcodesol-page-builder' ) : __( 'Choose Image', 'xcodesol-page-builder' ) }</span>
 					</button>
 				) }
 			</div>

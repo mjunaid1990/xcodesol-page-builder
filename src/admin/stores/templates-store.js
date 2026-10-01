@@ -72,10 +72,12 @@ const actions = {
 
 				dispatch.setTemplate( updated );
 				dispatch.setNotice( __( 'Template saved successfully.', 'xcodesol-page-builder' ) );
+				return updated;
 			} catch ( e ) {
 				dispatch.setError(
 					( e && e.message ) || __( 'Could not save template.', 'xcodesol-page-builder' )
 				);
+				return null;
 			} finally {
 				dispatch.setSaving( false );
 			}

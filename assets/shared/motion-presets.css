@@ -1,0 +1,23 @@
+/* Shared entrance motion catalog. Keep IDs aligned with includes/data/motion-presets.json. */
+@keyframes xsb-motion-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes xsb-motion-fade-in-up { from { opacity: 0; transform: translate3d(0, 28px, 0); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-fade-in-down { from { opacity: 0; transform: translate3d(0, -28px, 0); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-fade-in-left { from { opacity: 0; transform: translate3d(-28px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-fade-in-right { from { opacity: 0; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-slide-up { from { transform: translate3d(0, 36px, 0); } to { transform: none; } }
+@keyframes xsb-motion-slide-down { from { transform: translate3d(0, -36px, 0); } to { transform: none; } }
+@keyframes xsb-motion-slide-left { from { transform: translate3d(36px, 0, 0); } to { transform: none; } }
+@keyframes xsb-motion-slide-right { from { transform: translate3d(-36px, 0, 0); } to { transform: none; } }
+@keyframes xsb-motion-zoom-in { from { opacity: 0; transform: scale(.78); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-zoom-out { from { opacity: 0; transform: scale(1.18); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-bounce-in { 0% { opacity: 0; transform: scale(.3); } 50% { opacity: 1; transform: scale(1.06); } 70% { transform: scale(.94); } 100% { transform: none; } }
+@keyframes xsb-motion-flip-in-x { from { opacity: 0; transform: perspective(600px) rotateX(75deg); } to { opacity: 1; transform: perspective(600px) rotateX(0); } }
+@keyframes xsb-motion-flip-in-y { from { opacity: 0; transform: perspective(600px) rotateY(75deg); } to { opacity: 1; transform: perspective(600px) rotateY(0); } }
+@keyframes xsb-motion-rotate-in { from { opacity: 0; transform: rotate(-18deg) scale(.8); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-roll-in { from { opacity: 0; transform: translate3d(-36px, 0, 0) rotate(-90deg); } to { opacity: 1; transform: none; } }
+@keyframes xsb-motion-blur-in { from { opacity: 0; filter: blur(12px); transform: scale(1.03); } to { opacity: 1; filter: blur(0); transform: none; } }
+@keyframes xsb-motion-bounce { 0%, 20%, 53%, 80%, 100% { transform: translateY(0); } 40%, 43% { transform: translateY(-18px); } 70% { transform: translateY(-9px); } 90% { transform: translateY(-3px); } }
+.xsb-motion-preview { animation-fill-mode: both; }
+@media (prefers-reduced-motion: reduce) {
+	.xsb-motion-preview, [class*="xsb-anim-"] { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

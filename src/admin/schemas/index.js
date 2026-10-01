@@ -13,12 +13,29 @@
  * @package Xcodesol_Page_Builder
  */
 
-import { manifest as containerManifest } from './container-schema';
-import { manifest as headingManifest } from './heading-schema';
-import { manifest as buttonManifest } from './button-schema';
-import { manifest as imageManifest } from './image-schema';
-import { manifest as textManifest } from './text-schema';
-import { manifest as dividerManifest } from './divider-schema';
+import { CONTAINER_SCHEMA } from './container-schema';
+import { HEADING_SCHEMA } from './heading-schema';
+import { BUTTON_SCHEMA } from './button-schema';
+import { IMAGE_SCHEMA } from './image-schema';
+import { TEXT_SCHEMA } from './text-schema';
+import { DIVIDER_SCHEMA } from './divider-schema';
+import { BANNER_SCHEMA } from './banner-schema';
+import { SHORTCODE_SCHEMA } from './shortcode-schema';
+import { BREADCRUMB_SCHEMA } from './breadcrumb-schema';
+import { HTML_SCHEMA } from './html-schema';
+import { DYNAMIC_SCHEMA } from './dynamic-schema';
+
+const containerManifest = CONTAINER_SCHEMA.manifest;
+const headingManifest = HEADING_SCHEMA.manifest;
+const buttonManifest = BUTTON_SCHEMA.manifest;
+const imageManifest = IMAGE_SCHEMA.manifest;
+const textManifest = TEXT_SCHEMA.manifest;
+const dividerManifest = DIVIDER_SCHEMA.manifest;
+const bannerManifest = BANNER_SCHEMA.manifest;
+const shortcodeManifest = SHORTCODE_SCHEMA.manifest;
+const breadcrumbManifest = BREADCRUMB_SCHEMA.manifest;
+const htmlManifest = HTML_SCHEMA.manifest;
+const dynamicManifest = DYNAMIC_SCHEMA.manifest;
 
 /**
  * Every declared widget manifest, in registration order.
@@ -30,7 +47,14 @@ export const WIDGET_MANIFESTS = [
 	imageManifest,
 	textManifest,
 	dividerManifest,
+	bannerManifest,
+	shortcodeManifest,
+	breadcrumbManifest,
+	htmlManifest,
+	dynamicManifest,
 ];
+
+export const WIDGET_SCHEMAS = [ CONTAINER_SCHEMA, HEADING_SCHEMA, BUTTON_SCHEMA, IMAGE_SCHEMA, TEXT_SCHEMA, DIVIDER_SCHEMA, BANNER_SCHEMA, SHORTCODE_SCHEMA, BREADCRUMB_SCHEMA, HTML_SCHEMA, DYNAMIC_SCHEMA ];
 
 /**
  * Legacy block-type prefix. Stored documents written before the prefix
@@ -110,6 +134,11 @@ export function manifestLookup() {
  */
 export function manifestFor( type ) {
 	return manifestLookup().get( type ) || null;
+}
+
+export function schemaFor( type ) {
+	const manifest = manifestFor( type );
+	return manifest ? WIDGET_SCHEMAS.find( ( schema ) => schema.manifest.widget === manifest.widget ) || null : null;
 }
 
 /**

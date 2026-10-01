@@ -42,7 +42,7 @@ export const CONTAINER_BLOCKS = [
 		// A new container starts as one full-width column so its own layout
 		// mode (Columns / Grid / Masonry…) is what splits it up, instead of
 		// being pre-split into two halves.
-		defaults: { columns: 1, column_widths: [ 12 ], gap: 20, padding: 20, align: 'stretch', background: '', border_radius: 8 },
+		defaults: { columns: 1, column_widths: [ 12 ], gap: 20, padding: { top: 20, right: 20, bottom: 20, left: 20, unit: 'px', isLinked: true }, align: 'stretch', background: '', border_radius: 8, content_width: 'boxed', max_width: { value: 1200, unit: 'px' } },
 		icon: 'dashicons-editor-table',
 		category: 'layout',
 		description: __( 'Responsive container: full width until you give it a layout.', 'xcodesol-page-builder' ),
@@ -764,7 +764,7 @@ export default function BlockPalette( {
 																		className={ `xsb-layer-nested-item${ isNestedSelected ? ' is-selected' : '' }` }
 																		onClick={ ( e ) => {
 																			e.stopPropagation();
-																			onSelectNestedBlock && onSelectNestedBlock( { ci: index, cj, bi } );
+													onSelectNestedBlock && onSelectNestedBlock( index, cj, bi );
 																		} }
 																	>
 																		<span className="xsb-layer-node__icon">

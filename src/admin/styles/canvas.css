@@ -20,6 +20,42 @@
 	position: relative;
 }
 
+.xsb-container--has-video {
+	position: relative;
+	isolation: isolate;
+}
+
+.xsb-container--has-overlay {
+	position: relative;
+	isolation: isolate;
+}
+
+.xsb-container-background-video {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	z-index: 0;
+	pointer-events: none;
+}
+
+.xsb-container-background-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+.xsb-container--has-video > .xsb-container-col,
+.xsb-container--has-video > .xsb-container-flow,
+.xsb-container--has-overlay > .xsb-container-col,
+.xsb-container--has-overlay > .xsb-container-flow {
+	position: relative;
+	z-index: 2;
+}
+
 .xsb-container-flow.is-over {
 	outline: 2px dashed var(--xsb-accent, #2563eb);
 	outline-offset: 2px;
@@ -74,6 +110,23 @@
 	min-width: 0;
 }
 
+/* When a container is active, outline only its empty child slots. This makes
+ * nesting legible without drawing boxes around every widget in the layout. */
+.xsb-live-block--gb-container.is-selected .xsb-container-col:has(> .xsb-drop-hint) {
+	border: 1px dotted rgba(99, 91, 255, 0.55);
+	border-radius: 3px;
+	background: transparent;
+	transition: border-color 160ms ease;
+}
+
+.xsb-live-block--gb-container.is-selected .xsb-container-col:has(> .xsb-drop-hint):hover,
+.xsb-container-col.is-over {
+	border: 1px dotted var(--xsb-accent, #635bff);
+	border-color: var(--xsb-accent, #635bff);
+	background: transparent;
+	box-shadow: none;
+}
+
 .xsb-container-col:not(:has(> .xsb-nested-block)),
 .xsb-live-zone-body:not(:has(> .xsb-live-block)) {
 	display: flex;
@@ -94,8 +147,63 @@
 	justify-content: center;
 }
 
+/* Keep each structural zone droppable without giving every empty zone a full-page height. */
 .xsb-live-zone-body:not(:has(> .xsb-live-block)) {
-	min-height: 180px;
+	min-height: 0;
+}
+
+.xsb-live-zone:has(> .xsb-live-zone-body:not(:has(> .xsb-live-block))) {
+	flex: 0 0 auto;
+	gap: 0;
+	padding: 0;
+}
+
+.xsb-live-zone:has(> .xsb-live-zone-body:not(:has(> .xsb-live-block))) .xsb-live-zone-label {
+	display: none;
+}
+
+.xsb-live-zone:has(> .xsb-live-zone-body:not(:has(> .xsb-live-block))) .xsb-drop-hint {
+	min-height: 42px;
+}
+
+.xsb-live-zone-body:not(:has(> .xsb-live-block)) .xsb-drop-hint { display: none; }
+.xsb-live-zone:last-child .xsb-live-zone-body:not(:has(> .xsb-live-block)) .xsb-drop-hint { display: flex; }
+
+/* Exactly one top-level add target is visible on the page: the final structural zone. */
+.xsb-preview-canvas-live > .xsb-live-zone > .xsb-live-zone-body > .xsb-drop-hint {
+	display: none !important;
+}
+
+.xsb-preview-canvas-live > .xsb-live-zone.is-final-page-zone > .xsb-live-zone-body > .xsb-drop-hint {
+	display: none !important;
+}
+
+/* Container columns keep a clear plus target; the repeated helper text and
+ * the extra page-level trailing button are removed to reduce canvas clutter. */
+.xsb-preview-canvas-live .xsb-drop-hint-label { display: none; }
+.xsb-preview-canvas-live .xsb-drop-hint {
+	min-height: 42px;
+	padding: 4px;
+	border-color: transparent;
+	border-radius: 6px;
+	background: transparent;
+	box-shadow: none;
+}
+.xsb-preview-canvas-live .xsb-drop-hint--nested { min-height: 44px; }
+.xsb-preview-canvas-live .xsb-drop-hint--end { min-height: 30px; margin-top: 0; }
+/* The column's own trailing add box duplicates the container's highlighted
+ * bottom insertion button. Keep the column droppable for drag-and-drop, but
+ * use the container-level insertion affordance for adding the next item. */
+.xsb-preview-canvas-live .xsb-container-col > .xsb-drop-hint--end { display: none !important; }
+.xsb-preview-canvas-live .xsb-live-block--gb-container:has(.xsb-container-col.is-over) {
+	border: 1px dotted var(--xsb-accent, #635bff);
+	outline: none;
+	box-shadow: none;
+}
+.xsb-preview-canvas-live .xsb-container-col.is-over {
+	background: transparent;
+	box-shadow: none;
+	border-color: transparent;
 }
 
 /* ------------------------------------------------------------------ *
@@ -207,25 +315,225 @@
  * ------------------------------------------------------------------ */
 
 .xsb-live-block--nested-container {
+	position: relative;
 	min-height: 44px;
+	border: 1px dotted color-mix(in srgb, var(--xsb-depth-color, var(--xsb-accent, #635bff)) 65%, transparent);
+	border-radius: 4px;
+	background-clip: padding-box;
+	transition: border-color 160ms ease;
+}
+
+.xsb-nested-block,
+.xsb-nested-container-item {
+	--xsb-depth-color: #8b5cf6;
+	position: relative;
+	min-width: 0;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.xsb-nested-block:hover,
+.xsb-nested-block:focus-within,
+.xsb-nested-container-item:hover,
+.xsb-nested-container-item:focus-within {
+	border-color: var(--xsb-depth-color);
+	background-color: color-mix(in srgb, var(--xsb-depth-color) 4%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--xsb-depth-color) 13%, transparent);
+}
+
+/* Nested widgets use the same magenta edit frame as top-level widgets.
+ * Ancestor containers stay as quiet dotted guides while the pointer moves
+ * through deeper levels, making the nesting depth readable. */
+.xsb-nested-block:not(.xsb-nested-block--container):hover,
+.xsb-nested-block:not(.xsb-nested-block--container):focus-within,
+.xsb-nested-block:not(.xsb-nested-block--container).is-selected {
+	border-color: #d946ef;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.xsb-nested-block.is-selected {
+	border-color: var(--xsb-depth-color);
+	background-color: color-mix(in srgb, var(--xsb-depth-color) 7%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--xsb-depth-color) 18%, transparent);
+}
+
+.xsb-nested-block--container {
+	margin: 0;
+	padding: 0;
+	border-radius: 4px;
+	background: transparent;
+}
+
+.xsb-nested-block--container:hover {
+	border-color: var(--xsb-depth-color);
+}
+
+.xsb-nested-block--container.is-selected {
+	border-color: var(--xsb-depth-color);
+}
+
+.xsb-nested-block--container > .xsb-nested-toolbar,
+.xsb-nested-block--container > .xsb-nested-toolbar.is-first {
+	top: -11px;
+	left: 50%;
+	transform: translateX(-50%);
+	height: 23px;
+	padding: 0 5px;
+	border: 1px solid color-mix(in srgb, var(--xsb-depth-color) 30%, white);
+	border-radius: 6px 6px 0 0;
+	background: color-mix(in srgb, var(--xsb-depth-color) 18%, white);
+	color: color-mix(in srgb, var(--xsb-depth-color) 55%, #111827);
+	box-shadow: 0 2px 7px rgba(76, 29, 149, 0.13);
+}
+
+.xsb-nested-block--container .xsb-nested-toolbar-title {
+	display: inline-flex;
+	font-size: 10px;
+	font-weight: 600;
+}
+
+.xsb-nested-block--container .xsb-toolbar-grip {
+	color: color-mix(in srgb, var(--xsb-depth-color) 55%, white);
 }
 
 .xsb-nested-container-empty {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 40px;
-	font-size: 10.5px;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--xsb-muted, #94a3b8);
+	gap: 8px;
+	min-height: 72px;
+	padding: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--xsb-muted, #64748b);
 	border: 1px dashed var(--xsb-line, #cbd5e1);
-	border-radius: 6px;
+	border-radius: 3px;
+	background: rgba(248, 250, 252, 0.62);
 }
 
 .xsb-nested-container-item {
 	min-width: 0;
+}
+
+.xsb-nested-preview-popover {
+	position: absolute;
+	top: -22px;
+	left: 8px;
+	z-index: calc(var(--xsb-z-toolbar) + 3);
+	display: inline-flex;
+	align-items: center;
+	max-width: min(220px, 80%);
+	padding: 3px 8px;
+	border: 1px solid color-mix(in srgb, var(--xsb-depth-color) 25%, white);
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--xsb-depth-color) 13%, white);
+	color: color-mix(in srgb, var(--xsb-depth-color) 55%, #111827);
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 1.3;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	opacity: 0;
+	transform: translateY(3px);
+	pointer-events: none;
+	transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.xsb-nested-container-item:hover > .xsb-nested-preview-popover,
+.xsb-nested-container-item:focus-within > .xsb-nested-preview-popover {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.xsb-nested-container-column {
+	min-width: 0;
+	min-height: 72px;
+	padding: 4px;
+	border: 1px dashed rgba(100, 116, 139, .24);
+	border-radius: 4px;
+	background: rgba(248, 250, 252, .2);
+}
+
+.xsb-nested-container-column--empty {
+	background: rgba(248, 250, 252, .42);
+}
+
+.xsb-live-block--nested-container {
+	position: relative;
+	min-width: 0;
+	transition: border-color .14s ease;
+}
+
+.xsb-live-block--nested-container:hover,
+.xsb-live-block--nested-container:focus-within,
+.xsb-live-block--nested-container.is-over {
+	border-color: #aab2bf;
+	border-style: dotted;
+	border-width: 1px;
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+}
+
+.xsb-live-block--nested-container.is-over {
+	border-color: var(--xsb-depth-color);
+	border-style: dotted;
+	border-width: 1px;
+}
+
+/* The real nested container gets its own selection state, separate from its
+ * outer item wrapper, so nested levels remain easy to identify at a glance. */
+.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container {
+	border-color: var(--xsb-depth-color);
+	border-style: dotted;
+	border-width: 1px;
+	outline: none;
+	box-shadow: none;
+}
+
+/* Show one dotted boundary on the container itself; the outer nested item is
+ * only a hit area and should not draw a second highlight around it. */
+.xsb-nested-block--container:hover,
+.xsb-nested-block--container:focus-within,
+.xsb-nested-block--container.is-selected {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+
+/* Nested items containing a container are also hit-area wrappers. Keep their
+ * hover chrome off so the container's own dotted boundary is the only one. */
+.xsb-nested-container-item:has(> .xsb-live-block--nested-container):hover,
+.xsb-nested-container-item:has(> .xsb-live-block--nested-container):focus-within {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+
+.xsb-nested-container-item:has(> .xsb-live-block--nested-container) {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.xsb-nested-container-item.is-selected {
+	border: 1px dotted var(--xsb-depth-color, #8b5cf6);
+	background: transparent;
+	box-shadow: none;
+}
+
+.xsb-live-block--nested-container[data-nesting-level="2"] > .xsb-nested-container-column {
+	border-color: rgba(99, 91, 255, .24);
+}
+
+.xsb-live-block--nested-container[data-nesting-level="3"] > .xsb-nested-container-column {
+	border-color: rgba(14, 165, 233, .28);
 }
 
 /* ------------------------------------------------------------------ *
@@ -242,9 +550,11 @@
 	flex: 1 1 auto;
 	min-width: 0;
 	min-height: 0;
-	padding: var(--xsb-space-6) var(--xsb-space-6) var(--xsb-space-12);
-	overflow: auto;
-	background: var(--xsb-bg-panel);
+	padding: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior-y: contain;
+	background: #fff;
 }
 
 /* Guides toggle: opt-in ruled grid over the page surface. */
@@ -258,63 +568,63 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: var(--xsb-space-6);
+	gap: 0;
 	width: 100%;
 	min-height: 100%;
-	padding-top: var(--xsb-space-8);
+	padding: 0;
 	margin: 0 auto;
 	transition: max-width var(--xsb-dur-4) var(--xsb-ease);
 }
 
 .xsb-preview--device-tablet {
 	max-width: 834px;
+	min-height: 100%;
+	height: auto;
 }
 
 .xsb-preview--device-mobile {
 	max-width: 390px;
+	min-height: 100%;
+	height: auto;
 }
 
 .xsb-preview-frame-wrap {
 	display: flex;
 	flex-direction: column;
+	flex: 1 0 auto;
 	width: 100%;
+	height: auto;
 	min-height: 100%;
 }
 
 .xsb-device-mockup {
+	display: flex;
+	flex: 0 0 auto;
+	flex-direction: column;
 	width: 100%;
+	min-height: 100%;
+	height: auto;
 }
 
 /* Only the narrow breakpoints get device chrome. */
 .xsb-preview--device-mobile .xsb-device-mockup {
-	position: relative;
-	padding: var(--xsb-space-8) var(--xsb-space-3) var(--xsb-space-9);
-	border: 1px solid var(--xsb-border-strong);
-	border-radius: 38px;
-	background: var(--xsb-bg-panel);
-	box-shadow: var(--xsb-shadow-xl);
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: #fff;
+	box-shadow: none;
 }
 
 .xsb-preview--device-tablet .xsb-device-mockup {
-	padding: var(--xsb-space-7);
-	border: 1px solid var(--xsb-border-strong);
-	border-radius: 26px;
-	background: var(--xsb-bg-panel);
-	box-shadow: var(--xsb-shadow-xl);
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: #fff;
+	box-shadow: none;
 }
 
-.xsb-device-mockup__notch {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 18px;
-}
-
-.xsb-device-mockup__notch span {
-	width: 92px;
-	height: 5px;
-	border-radius: var(--xsb-radius-full);
-	background: var(--xsb-border-strong);
+.xsb-canvas--responsive {
+	background: #303033;
 }
 
 /*
@@ -326,19 +636,31 @@
 .xsb-preview--live .xcopb-template-wrapper {
 	display: flex;
 	flex-direction: column;
-	flex: 1 1 auto;
+	flex: 0 0 auto;
 	min-width: 0;
-	background: transparent;
+	background: #fff;
 	border-radius: 0;
 	box-shadow: none;
 	overflow: visible;
+	min-height: 100%;
+	height: auto;
+	background: #fff;
+	box-shadow: none;
 }
 
 .xsb-preview--device-mobile .xsb-template-wrapper,
 .xsb-preview--device-mobile .xcopb-template-wrapper,
 .xsb-preview--device-tablet .xsb-template-wrapper,
 .xsb-preview--device-tablet .xcopb-template-wrapper {
-	border-radius: var(--xsb-radius-xl);
+	border-radius: 0;
+}
+
+.xsb-preview--device-tablet .xsb-preview-canvas-live,
+.xsb-preview--device-mobile .xsb-preview-canvas-live {
+	flex: 0 0 auto;
+	min-height: 100%;
+	height: auto;
+	background: #fff;
 }
 
 /* ------------------------------------------------------------------ *
@@ -349,8 +671,8 @@
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;
-	gap: var(--xsb-space-4);
-	padding: var(--xsb-space-10) 0;
+	gap: 0;
+	padding: 0;
 }
 
 /* The zone caption is drop affordance, not chrome: it stays out of the way
@@ -390,14 +712,32 @@
 	border-color: var(--xsb-a-200);
 }
 
+/* Match Elementor's editor chrome: widgets get a crisp accent frame while
+ * containers use a light dotted boundary so nested levels remain visible. */
+.xsb-preview-canvas-live .xsb-live-block:not(.xsb-live-block--gb-container):hover,
+.xsb-preview-canvas-live .xsb-live-block:not(.xsb-live-block--gb-container).is-selected,
+.xsb-preview-canvas-live .xsb-live-block:not(.xsb-live-block--gb-container):focus-within {
+	border-color: #d946ef;
+	border-radius: 0;
+	box-shadow: none;
+}
+
 .xsb-live-block.is-selected,
 .xsb-live-block[data-selected='true'] {
 	border-color: var(--xsb-accent);
 	box-shadow: 0 0 0 3px var(--xsb-guide-soft);
 }
 
+.xsb-preview-canvas-live .xsb-live-block--gb-container:hover,
+.xsb-preview-canvas-live .xsb-live-block--gb-container.is-selected,
+.xsb-preview-canvas-live .xsb-live-block--gb-container:focus-within {
+	border: 1px dotted var(--xsb-accent, #635bff);
+	border-radius: 0;
+	box-shadow: none;
+}
+
 .xsb-live-block--gb-container {
-	padding: var(--xsb-space-2);
+	padding: 0;
 }
 
 .xsb-live-block-order {
@@ -427,31 +767,87 @@
 
 .xsb-drop-hint {
 	display: flex;
+	width: 100%;
+	box-sizing: border-box;
 	align-items: center;
 	justify-content: center;
+	gap: 9px;
 	min-height: 96px;
 	padding: var(--xsb-space-4) var(--xsb-space-6);
-	border-radius: var(--xsb-radius-md);
-	color: var(--xsb-muted);
+	border: 1px dashed rgba(100, 116, 139, 0.34);
+	border-radius: 3px;
+	background: rgba(248, 250, 252, 0.42);
+	color: #64748b;
+	font-family: inherit;
 	font-size: var(--xsb-text-sm);
 	font-weight: var(--xsb-weight-medium);
 	text-align: center;
 	cursor: pointer;
-	transition: color var(--xsb-dur-2) var(--xsb-ease), background var(--xsb-dur-2) var(--xsb-ease);
+	transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
-/* Sits under existing children, so it stays a slim line. */
-.xsb-drop-hint--end {
-	min-height: 30px;
-	padding: var(--xsb-space-2) var(--xsb-space-6);
+.xsb-drop-hint-plus {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 25px;
+	width: 25px;
+	height: 25px;
+	border: 1px solid rgba(99, 91, 255, 0.24);
+	border-radius: 50%;
+	background: #fff;
+	color: var(--xsb-accent, #635bff);
+	box-shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
+	transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.xsb-drop-hint-label { line-height: 1.3; }
+
+.xsb-drop-hint--nested {
+	grid-column: 1 / -1;
+	min-height: 68px;
+	border-color: rgba(99, 91, 255, 0.3);
+	background: rgba(255, 255, 255, 0.56);
 }
 
 .xsb-drop-hint:hover,
-.xsb-live-zone.is-over .xsb-drop-hint,
-.xsb-container-col.is-over .xsb-drop-hint {
-	background: var(--xsb-guide-soft);
-	color: var(--xsb-accent-soft-text);
+.xsb-drop-hint:focus-visible,
+.xsb-container-col.is-over > .xsb-drop-hint,
+.xsb-container-flow.is-over > .xsb-drop-hint,
+.xsb-live-zone.is-over .xsb-drop-hint {
+	border-color: var(--xsb-accent, #635bff);
+	background: rgba(99, 91, 255, 0.075);
+	color: #4f46e5;
+	box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.09);
+	outline: none;
 }
+
+.xsb-drop-hint:hover .xsb-drop-hint-plus,
+.xsb-drop-hint:focus-visible .xsb-drop-hint-plus,
+.xsb-container-col.is-over > .xsb-drop-hint .xsb-drop-hint-plus,
+.xsb-container-flow.is-over > .xsb-drop-hint .xsb-drop-hint-plus,
+.xsb-live-zone.is-over .xsb-drop-hint .xsb-drop-hint-plus {
+	border-color: var(--xsb-accent, #635bff);
+	background: var(--xsb-accent, #635bff);
+	color: #fff;
+	transform: scale(1.06);
+	box-shadow: 0 2px 7px rgba(79, 70, 229, 0.22);
+}
+
+.xsb-drop-hint:focus-visible { outline: 2px solid var(--xsb-accent, #635bff); outline-offset: 2px; }
+
+/* Sits under existing children, so it stays a slim line. */
+.xsb-drop-hint--end {
+	min-height: 42px;
+	margin-top: var(--xsb-space-2);
+	padding: var(--xsb-space-2) var(--xsb-space-6);
+	border-color: rgba(100, 116, 139, 0.25);
+	background: rgba(248, 250, 252, 0.35);
+	box-shadow: none;
+}
+
+.xsb-drop-hint--end .xsb-drop-hint-plus { width: 20px; height: 20px; flex-basis: 20px; }
+
 
 /* Rich first-run empty state ------------------------------------------ */
 
@@ -891,6 +1287,42 @@
 	transform: scale(1);
 }
 
+/* Container handles sit at the top centre, like a small insertion tab. The
+ * lighter accent keeps the action bar distinct from the page content and
+ * makes nested selection easier to read. */
+.xsb-block-toolbar--container,
+.xsb-block-toolbar--container.is-first {
+	top: -12px;
+	left: 50%;
+	transform: translateX(-50%);
+	height: 24px;
+	gap: 2px;
+	padding: 0 5px;
+	border: 1px solid rgba(109, 40, 217, 0.18);
+	border-radius: 7px 7px 0 0;
+	background: #f0abfc;
+	color: #3b0764;
+	box-shadow: 0 2px 8px rgba(76, 29, 149, 0.15);
+}
+
+.xsb-block-toolbar--container .xsb-block-toolbar-badge {
+	background: transparent;
+	color: inherit;
+}
+
+.xsb-block-toolbar--container .xsb-toolbar-grip {
+	color: rgba(59, 7, 100, 0.58);
+}
+
+.xsb-block-toolbar--container .xsb-tb-btn:hover {
+	background: rgba(255, 255, 255, 0.55);
+}
+
+.xsb-block-toolbar--container .xsb-tb-btn--remove:hover {
+	background: #fee2e2;
+	color: #b91c1c;
+}
+
 /* ------------------------------------------------------------------ *
  * Canvas chrome that stays out of the way
  *
@@ -906,3 +1338,6 @@
 .xsb-live-block-order {
 	display: none;
 }
+
+.xsb-preview-interactive-color:hover { color: var(--xsb-preview-hover-color) !important; }
+.xsb-preview-interactive-filter:hover { filter: var(--xsb-preview-hover-filter) !important; }

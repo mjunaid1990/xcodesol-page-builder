@@ -46,6 +46,7 @@ if ( isset( $settings['line_height'] ) && '' !== $settings['line_height'] ) {
 if ( ! empty( $settings['align'] ) && 'left' !== $settings['align'] ) {
 	$vars['--xsb-twt-align'] = $settings['align'];
 }
+if ( ! empty( $settings['font_family'] ) ) { $vars['--xsb-twt-content-ff'] = $settings['font_family']; }
 
 // Margins only inline (typography travels through the vars above).
 $wrap_props = $vars;

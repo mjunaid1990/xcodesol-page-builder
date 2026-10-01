@@ -62,12 +62,14 @@ $gradient_pos   = ! empty( $settings['gradient_position'] ) ? $settings['gradien
 $gradient_a     = $xsb_banner_color( isset( $settings['gradient_color_a'] ) ? $settings['gradient_color_a'] : '', '#2563eb' );
 $gradient_b     = $xsb_banner_color( isset( $settings['gradient_color_b'] ) ? $settings['gradient_color_b'] : '', '#4f46e5' );
 
-$bg_image    = ! empty( $settings['bg_image'] ) ? $settings['bg_image'] : '';
+$bg_image_value = ! empty( $settings['bg_image'] ) ? $settings['bg_image'] : '';
+$bg_image    = is_array( $bg_image_value ) ? ( $bg_image_value['url'] ?? '' ) : $bg_image_value;
 $bg_size     = ! empty( $settings['bg_size'] ) ? $settings['bg_size'] : 'cover';
 $bg_position = ! empty( $settings['bg_position'] ) ? $settings['bg_position'] : 'center center';
 $bg_repeat   = ! empty( $settings['bg_repeat'] ) ? $settings['bg_repeat'] : 'no-repeat';
 $bg_attachment = ! empty( $settings['bg_attachment'] ) ? $settings['bg_attachment'] : 'scroll';
-$bg_video    = ! empty( $settings['bg_video'] ) ? $settings['bg_video'] : '';
+$bg_video_value = ! empty( $settings['bg_video'] ) ? $settings['bg_video'] : '';
+$bg_video    = is_array( $bg_video_value ) ? ( $bg_video_value['url'] ?? '' ) : $bg_video_value;
 $overlay_color = $xsb_banner_color( isset( $settings['overlay_color'] ) ? $settings['overlay_color'] : '', '#000000' );
 
 // Title styling
@@ -127,7 +129,7 @@ $xsb_shadow_map = array(
 	'medium' => '0 10px 28px rgba(0,0,0,0.18)',
 	'strong' => '0 18px 50px rgba(0,0,0,0.28)',
 );
-$xsb_anim_list = array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
+$xsb_anim_list = class_exists( 'XCOPB_Motion_Presets' ) ? array_slice( XCOPB_Motion_Presets::ids(), 1 ) : array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
 
 if ( '' === $title && '' === $subtitle && '' === $button_text ) {
 	return;
@@ -198,8 +200,11 @@ if ( ( 'image' === $bg_type || 'video' === $bg_type ) && $overlay_color ) {
 $xsb_anim_class = '';
 if ( 'none' !== $animation && in_array( $animation, $xsb_anim_list, true ) ) {
 	$xsb_anim_class = ' xsb-anim-' . $animation;
-	$container_style .= 'animation-duration:' . absint( $animation_duration ) . 'ms;';
+	$animation_keyframe = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::keyframe( $animation ) : 'xsb-' . $animation;
+	$container_style .= 'animation-name:' . esc_attr( $animation_keyframe ) . ';animation-duration:' . absint( $animation_duration ) . 'ms;';
 	$container_style .= 'animation-delay:' . absint( $animation_delay ) . 'ms;';
+	$container_style .= 'animation-timing-function:' . ( isset( $settings['animation_easing'] ) && in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), true ) ? $settings['animation_easing'] : 'ease' ) . ';';
+	$container_style .= 'animation-iteration-count:' . ( isset( $settings['animation_repeat'] ) && in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? $settings['animation_repeat'] : '1' ) . ';';
 }
 
 $content  = '';

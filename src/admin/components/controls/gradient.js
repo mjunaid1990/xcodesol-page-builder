@@ -6,6 +6,7 @@
 
 import { __ } from '@wordpress/i18n';
 import ControlBase from './control-base';
+import ColorControl from './color';
 
 export default function GradientControl( {
 	config = {},
@@ -13,6 +14,7 @@ export default function GradientControl( {
 	onChange,
 	device,
 	state,
+	customPalette = [],
 } ) {
 	const {
 		id,
@@ -99,13 +101,13 @@ export default function GradientControl( {
 				<div className="xsb-gradient-stops-row">
 					<div className="xsb-stop-field">
 						<label className="xsb-sub-label">{ __( 'Color 1', 'xcodesol-page-builder' ) }</label>
-						<div className="xsb-color-input-row">
-							<input
-								type="color"
-								value={ current.colorA }
-								onChange={ ( e ) => update( 'colorA', e.target.value ) }
-								className="xsb-native-color-picker"
-							/>
+						<ColorControl
+							config={ { default: defaultValue.colorA || '#4f46e5' } }
+							value={ current.colorA }
+							onChange={ ( color ) => update( 'colorA', color ) }
+							customPalette={ customPalette }
+						/>
+						<div className="xsb-color-input-row xsb-gradient-stop-position">
 							<input
 								type="number"
 								min="0"
@@ -120,13 +122,13 @@ export default function GradientControl( {
 
 					<div className="xsb-stop-field">
 						<label className="xsb-sub-label">{ __( 'Color 2', 'xcodesol-page-builder' ) }</label>
-						<div className="xsb-color-input-row">
-							<input
-								type="color"
-								value={ current.colorB }
-								onChange={ ( e ) => update( 'colorB', e.target.value ) }
-								className="xsb-native-color-picker"
-							/>
+						<ColorControl
+							config={ { default: defaultValue.colorB || '#06b6d4' } }
+							value={ current.colorB }
+							onChange={ ( color ) => update( 'colorB', color ) }
+							customPalette={ customPalette }
+						/>
+						<div className="xsb-color-input-row xsb-gradient-stop-position">
 							<input
 								type="number"
 								min="0"
