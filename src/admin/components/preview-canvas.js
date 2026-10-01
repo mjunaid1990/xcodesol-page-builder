@@ -41,6 +41,24 @@ function getBlockMeta(type) {
 	return all.find((b) => b.type === type) || { type, label: type, icon: 'dashicons-editor-help', defaults: {} };
 }
 
+function getBlockDisplayLabel(type) {
+	const meta = getBlockMeta( type );
+	if ( meta.label && meta.label !== type ) return meta.label;
+	const slug = String( type || '' ).split( '/' ).pop().replace( /^gb-/, '' );
+	const labels = {
+		heading: __( 'Heading', 'xcodesol-page-builder' ),
+		text: __( 'Text Editor', 'xcodesol-page-builder' ),
+		'image': __( 'Image', 'xcodesol-page-builder' ),
+		button: __( 'Button', 'xcodesol-page-builder' ),
+		container: __( 'Container', 'xcodesol-page-builder' ),
+		'breadcrumb': __( 'Breadcrumbs', 'xcodesol-page-builder' ),
+		divider: __( 'Divider', 'xcodesol-page-builder' ),
+		banner: __( 'Banner', 'xcodesol-page-builder' ),
+	};
+	if ( labels[ slug ] ) return labels[ slug ];
+	return slug.replace( /[-_]+/g, ' ' ).replace( /\b\w/g, ( letter ) => letter.toUpperCase() ) || __( 'Widget', 'xcodesol-page-builder' );
+}
+
 function nestingAccent(depth = 1) {
 	const level = Math.max(1, Number(depth) || 1);
 	const hue = (263 + (level - 1) * 67) % 360;
@@ -2926,7 +2944,7 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 			className={ `xsb-nested-container-item${ isNestedSelected ? ' is-selected' : '' }` }
 			data-nesting-level={ depth + 1 }
 			style={ { '--xsb-depth-color': nestingAccent( depth + 1 ) } }
-			aria-label={ getBlockMeta( nested.type ).label }
+			aria-label={ getBlockDisplayLabel( nested.type ) }
 			onClick={ ( event ) => {
 				event.stopPropagation();
 				if ( onSelectNested && Number.isInteger( containerIndex ) ) {
@@ -2934,7 +2952,7 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 				}
 			} }
 		>
-			<span className="xsb-nested-preview-popover" aria-hidden="true">{ getBlockMeta( nested.type ).label }</span>
+			<span className="xsb-nested-preview-popover" aria-hidden="true"><span className="xsb-nested-preview-popover__marker" />{ getBlockDisplayLabel( nested.type ) }</span>
 			{ guideMatches && dropGuide.slot === itemIndex && <DropGuideLine /> }
 			{ renderBlockBody(
 				nested,

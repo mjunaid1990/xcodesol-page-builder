@@ -338,8 +338,8 @@
 .xsb-nested-container-item:hover,
 .xsb-nested-container-item:focus-within {
 	border-color: var(--xsb-depth-color);
-	background-color: color-mix(in srgb, var(--xsb-depth-color) 4%, transparent);
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--xsb-depth-color) 13%, transparent);
+	background: transparent;
+	box-shadow: none;
 }
 
 /* Nested widgets use the same magenta edit frame as top-level widgets.
@@ -355,9 +355,9 @@
 }
 
 .xsb-nested-block.is-selected {
-	border-color: var(--xsb-depth-color);
-	background-color: color-mix(in srgb, var(--xsb-depth-color) 7%, transparent);
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--xsb-depth-color) 18%, transparent);
+	border-color: #d946ef;
+	background: transparent;
+	box-shadow: none;
 }
 
 .xsb-nested-block--container {
@@ -422,33 +422,37 @@
 
 .xsb-nested-preview-popover {
 	position: absolute;
-	top: -22px;
-	left: 8px;
+	top: -12px;
+	left: 6px;
 	z-index: calc(var(--xsb-z-toolbar) + 3);
 	display: inline-flex;
 	align-items: center;
+	gap: 6px;
 	max-width: min(220px, 80%);
-	padding: 3px 8px;
-	border: 1px solid color-mix(in srgb, var(--xsb-depth-color) 25%, white);
-	border-radius: 6px;
-	background: color-mix(in srgb, var(--xsb-depth-color) 13%, white);
-	color: color-mix(in srgb, var(--xsb-depth-color) 55%, #111827);
-	font-size: 10px;
+	min-height: 23px;
+	padding: 3px 9px;
+	border: 1px solid rgba(217, 70, 239, .28);
+	border-radius: 7px;
+	background: #fff;
+	color: #86198f;
+	box-shadow: 0 3px 10px rgba(30, 20, 45, .11);
+	font-size: 11px;
 	font-weight: 600;
 	line-height: 1.3;
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	overflow: hidden;
 	opacity: 0;
-	transform: translateY(3px);
+	transform: translateY(0);
 	pointer-events: none;
-	transition: opacity 140ms ease, transform 140ms ease;
+	transition: opacity 120ms ease;
 }
+
+.xsb-nested-preview-popover__marker { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: #d946ef; }
 
 .xsb-nested-container-item:hover > .xsb-nested-preview-popover,
 .xsb-nested-container-item:focus-within > .xsb-nested-preview-popover {
 	opacity: 1;
-	transform: translateY(0);
 }
 
 .xsb-nested-container-column {
