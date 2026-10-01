@@ -43,17 +43,32 @@ function getBlockMeta(type) {
 
 function getBlockDisplayLabel(type) {
 	const meta = getBlockMeta( type );
-	if ( meta.label && meta.label !== type ) return meta.label;
-	const slug = String( type || '' ).split( '/' ).pop().replace( /^gb-/, '' );
+	const metaLabel = String( meta.label || '' ).trim();
+	// A few legacy block manifests use the registered block name as their
+	// label. Never expose a namespace/slug such as "xcopb/gb-heading" in the
+	// canvas hover chip when a readable fallback can be derived from its type.
+	if ( metaLabel && ! /^[a-z0-9_-]+\/[a-z0-9_-]+$/i.test( metaLabel ) ) return metaLabel;
+	const slug = String( type || metaLabel ).split( '/' ).pop().replace( /^gb-/, '' );
 	const labels = {
 		heading: __( 'Heading', 'xcodesol-page-builder' ),
 		text: __( 'Text Editor', 'xcodesol-page-builder' ),
+		'text-widget': __( 'Text Editor', 'xcodesol-page-builder' ),
 		'image': __( 'Image', 'xcodesol-page-builder' ),
 		button: __( 'Button', 'xcodesol-page-builder' ),
 		container: __( 'Container', 'xcodesol-page-builder' ),
 		'breadcrumb': __( 'Breadcrumbs', 'xcodesol-page-builder' ),
 		divider: __( 'Divider', 'xcodesol-page-builder' ),
 		banner: __( 'Banner', 'xcodesol-page-builder' ),
+		shortcode: __( 'Shortcode', 'xcodesol-page-builder' ),
+		'sp-title': __( 'Post Title', 'xcodesol-page-builder' ),
+		'sp-content': __( 'Post Content', 'xcodesol-page-builder' ),
+		'sp-featured-image': __( 'Featured Image', 'xcodesol-page-builder' ),
+		'sp-post-meta': __( 'Post Meta', 'xcodesol-page-builder' ),
+		'sp-comments': __( 'Comments', 'xcodesol-page-builder' ),
+		'ar-title': __( 'Archive Title', 'xcodesol-page-builder' ),
+		'ar-description': __( 'Archive Description', 'xcodesol-page-builder' ),
+		'ar-loop': __( 'Posts', 'xcodesol-page-builder' ),
+		'ar-pagination': __( 'Pagination', 'xcodesol-page-builder' ),
 	};
 	if ( labels[ slug ] ) return labels[ slug ];
 	return slug.replace( /[-_]+/g, ' ' ).replace( /\b\w/g, ( letter ) => letter.toUpperCase() ) || __( 'Widget', 'xcodesol-page-builder' );
