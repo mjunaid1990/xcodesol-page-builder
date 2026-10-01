@@ -2928,7 +2928,7 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 			style={ { '--xsb-depth-color': nestingAccent( depth + 1 ) } }
 			aria-label={ getBlockMeta( nested.type ).label }
 			onClick={ ( event ) => {
-				e.stopPropagation();
+				event.stopPropagation();
 				if ( onSelectNested && Number.isInteger( containerIndex ) ) {
 					onSelectNested( containerIndex, nestedPath[ 0 ].cj, nestedPath[ 0 ].bi, { x: event.clientX, y: event.clientY }, nestedPath );
 				}
@@ -2962,7 +2962,7 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 	return (
 		<div ref={ setNodeRef } data-inner-container-id={ dropTarget ? dropTarget.path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '_' ) : undefined } data-inner-container-path={ dropTarget ? JSON.stringify( dropTarget ) : undefined } data-nesting-level={ depth } data-column-count={ columnLayout ? renderedColumns.length : undefined } className={ `xsb-live-block--nested-container xsb-layout--${ layoutMode }${ isOver ? ' is-over' : '' }` } style={ { ...boxStyle, ...modeStyles, '--xsb-depth-color': nestingAccent( depth ) } } onClick={ ( event ) => {
 			if ( event.target !== event.currentTarget ) return;
-			e.stopPropagation();
+			event.stopPropagation();
 			if ( onSelectNested && Number.isInteger( containerIndex ) && containerPath.length ) {
 				onSelectNested( containerIndex, containerPath[ 0 ].cj, containerPath[ 0 ].bi, { x: event.clientX, y: event.clientY }, containerPath );
 			}
