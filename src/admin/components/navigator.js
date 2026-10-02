@@ -134,7 +134,7 @@ function NavigatorItem( props ) {
 	return (
 		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch" dragPointerY={ dragPointerY }>
 			{ ( dragAttributes, dragListeners, rowRef, dropClass, setSortableRef ) => <>
-				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ ! container && ! root ? ' is-nested-widget' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container ? expanded : undefined }>
+				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container ? expanded : undefined }>
 					{ container && <button type="button" className="xsb-navigator__disclosure" onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> }
 					<button
 						type="button"
