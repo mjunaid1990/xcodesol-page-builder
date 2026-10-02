@@ -93,6 +93,28 @@
 	border-radius: 999px;
 }
 
+.xsb-live-block--nested-container.xsb-layout--scroll-row {
+	scrollbar-width: thin;
+	-webkit-overflow-scrolling: touch;
+}
+
+.xsb-live-block--nested-container.xsb-layout--scroll-row::-webkit-scrollbar {
+	height: 8px;
+}
+
+.xsb-live-block--nested-container.xsb-layout--scroll-row::-webkit-scrollbar-thumb {
+	background: rgba(15, 23, 42, .2);
+	border-radius: 999px;
+}
+
+.xsb-live-block--nested-container.xsb-layout--scroll-row.is-scrollbar-hidden {
+	scrollbar-width: none;
+}
+
+.xsb-live-block--nested-container.xsb-layout--scroll-row.is-scrollbar-hidden::-webkit-scrollbar {
+	display: none;
+}
+
 /* The "+ Add widget" placeholder is defined further down, next to the
  * empty live-zone state, so both share one set of rules. */
 
@@ -427,6 +449,8 @@
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
+	width: 100%;
+	box-sizing: border-box;
 	min-height: 72px;
 	padding: 12px;
 	font-size: 12px;

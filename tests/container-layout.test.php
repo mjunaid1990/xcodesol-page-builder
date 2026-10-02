@@ -307,6 +307,30 @@ xsb_assert_contains( 'flow wrapper carries the mode class', $list_flow, array( '
 xsb_assert_contains( 'flex stack declared', $list, array( 'display:flex', 'flex-direction:column', 'row-gap:12px', 'column-gap:8px', 'justify-content:center', 'align-items:stretch' ) );
 xsb_assert( 'children wrapped as layout items', 2 === substr_count( $list, 'class="xsb-container-item"' ), substr_count( $list, 'class="xsb-container-item"' ) );
 
+echo "\n== renderer: row mode shares width evenly ==\n";
+
+$row = xsb_render_container(
+	array(
+		'layout_mode' => 'row',
+		'gap'         => 16,
+	),
+	array( array( $child ), array( $child2 ) )
+);
+xsb_assert_contains( 'row mode uses the horizontal flex layout', $row, array( 'xsb-container-flow--row', 'display:flex', 'flex-direction:row' ) );
+xsb_assert( 'unsized row items each grow from a zero basis', 2 === substr_count( $row, 'flex:1 1 0%' ), substr_count( $row, 'flex:1 1 0%' ) );
+xsb_assert( 'row items can shrink evenly without overflowing', 2 === substr_count( $row, 'min-width:0' ), substr_count( $row, 'min-width:0' ) );
+
+$row_custom_sizing = xsb_render_container(
+	array( 'layout_mode' => 'row' ),
+	array(
+		array(
+			array( 'type' => 'xcosb/gb-heading', 'settings' => array( 'text' => 'Fixed', 'flex_grow' => 0 ) ),
+		),
+	)
+);
+xsb_assert_contains( 'explicit row flex sizing overrides equal-width defaults', $row_custom_sizing, array( 'flex-grow:0' ) );
+xsb_assert_missing( 'explicit row sizing does not also get equal-width flex', $row_custom_sizing, array( 'flex:1 1 0%' ) );
+
 echo "\n== renderer: grid mode ==\n";
 
 $grid = xsb_render_container(
@@ -348,16 +372,17 @@ $masonry = xsb_render_container(
 		'layout_mode'     => 'masonry',
 		'masonry_columns' => 3,
 		'masonry_gap'     => array( 'value' => 24, 'unit' => 'px' ),
+		'masonry_break_inside' => 'auto',
 	),
 	array(
 		array(
 			array( 'type' => 'xcosb/gb-heading', 'settings' => array( 'text' => 'A' ) ),
-			array( 'type' => 'xcosb/gb-heading', 'settings' => array( 'text' => 'B', 'masonry_item_span' => 'all' ) ),
+			array( 'type' => 'xcosb/gb-heading', 'settings' => array( 'text' => 'B', 'masonry_item_break' => 'avoid', 'masonry_item_span' => 'all' ) ),
 		),
 	)
 );
 xsb_assert_contains( 'masonry container styles', $masonry, array( 'xsb-container-flow--masonry', 'column-count:3', 'column-gap:24px' ) );
-xsb_assert_contains( 'masonry items avoid breaks', $masonry, array( 'break-inside:avoid', 'column-span:all' ) );
+xsb_assert_contains( 'masonry parent default and item override render', $masonry, array( 'break-inside:auto', 'break-inside:avoid', 'column-span:all' ) );
 
 echo "\n== renderer: scroll-row mode ==\n";
 

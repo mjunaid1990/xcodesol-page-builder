@@ -387,14 +387,31 @@ $xsb_item_decls = function ( $child, $mode, $item_width, $parent = array() ) use
 	}
 
 	if ( 'list' === $mode || 'row' === $mode ) {
-		if ( isset( $child['flex_grow'] ) && '' !== $child['flex_grow'] ) {
-			$decls[] = 'flex-grow:' . (float) $child['flex_grow'];
+		$has_custom_flex_sizing = false;
+		foreach ( array( 'flex_grow', 'flex_shrink', 'flex_basis' ) as $flex_key ) {
+			if ( isset( $child[ $flex_key ] ) && '' !== $child[ $flex_key ] ) {
+				$has_custom_flex_sizing = true;
+				break;
+			}
 		}
-		if ( isset( $child['flex_shrink'] ) && '' !== $child['flex_shrink'] ) {
-			$decls[] = 'flex-shrink:' . (float) $child['flex_shrink'];
+
+		if ( 'row' === $mode && ! $has_custom_flex_sizing ) {
+			// A new row shares its available width evenly. Saved child sizing is
+			// still treated as an explicit override, matching the live canvas.
+			$decls[] = 'flex:1 1 0%';
+		} else {
+			if ( isset( $child['flex_grow'] ) && '' !== $child['flex_grow'] ) {
+				$decls[] = 'flex-grow:' . (float) $child['flex_grow'];
+			}
+			if ( isset( $child['flex_shrink'] ) && '' !== $child['flex_shrink'] ) {
+				$decls[] = 'flex-shrink:' . (float) $child['flex_shrink'];
+			}
+			if ( ! empty( $child['flex_basis'] ) ) {
+				$decls[] = 'flex-basis:' . preg_replace( '/[^0-9a-z%.\-]/i', '', (string) $child['flex_basis'] );
+			}
 		}
-		if ( ! empty( $child['flex_basis'] ) ) {
-			$decls[] = 'flex-basis:' . preg_replace( '/[^0-9a-z%.\-]/i', '', (string) $child['flex_basis'] );
+		if ( 'row' === $mode ) {
+			$decls[] = 'min-width:0';
 		}
 		if ( ! empty( $child['child_min_width'] ) ) {
 			$decls[] = 'min-width:' . (int) $child['child_min_width'] . 'px';
@@ -423,7 +440,8 @@ $xsb_item_decls = function ( $child, $mode, $item_width, $parent = array() ) use
 	}
 
 	if ( 'masonry' === $mode ) {
-		$decls[] = 'break-inside:' . ( 'auto' === ( $child['masonry_item_break'] ?? '' ) ? 'auto' : 'avoid' );
+		$break_inside = $child['masonry_item_break'] ?? ( $parent['masonry_break_inside'] ?? 'avoid' );
+		$decls[]      = 'break-inside:' . ( 'auto' === $break_inside ? 'auto' : 'avoid' );
 		if ( 'all' === ( $child['masonry_item_span'] ?? '' ) ) {
 			$decls[] = 'column-span:all';
 		}

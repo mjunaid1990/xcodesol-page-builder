@@ -2571,7 +2571,7 @@ function countGridTracks( template ) {
  * @param {string} parentSnap Parent's default scroll-snap alignment.
  * @return {Object} Inline style.
  */
-function childPlacementStyle( setting = {}, parentMode = 'columns', itemWidth, parentSnap ) {
+function childPlacementStyle( setting = {}, parentMode = 'columns', itemWidth, parentSnap, parentSettings = {} ) {
 	const s = {};
 
 	if ( setting.align_self && setting.align_self !== 'auto' ) {
@@ -2583,14 +2583,26 @@ function childPlacementStyle( setting = {}, parentMode = 'columns', itemWidth, p
 	}
 
 	if ( parentMode === 'list' || parentMode === 'row' ) {
-		if ( setting.flex_grow !== undefined && setting.flex_grow !== '' ) {
-			s.flexGrow = Number( setting.flex_grow ) || 0;
+		const hasCustomFlexSizing = [ 'flex_grow', 'flex_shrink', 'flex_basis' ].some(
+			( key ) => setting[ key ] !== undefined && setting[ key ] !== ''
+		);
+		if ( parentMode === 'row' && ! hasCustomFlexSizing ) {
+			// A fresh row divides its available width evenly between items. Any
+			// saved flex sizing remains an explicit per-item override.
+			s.flex = '1 1 0%';
+		} else {
+			if ( setting.flex_grow !== undefined && setting.flex_grow !== '' ) {
+				s.flexGrow = Number( setting.flex_grow ) || 0;
+			}
+			if ( setting.flex_shrink !== undefined && setting.flex_shrink !== '' ) {
+				s.flexShrink = Number( setting.flex_shrink ) || 0;
+			}
+			if ( setting.flex_basis ) {
+				s.flexBasis = setting.flex_basis;
+			}
 		}
-		if ( setting.flex_shrink !== undefined && setting.flex_shrink !== '' ) {
-			s.flexShrink = Number( setting.flex_shrink ) || 0;
-		}
-		if ( setting.flex_basis ) {
-			s.flexBasis = setting.flex_basis;
+		if ( parentMode === 'row' ) {
+			s.minWidth = '0';
 		}
 		if ( setting.child_min_width ) {
 			s.minWidth = `${ Number( setting.child_min_width ) }px`;
@@ -2613,7 +2625,8 @@ function childPlacementStyle( setting = {}, parentMode = 'columns', itemWidth, p
 			s.justifySelf = setting.grid_justify_self;
 		}
 	} else if ( parentMode === 'masonry' ) {
-		s.breakInside = setting.masonry_item_break === 'auto' ? 'auto' : 'avoid';
+		const breakSetting = setting.masonry_item_break || parentSettings.masonry_break_inside || 'avoid';
+		s.breakInside = breakSetting === 'auto' ? 'auto' : 'avoid';
 		if ( setting.masonry_item_span === 'all' ) {
 			s.columnSpan = 'all';
 		}
@@ -2857,7 +2870,13 @@ function ContainerFlowZone({
 						onOpenWidgetPanel={ onOpenWidgetPanel }
 						dropGuide={ dropGuide }
 						isLastInColumn={ flatIndex === items.length - 1 }
-						placementStyle={ childPlacementStyle( item.block.settings || {}, layoutMode, itemWidth, viewSettings.scroll_snap_align ) }
+						placementStyle={ childPlacementStyle(
+							device !== 'desktop' ? effectiveForDevice( item.block.settings || {}, device ) : ( item.block.settings || {} ),
+							layoutMode,
+							itemWidth,
+							viewSettings.scroll_snap_align,
+							viewSettings
+						) }
 					/>
 				</Fragment>
 			) ) }
@@ -2884,28 +2903,96 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 		( viewSettings.layout_type === 'grid' ? 'grid' : ( viewSettings.layout_type === 'flex' ? 'list' : 'columns' ) );
 	const cols = columnCount( viewSettings.columns );
 	const gap = Number( viewSettings.gap ) || 20;
-	const gapCss = typeof viewSettings.gap === 'object' && viewSettings.gap !== null
+	const gapRowCss = typeof viewSettings.gap === 'object' && viewSettings.gap !== null
 		? `${ viewSettings.gap.row ?? 20 }${ viewSettings.gap.unit || 'px' }`
 		: `${ gap }px`;
+	const gapColCss = typeof viewSettings.gap === 'object' && viewSettings.gap !== null
+		? `${ viewSettings.gap.col ?? 20 }${ viewSettings.gap.unit || 'px' }`
+		: `${ gap }px`;
 	const gridResolved = resolveGridTemplate( viewSettings.grid_template, viewSettings );
+	const gridGap = viewSettings.grid_gap && typeof viewSettings.grid_gap === 'object' ? viewSettings.grid_gap : viewSettings.gap;
+	const gridGapRowCss = typeof gridGap === 'object' && gridGap !== null
+		? `${ gridGap.row ?? 20 }${ gridGap.unit || 'px' }`
+		: `${ Number( gridGap ) || 20 }px`;
+	const gridGapColCss = typeof gridGap === 'object' && gridGap !== null
+		? `${ gridGap.col ?? 20 }${ gridGap.unit || 'px' }`
+		: `${ Number( gridGap ) || 20 }px`;
+	const scrollGapCss = typeof viewSettings.scroll_gap === 'object' && viewSettings.scroll_gap !== null
+		? `${ viewSettings.scroll_gap.value ?? 20 }${ viewSettings.scroll_gap.unit || 'px' }`
+		: `${ Number( viewSettings.scroll_gap ) || 20 }px`;
+	const scrollPeekCss = typeof viewSettings.scroll_padding_peek === 'object' && viewSettings.scroll_padding_peek !== null
+		? `${ viewSettings.scroll_padding_peek.value ?? 24 }${ viewSettings.scroll_padding_peek.unit || 'px' }`
+		: `${ Number( viewSettings.scroll_padding_peek ) || 24 }px`;
+	const rawScrollItemWidth = viewSettings.scroll_item_width;
+	const scrollItemWidth = rawScrollItemWidth
+		? ( typeof rawScrollItemWidth === 'object'
+			? `${ rawScrollItemWidth.value ?? 280 }${ rawScrollItemWidth.unit || 'px' }`
+			: `${ Number( rawScrollItemWidth ) || 280 }px` )
+		: undefined;
 
 	let modeStyles;
 	if ( layoutMode === 'grid' ) {
-		modeStyles = { display: 'grid', gridTemplateColumns: gridResolved.columns, rowGap: gapCss, columnGap: gapCss };
+		modeStyles = {
+			display: 'grid',
+			gridTemplateColumns: gridResolved.columns,
+			gridTemplateRows: gridResolved.rows,
+			gridAutoFlow: gridResolved.autoFlow,
+			gridAutoRows: gridResolved.autoRows,
+			gridTemplateAreas: viewSettings.grid_named_areas || undefined,
+			alignItems: viewSettings.grid_align_items || 'stretch',
+			justifyItems: viewSettings.grid_justify_items || 'stretch',
+			alignContent: viewSettings.grid_align_content || undefined,
+			justifyContent: viewSettings.grid_justify_content || undefined,
+			rowGap: gridGapRowCss,
+			columnGap: gridGapColCss,
+		};
 	} else if ( layoutMode === 'scroll-row' ) {
-		modeStyles = { display: 'flex', overflowX: 'auto', gap: gapCss };
+		const snapType = viewSettings.scroll_snap_type || 'mandatory';
+		modeStyles = {
+			display: 'flex',
+			flexDirection: 'row',
+			overflowX: 'auto',
+			scrollSnapType: snapType === 'none' ? 'none' : `x ${ snapType }`,
+			gap: scrollGapCss,
+			paddingLeft: scrollPeekCss,
+			paddingRight: scrollPeekCss,
+			scrollbarWidth: viewSettings.scroll_hide_scrollbar ? 'none' : undefined,
+		};
 	} else if ( layoutMode === 'masonry' ) {
-		modeStyles = { columnCount: Number( viewSettings.masonry_columns ) || 3, columnGap: gapCss };
+		const masonryGapCss = typeof viewSettings.masonry_gap === 'object' && viewSettings.masonry_gap !== null
+			? `${ viewSettings.masonry_gap.value ?? 20 }${ viewSettings.masonry_gap.unit || 'px' }`
+			: `${ Number( viewSettings.masonry_gap ) || 20 }px`;
+		modeStyles = { columnCount: Number( viewSettings.masonry_columns ) || 3, columnGap: masonryGapCss };
 	} else if ( layoutMode === 'list' || layoutMode === 'row' ) {
 		modeStyles = {
 			display: 'flex',
-			flexDirection: layoutMode === 'row' ? 'row' : 'column',
-			flexWrap: 'wrap',
-			gap: gapCss,
+			flexDirection: device === 'mobile' && viewSettings.column_reverse_mobile
+				? ( layoutMode === 'row' ? 'row-reverse' : 'column-reverse' )
+				: ( viewSettings.flex_direction || ( layoutMode === 'row' ? 'row' : 'column' ) ),
+			flexWrap: viewSettings.flex_wrap || ( layoutMode === 'row' ? 'wrap' : 'nowrap' ),
+			justifyContent: viewSettings.justify_content || 'flex-start',
+			alignItems: viewSettings.equal_height ? 'stretch' : ( viewSettings.align_items || 'stretch' ),
+			alignContent: viewSettings.align_content || 'stretch',
+			rowGap: gapRowCss,
+			columnGap: gapColCss,
 		};
 	} else {
 		const widths = resolveColumnWidths( cols, viewSettings.column_widths );
-		modeStyles = { display: 'grid', gridTemplateColumns: widths.map( ( width ) => `minmax(0, ${ width }fr)` ).join( ' ' ), gap: gapCss };
+		const columnGapSetting = viewSettings.column_gap;
+		const columnGapRowCss = typeof columnGapSetting === 'object' && columnGapSetting !== null
+			? `${ columnGapSetting.row ?? 20 }${ columnGapSetting.unit || 'px' }`
+			: `${ Number( columnGapSetting ) || gap }px`;
+		const columnGapColCss = typeof columnGapSetting === 'object' && columnGapSetting !== null
+			? `${ columnGapSetting.col ?? 20 }${ columnGapSetting.unit || 'px' }`
+			: `${ Number( columnGapSetting ) || gap }px`;
+		const valignMap = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
+		modeStyles = {
+			display: 'grid',
+			gridTemplateColumns: widths.map( ( width ) => `minmax(0, ${ width }fr)` ).join( ' ' ),
+			alignItems: valignMap[ viewSettings.column_valign ] || viewSettings.column_valign || 'stretch',
+			rowGap: columnGapRowCss,
+			columnGap: columnGapColCss,
+		};
 	}
 
 	const bg = viewSettings.bg_color || viewSettings.background || undefined;
@@ -2953,12 +3040,15 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 		const nestedPath = [ ...containerPath, { cj, bi } ];
 		const isNestedSelected = selectedNested?.ci === containerIndex && Array.isArray( selectedNested.path ) && JSON.stringify( selectedNested.path ) === JSON.stringify( nestedPath );
 		const nestedDropTarget = dropTarget?.path ? { ci: dropTarget.ci, path: [ ...dropTarget.path, { cj, bi } ] } : null;
+		const nestedMeta = getBlockMeta( nested.type );
+		const nestedBaseSettings = { ...( nestedMeta.defaults || {} ), ...( nested.settings || {} ) };
+		const nestedSettings = device !== 'desktop' ? effectiveForDevice( nestedBaseSettings, device ) : nestedBaseSettings;
 		return (
 		<div
 			key={ `${ depth }-${ columnIndex }-${ itemIndex }` }
 			className={ `xsb-nested-container-item${ isNestedSelected ? ' is-selected' : '' }` }
 			data-nesting-level={ depth + 1 }
-			style={ { '--xsb-depth-color': nestingAccent( depth + 1 ) } }
+			style={ { ...childPlacementStyle( nestedSettings, layoutMode, scrollItemWidth, viewSettings.scroll_snap_align, viewSettings ), '--xsb-depth-color': nestingAccent( depth + 1 ) } }
 			aria-label={ getBlockDisplayLabel( nested.type ) }
 			onClick={ ( event ) => {
 				event.stopPropagation();
@@ -2971,8 +3061,8 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 			{ guideMatches && dropGuide.slot === itemIndex && <DropGuideLine /> }
 			{ renderBlockBody(
 				nested,
-				{ ...( getBlockMeta( nested.type ).defaults || {} ), ...( nested.settings || {} ) },
-				getBlockMeta( nested.type ),
+				nestedSettings,
+				nestedMeta,
 				device,
 				{
 					depth: depth + 1,
@@ -2993,7 +3083,7 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 	};
 
 	return (
-		<div ref={ setNodeRef } data-inner-container-id={ dropTarget ? dropTarget.path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '_' ) : undefined } data-inner-container-path={ dropTarget ? JSON.stringify( dropTarget ) : undefined } data-nesting-level={ depth } data-column-count={ columnLayout ? renderedColumns.length : undefined } className={ `xsb-live-block--nested-container xsb-layout--${ layoutMode }${ isOver ? ' is-over' : '' }` } style={ { ...boxStyle, ...modeStyles, '--xsb-depth-color': nestingAccent( depth ) } } onClick={ ( event ) => {
+		<div ref={ setNodeRef } data-inner-container-id={ dropTarget ? dropTarget.path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '_' ) : undefined } data-inner-container-path={ dropTarget ? JSON.stringify( dropTarget ) : undefined } data-nesting-level={ depth } data-column-count={ columnLayout ? renderedColumns.length : undefined } className={ `xsb-live-block--nested-container xsb-layout--${ layoutMode }${ layoutMode === 'scroll-row' && viewSettings.scroll_hide_scrollbar ? ' is-scrollbar-hidden' : '' }${ isOver ? ' is-over' : '' }` } style={ { ...boxStyle, ...modeStyles, '--xsb-depth-color': nestingAccent( depth ) } } onClick={ ( event ) => {
 			if ( event.target !== event.currentTarget ) return;
 			event.stopPropagation();
 			if ( onSelectNested && Number.isInteger( containerIndex ) && containerPath.length ) {
