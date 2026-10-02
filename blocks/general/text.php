@@ -140,5 +140,5 @@ echo wp_kses( sprintf(
 	$anim_class,
 	! empty( $settings['drop_cap'] ) ? ' xsb-text-block--drop-cap' : '',
 	$style,
-	wp_kses_post( $content )
+	wp_kses( $content, XCOPB_Block_Registry::allowed_output_html() )
 ), XCOPB_Block_Registry::allowed_output_html() );

@@ -2258,6 +2258,16 @@ html[data-theme='dark'] .xsb-sheet-in {
 	background: var(--xsb-bg-subtle, #f6f8fc);
 }
 
+.xsb-rich-text-toolbar select {
+	max-width: 132px;
+	min-height: 28px;
+	border: 1px solid var(--xsb-line, #dfe5ef);
+	border-radius: 4px;
+	background: #fff;
+	color: var(--xsb-text, #1e293b);
+	font-size: 11px;
+}
+
 .xsb-control-field.xsb-rich-text-control {
 	align-items: stretch;
 	display: flex;
@@ -2283,11 +2293,43 @@ html[data-theme='dark'] .xsb-sheet-in {
 	background: #fff;
 }
 
+.xsb-rich-text-toolbar button.is-active {
+	border-color: var(--xsb-a-200, #c7d2fe);
+	background: var(--xsb-accent-soft, #eef2ff);
+	color: var(--xsb-accent-soft-text, #4338ca);
+}
+
+.xsb-rich-text-color {
+	width: 30px;
+	height: 28px;
+	padding: 4px;
+	border: 1px solid var(--xsb-line, #dfe5ef);
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.xsb-rich-text-color input {
+	display: block;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
 .xsb-rich-text-editor {
 	min-height: 150px;
 	padding: 10px 12px;
 	border-radius: 0 0 7px 7px;
 	line-height: 1.5;
+}
+
+.xsb-rich-text-source {
+	min-height: 180px;
+	font-family: var(--xsb-font-mono, Consolas, monospace);
+	font-size: 11px;
+	line-height: 1.55;
 }
 
 .xsb-rich-text-editor:empty::before {

@@ -150,6 +150,12 @@ class XCOPB_Block_Registry {
 		}
 
 		$allowed = wp_kses_allowed_html( 'post' );
+		foreach ( array( 'blockquote', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'p', 'span' ) as $text_tag ) {
+			if ( ! isset( $allowed[ $text_tag ] ) || ! is_array( $allowed[ $text_tag ] ) ) {
+				$allowed[ $text_tag ] = array();
+			}
+			$allowed[ $text_tag ]['style'] = true;
+		}
 
 		$global = array(
 			'class'    => true,

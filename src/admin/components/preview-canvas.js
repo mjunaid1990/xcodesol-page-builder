@@ -39,7 +39,30 @@ const DynamicImagePreviewContext = createContext( { featuredImageUrl: '' } );
 
 function sanitizeRichPreviewMarkup( markup ) {
 	if ( typeof document === 'undefined' ) return String( markup || '' ).replace( /<[^>]*>/g, '' );
-	const allowed = new Set( [ 'A', 'B', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'DIV', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'LI', 'OL', 'P', 'PRE', 'S', 'SPAN', 'STRONG', 'U', 'UL' ] );
+	const allowed = new Set( [ 'A', 'B', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'DIV', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HR', 'I', 'LI', 'OL', 'P', 'PRE', 'S', 'SPAN', 'STRONG', 'SUB', 'SUP', 'U', 'UL' ] );
+	const safeStyle = ( rawStyle ) => {
+		const allowedProperties = new Set( [ 'background-color', 'color', 'font-size', 'font-style', 'font-weight', 'text-align', 'text-decoration', 'vertical-align' ] );
+		const safeColor = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([0-9.%+\-,\s/]+\)|[a-z]{3,20}|transparent|currentcolor)$/i;
+		const safeValues = {
+			'font-size': /^(?:\d+(?:\.\d+)?(?:px|em|rem|%)|xx-small|x-small|small|medium|large|x-large|xx-large)$/i,
+			'font-style': /^(?:normal|italic|oblique)$/i,
+			'font-weight': /^(?:normal|bold|bolder|lighter|[1-9]00)$/i,
+			'text-align': /^(?:left|center|right|justify|start|end)$/i,
+			'text-decoration': /^(?:none|underline|overline|line-through)$/i,
+			'vertical-align': /^(?:baseline|sub|super|top|middle|bottom|text-top|text-bottom)$/i,
+		};
+	const declarations = String( rawStyle || '' ).split( ';' ).map( ( declaration ) => {
+		const separator = declaration.indexOf( ':' );
+		if ( separator < 1 ) return '';
+		const property = declaration.slice( 0, separator ).trim().toLowerCase();
+		const value = declaration.slice( separator + 1 ).trim();
+		if ( ! allowedProperties.has( property ) || ! value || /[{}<>\\]/.test( value ) ) return '';
+		if ( property.endsWith( 'color' ) && ! safeColor.test( value ) ) return '';
+		if ( safeValues[ property ] && ! safeValues[ property ].test( value ) ) return '';
+		return `${ property }: ${ value }`;
+	} ).filter( Boolean );
+	return declarations.join( '; ' );
+	};
 	const template = document.createElement( 'template' );
 	template.innerHTML = String( markup || '' );
 	const clean = ( node ) => {
@@ -49,6 +72,12 @@ function sanitizeRichPreviewMarkup( markup ) {
 				return;
 			}
 			[ ...child.attributes ].forEach( ( attribute ) => {
+				if ( 'style' === attribute.name ) {
+					const style = safeStyle( attribute.value );
+					if ( style ) child.setAttribute( 'style', style );
+					else child.removeAttribute( 'style' );
+					return;
+				}
 				if ( 'A' === child.tagName && [ 'href', 'title', 'target', 'rel' ].includes( attribute.name ) ) {
 					if ( 'href' === attribute.name && ! /^(?:https?:|mailto:|tel:|\/|#)/i.test( attribute.value ) ) child.removeAttribute( attribute.name );
 					return;

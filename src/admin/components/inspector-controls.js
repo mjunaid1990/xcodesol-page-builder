@@ -282,6 +282,8 @@ export function TextareaControl( {
  */
 function RichTextEditorControl( { id, label, value = '', onChange, placeholder = '' } ) {
 	const editorRef = useRef( null );
+	const selectionRef = useRef( null );
+	const [ codeMode, setCodeMode ] = useState( false );
 	const source = String( value || '' );
 	useEffect( () => {
 		if ( editorRef.current && document.activeElement !== editorRef.current && editorRef.current.innerHTML !== source ) {
@@ -289,15 +291,31 @@ function RichTextEditorControl( { id, label, value = '', onChange, placeholder =
 		}
 	}, [ source ] );
 
+	const rememberSelection = () => {
+		const selection = window.getSelection?.();
+		if ( selection?.rangeCount && editorRef.current?.contains( selection.anchorNode ) ) {
+			selectionRef.current = selection.getRangeAt( 0 ).cloneRange();
+		}
+	};
+
+	const restoreSelection = () => {
+		const selection = window.getSelection?.();
+		if ( ! selectionRef.current || ! editorRef.current || ! selection ) return;
+		editorRef.current.focus();
+		selection.removeAllRanges();
+		selection.addRange( selectionRef.current );
+	};
+
 	const runCommand = ( command, argument ) => {
 		if ( ! editorRef.current ) return;
-		editorRef.current.focus();
+		restoreSelection();
 		if ( 'createLink' === command ) {
 			const url = window.prompt( __( 'Enter link URL', 'xcodesol-page-builder' ), 'https://' );
 			if ( ! url ) return;
 			argument = url;
 		}
 		document.execCommand( command, false, argument );
+		rememberSelection();
 		onChange( editorRef.current.innerHTML );
 	};
 
@@ -305,33 +323,64 @@ function RichTextEditorControl( { id, label, value = '', onChange, placeholder =
 		[ 'bold', __( 'Bold', 'xcodesol-page-builder' ), 'B' ],
 		[ 'italic', __( 'Italic', 'xcodesol-page-builder' ), 'I' ],
 		[ 'underline', __( 'Underline', 'xcodesol-page-builder' ), 'U' ],
+		[ 'strikeThrough', __( 'Strikethrough', 'xcodesol-page-builder' ), 'S' ],
+		[ 'superscript', __( 'Superscript', 'xcodesol-page-builder' ), 'x2' ],
+		[ 'subscript', __( 'Subscript', 'xcodesol-page-builder' ), 'x2' ],
 		[ 'insertUnorderedList', __( 'Bulleted list', 'xcodesol-page-builder' ), '• List' ],
 		[ 'insertOrderedList', __( 'Numbered list', 'xcodesol-page-builder' ), '1. List' ],
 		[ 'createLink', __( 'Insert link', 'xcodesol-page-builder' ), 'Link' ],
+		[ 'unlink', __( 'Remove link', 'xcodesol-page-builder' ), 'Unlink' ],
+		[ 'outdent', __( 'Decrease indent', 'xcodesol-page-builder' ), 'Outdent' ],
+		[ 'indent', __( 'Increase indent', 'xcodesol-page-builder' ), 'Indent' ],
+		[ 'justifyLeft', __( 'Align left', 'xcodesol-page-builder' ), 'Left' ],
+		[ 'justifyCenter', __( 'Align center', 'xcodesol-page-builder' ), 'Center' ],
+		[ 'justifyRight', __( 'Align right', 'xcodesol-page-builder' ), 'Right' ],
+		[ 'undo', __( 'Undo', 'xcodesol-page-builder' ), 'Undo' ],
+		[ 'redo', __( 'Redo', 'xcodesol-page-builder' ), 'Redo' ],
 	];
 
 	return (
 		<div className="xsb-control-field xsb-rich-text-control">
 			{ label && <label className="xsb-control-label" htmlFor={ id }>{ label }</label> }
 			<div className="xsb-rich-text-toolbar" role="toolbar" aria-label={ __( 'Text formatting', 'xcodesol-page-builder' ) }>
+				<select aria-label={ __( 'Block format', 'xcodesol-page-builder' ) } title={ __( 'Block format', 'xcodesol-page-builder' ) } defaultValue="p" onMouseDown={ rememberSelection } onChange={ ( event ) => runCommand( 'formatBlock', `<${ event.target.value }>` ) }>
+					<option value="p">{ __( 'Paragraph', 'xcodesol-page-builder' ) }</option>
+					<option value="h2">{ __( 'Heading 2', 'xcodesol-page-builder' ) }</option>
+					<option value="h3">{ __( 'Heading 3', 'xcodesol-page-builder' ) }</option>
+					<option value="h4">{ __( 'Heading 4', 'xcodesol-page-builder' ) }</option>
+					<option value="blockquote">{ __( 'Quote', 'xcodesol-page-builder' ) }</option>
+					<option value="pre">{ __( 'Preformatted', 'xcodesol-page-builder' ) }</option>
+				</select>
 				{ tools.map( ( [ command, title, text ] ) => (
-					<button key={ command } type="button" title={ title } aria-label={ title } onMouseDown={ ( event ) => event.preventDefault() } onClick={ () => runCommand( command ) }>
+					<button key={ command } type="button" title={ title } aria-label={ title } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( command ) }>
 						{text}
 					</button>
 				) ) }
-				<button type="button" title={ __( 'Remove formatting', 'xcodesol-page-builder' ) } aria-label={ __( 'Remove formatting', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => event.preventDefault() } onClick={ () => runCommand( 'removeFormat' ) }>Tx</button>
+				<label className="xsb-rich-text-color" title={ __( 'Text color', 'xcodesol-page-builder' ) }>
+					<span className="screen-reader-text">{ __( 'Text color', 'xcodesol-page-builder' ) }</span>
+					<input type="color" aria-label={ __( 'Text color', 'xcodesol-page-builder' ) } defaultValue="#172033" onMouseDown={ rememberSelection } onChange={ ( event ) => runCommand( 'foreColor', event.target.value ) } />
+				</label>
+				<button type="button" title={ __( 'Horizontal rule', 'xcodesol-page-builder' ) } aria-label={ __( 'Horizontal rule', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( 'insertHorizontalRule' ) }>HR</button>
+				<button type="button" title={ __( 'Remove formatting', 'xcodesol-page-builder' ) } aria-label={ __( 'Remove formatting', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( 'removeFormat' ) }>Tx</button>
+				<button type="button" className={ codeMode ? 'is-active' : '' } aria-pressed={ codeMode } title={ __( 'Edit HTML source', 'xcodesol-page-builder' ) } aria-label={ __( 'Edit HTML source', 'xcodesol-page-builder' ) } onClick={ () => setCodeMode( ( mode ) => ! mode ) }>&lt;/&gt;</button>
 			</div>
-			<div
-				id={ id }
-				ref={ editorRef }
-				className="xsb-text-input xsb-rich-text-editor"
-				contentEditable
-				role="textbox"
-				aria-multiline="true"
-				data-placeholder={ placeholder }
-				suppressContentEditableWarning
-				onInput={ () => onChange( editorRef.current?.innerHTML || '' ) }
-			/>
+			{ codeMode ? (
+				<textarea id={ id } className="xsb-textarea-input xsb-rich-text-source" aria-label={ __( 'HTML source', 'xcodesol-page-builder' ) } spellCheck={ false } value={ source } onChange={ ( event ) => onChange( event.target.value ) } />
+			) : (
+				<div
+					id={ id }
+					ref={ editorRef }
+					className="xsb-text-input xsb-rich-text-editor"
+					contentEditable
+					role="textbox"
+					aria-multiline="true"
+					data-placeholder={ placeholder }
+					suppressContentEditableWarning
+					onMouseUp={ rememberSelection }
+					onKeyUp={ rememberSelection }
+					onInput={ () => { rememberSelection(); onChange( editorRef.current?.innerHTML || '' ); } }
+				/>
+			) }
 		</div>
 	);
 }

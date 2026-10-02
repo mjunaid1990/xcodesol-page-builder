@@ -451,6 +451,7 @@
 	position: relative;
 	z-index: 2;
 	display: flex;
+	flex-direction: column;
 	flex: 0 0 48px;
 	width: 48px;
 	min-width: 0;
@@ -496,30 +497,26 @@
 }
 
 .xsb-left-palette {
-	display: grid;
-	flex: 1 1 auto;
-	grid-template-rows: auto minmax(0, 1fr);
+	display: flex;
+	flex: 1 1 0%;
+	flex-direction: column;
 	width: 100%;
 	min-width: 0;
 	min-height: 0;
-	height: 100%;
+	height: 0;
 	overflow: hidden;
 	background: #f6f8fc;
 }
 
 .xsb-palette-pane {
-	display: grid;
-	grid-template-rows: auto minmax(0, 1fr);
+	display: flex;
 	flex: 1 1 0%;
+	flex-direction: column;
 	width: 100%;
+	height: 0;
 	min-height: 0;
 	min-width: 0;
 	overflow: hidden;
-}
-
-.xsb-palette-pane--layers,
-.xsb-palette-pane--templates {
-	grid-template-rows: auto minmax(0, 1fr);
 }
 
 .xsb-palette-tabs {
@@ -645,10 +642,10 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--xsb-space-4);
-	flex: none;
+	flex: 1 1 0%;
 	width: 100%;
-	height: auto;
-	max-height: none;
+	height: 0;
+	max-height: 100%;
 	min-height: 0;
 	padding: 0 var(--xsb-space-4) var(--xsb-space-10);
 	overflow-y: scroll;
@@ -874,8 +871,8 @@
 .xsb-layers-tree {
 	display: flex;
 	flex-direction: column;
-	flex: none;
-	height: 100%;
+	flex: 1 1 0%;
+	height: 0;
 	min-height: 0;
 	gap: var(--xsb-space-2);
 	padding: 0 var(--xsb-space-4);
@@ -967,8 +964,8 @@
 
 .xsb-templates-list {
 	display: grid;
-	flex: none;
-	height: 100%;
+	flex: 1 1 0%;
+	height: 0;
 	min-height: 0;
 	gap: var(--xsb-space-5);
 	padding: 0 var(--xsb-space-5) var(--xsb-space-8);

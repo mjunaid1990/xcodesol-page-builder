@@ -1622,8 +1622,15 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	 * @return array
 	 */
 	private function sanitize_text_settings( $settings ) {
+		$text_html = wp_kses_allowed_html( 'post' );
+		foreach ( array( 'blockquote', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'p', 'span' ) as $text_tag ) {
+			if ( ! isset( $text_html[ $text_tag ] ) || ! is_array( $text_html[ $text_tag ] ) ) {
+				$text_html[ $text_tag ] = array();
+			}
+			$text_html[ $text_tag ]['style'] = true;
+		}
 		$clean = array(
-			'content' => isset( $settings['content'] ) ? wp_kses_post( (string) $settings['content'] ) : '',
+			'content' => isset( $settings['content'] ) ? wp_kses( (string) $settings['content'], $text_html ) : '',
 			'tag'     => isset( $settings['tag'] ) ? sanitize_key( $settings['tag'] ) : 'p',
 		);
 
