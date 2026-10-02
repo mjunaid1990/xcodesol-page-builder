@@ -4,13 +4,46 @@
  * @package Xcodesol_Page_Builder
  */
 
-import { useState } from '@wordpress/element';
+import { useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import { useDndContext } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { IconLayers, IconChevronDown, IconChevronRight, IconClose, IconWidgetContainer, IconGrip } from './icons';
+import {
+	IconLayers,
+	IconChevronDown,
+	IconChevronRight,
+	IconClose,
+	IconWidgetContainer,
+	IconWidgetHeading,
+	IconWidgetText,
+	IconWidgetImage,
+	IconWidgetButton,
+	IconWidgetDivider,
+	IconWidgetBanner,
+	IconWidgetShortcode,
+	IconWidgetBreadcrumb,
+	IconWidgetProduct,
+} from './icons';
 
 const isContainer = ( block ) => /(?:xcopb|xcosb)\/(?:gb-container|container)/.test( block?.type || '' );
+const widgetIcons = {
+	heading: IconWidgetHeading,
+	text: IconWidgetText,
+	'text-widget': IconWidgetText,
+	image: IconWidgetImage,
+	button: IconWidgetButton,
+	divider: IconWidgetDivider,
+	banner: IconWidgetBanner,
+	shortcode: IconWidgetShortcode,
+	breadcrumb: IconWidgetBreadcrumb,
+	'sp-title': IconWidgetHeading,
+	'sp-content': IconWidgetText,
+	'sp-featured-image': IconWidgetImage,
+	'ar-title': IconWidgetHeading,
+	'ar-description': IconWidgetText,
+	'ar-loop': IconWidgetProduct,
+};
 const sortableId = ( rootIndex, path, root = false ) => root
 	? `nav-root-${ rootIndex }`
 	: `nav-node-${ rootIndex }-${ path.map( ( step ) => `${ step.cj }_${ step.bi }` ).join( '__' ) }`;
@@ -39,24 +72,47 @@ const blockTitle = ( block ) => {
 		'ar-loop': __( 'Posts', 'xcodesol-page-builder' ),
 		'ar-pagination': __( 'Pagination', 'xcodesol-page-builder' ),
 	};
-	return block?.settings?.title || block?.settings?.text || cleanLabel || labels[ slug ] || ( block?.type || __( 'Element', 'xcodesol-page-builder' ) ).replace( /^xcopb\/|^xcosb\//, '' ).replace( /^gb-/, '' ).replace( /[-_/]+/g, ' ' );
+	return cleanLabel || labels[ slug ] || ( block?.type || __( 'Element', 'xcodesol-page-builder' ) ).replace( /^xcopb\/|^xcosb\//, '' ).replace( /^gb-/, '' ).replace( /[-_/]+/g, ' ' );
 };
 
 function SortableTreeItem( { id, moveData, className, children } ) {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable( {
+	const { active, over } = useDndContext();
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable( {
 		id,
 		data: { navigatorMove: moveData },
 	} );
+	const rowRef = useRef( null );
 	const style = { transform: CSS.Transform.toString( transform ), transition };
-	return <div ref={ setNodeRef } className={ `${ className }${ isDragging ? ' is-dragging' : '' }${ isOver ? ' is-drop-target' : '' }` } style={ style }>{ children( attributes, listeners ) }</div>;
+	const source = active?.data?.current?.navigatorMove;
+	const overThisItem = String( over?.id ) === String( id ) && String( active?.id ) !== String( id );
+	const activeRect = String( active?.id ) === String( id ) ? rowRef.current?.getBoundingClientRect() : active?.rect?.current?.translated;
+	const targetRect = overThisItem ? rowRef.current?.getBoundingClientRect() || over?.rect : over?.rect;
+	const activeCenter = activeRect ? activeRect.top + activeRect.height / 2 : null;
+	const targetRatio = activeCenter !== null && targetRect?.height
+		? ( activeCenter - targetRect.top ) / targetRect.height
+		: 0.5;
+	const isInside = overThisItem && !! moveData.container && targetRatio >= 0.24 && targetRatio <= 0.76;
+	const dropPosition = isInside ? 'inside' : targetRatio < 0.5 ? 'before' : 'after';
+	const invalidSelfDrop = source && (
+		( source.kind === 'root' && moveData.kind === 'root' && source.index === moveData.index && ! isInside ) ||
+		( source.kind === 'root' && moveData.kind === 'root' && ! isInside && ( source.zone || '' ) !== ( moveData.zone || '' ) ) ||
+		( source.kind === 'root' && moveData.kind === 'nested' && source.index === moveData.ci ) ||
+		( source.kind === 'nested' && moveData.kind === 'nested' && source.ci === moveData.ci &&
+			Array.isArray( source.path ) && moveData.path.length >= source.path.length &&
+			source.path.every( ( step, index ) => step.cj === moveData.path[ index ]?.cj && step.bi === moveData.path[ index ]?.bi ) )
+	);
+	const canDrop = overThisItem && !! source && ! invalidSelfDrop && ( ! isInside || moveData.container );
+	const dropClass = canDrop ? ` is-drop-${ dropPosition }` : '';
+	return <div ref={ setNodeRef } className={ `${ className }${ isDragging ? ' is-dragging' : '' }` } style={ style }>{ children( attributes, listeners, rowRef, dropClass ) }</div>;
 }
 
 function NavigatorItem( props ) {
 	const {
 		block, rootIndex, path, root, columnIndex, itemIndex, selectedIndex, selectedNested,
-		onSelect, onSelectNested, onReorder, collapsed, toggle,
+		onSelect, onSelectNested, collapsed, toggle,
 	} = props;
 	const container = isContainer( block );
+	const ItemIcon = container ? IconWidgetContainer : widgetIcons[ ( block?.type || '' ).split( '/' ).pop().replace( /^gb-/, '' ) ];
 	const nodeKey = root ? `root-${ rootIndex }` : `tree-${ rootIndex }-${ path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '-' ) }`;
 	const expanded = ! collapsed[ nodeKey ];
 	const children = container && Array.isArray( block.inner ) ? block.inner : [];
@@ -70,23 +126,23 @@ function NavigatorItem( props ) {
 	const ancestorSelected = !! selectedNested && selectedNested.ci === rootIndex && (
 		root || ( path.length < selectedPath.length && path.every( ( step, index ) => step.cj === selectedPath[ index ]?.cj && step.bi === selectedPath[ index ]?.bi ) )
 	);
-	const moveData = root ? { kind: 'root', index: rootIndex, container } : { kind: 'nested', ci: rootIndex, path, container };
+	const moveData = root
+		? { kind: 'root', index: rootIndex, container, zone: props.zoneMap?.[ rootIndex ] || '' }
+		: { kind: 'nested', ci: rootIndex, path, container };
 	const itemSortableId = sortableId( rootIndex, path, root );
 
 	return (
 		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch">
-			{ ( dragAttributes, dragListeners ) => <>
-				<div className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container ? expanded : undefined }>
-					{ container ? <button type="button" className="xsb-navigator__disclosure" onClick={ () => toggle( nodeKey ) } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" /> }
-					<button type="button" className="xsb-navigator__drag" { ...dragAttributes } { ...dragListeners } aria-label={ __( 'Drag to move', 'xcodesol-page-builder' ) } title={ __( 'Drag to move', 'xcodesol-page-builder' ) }><IconGrip width={ 14 } height={ 14 } /></button>
+			{ ( dragAttributes, dragListeners, rowRef, dropClass ) => <>
+				<div ref={ rowRef } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container && hasChildren ? expanded : undefined }>
+					{ container && hasChildren ? <button type="button" className="xsb-navigator__disclosure" onClick={ () => toggle( nodeKey ) } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
 					<button type="button" className="xsb-navigator__select" onClick={ () => root ? onSelect?.( rootIndex ) : onSelectNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }>
-						{ container && <span className="xsb-navigator__item-icon"><IconWidgetContainer width={ 14 } height={ 14 } /></span> }
+						{ ItemIcon && <span className="xsb-navigator__item-icon"><ItemIcon width={ 14 } height={ 14 } /></span> }
 						<span className="xsb-navigator__label">{ blockTitle( block ) }</span>
 					</button>
 				</div>
-				{ container && expanded && (
+				{ container && expanded && hasChildren && (
 					<div className="xsb-navigator__children" role="group">
-						{ ! hasChildren && <div className="xsb-navigator__empty-node">{ __( 'Empty', 'xcodesol-page-builder' ) }</div> }
 						{ children.map( ( column, cj ) => {
 							const items = Array.isArray( column ) ? column : [];
 							const showColumn = children.length > 1;
@@ -116,10 +172,10 @@ function NavigatorItem( props ) {
 	);
 }
 
-export default function Navigator( { layout = [], selectedIndex, selectedNested, onSelect, onSelectNested, onReorder, onClose } ) {
+export default function Navigator( { layout = [], zoneMap = [], selectedIndex, selectedNested, onSelect, onSelectNested, onClose } ) {
 	const [ collapsed, setCollapsed ] = useState( {} );
 	const toggle = ( key ) => setCollapsed( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
-	const shared = { layout, selectedIndex, selectedNested, onSelect, onSelectNested, onReorder, collapsed, toggle };
+	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, collapsed, toggle };
 	return (
 		<section className="xsb-navigator" aria-label={ __( 'Navigator', 'xcodesol-page-builder' ) }>
 			<header className="xsb-navigator__header"><span className="xsb-navigator__heading-icon"><IconLayers width={ 15 } height={ 15 } /></span><strong>{ __( 'Navigator', 'xcodesol-page-builder' ) }</strong><button type="button" className="xsb-navigator__close" onClick={ onClose } aria-label={ __( 'Close Navigator', 'xcodesol-page-builder' ) } title={ __( 'Close', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></header>

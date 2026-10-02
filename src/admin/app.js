@@ -556,104 +556,62 @@ function Editor( { config, structure: savedStructure } ) {
 
 	const reorderNavigatorItem = useCallback( ( source, target ) => {
 		if ( ! source || ! target ) return;
-		if ( source.kind === 'root' && source.index !== target.index ) {
-			if ( ( target.kind === 'nested' || target.kind === 'root' ) && target.container ) {
-				const next = layout.map( cloneBlockTree );
-				const moving = next[ source.index ];
-				const targetRootIndex = target.kind === 'root' ? target.index : target.ci;
-				let targetContainer = next[ targetRootIndex ];
-				for ( const step of target.path || [] ) targetContainer = targetContainer?.inner?.[ step.cj ]?.[ step.bi ];
-				if ( ! moving || ! targetContainer || ! isContainerType( targetContainer.type ) ) return;
-				if ( targetRootIndex === source.index ) return; // A root cannot be moved into its own subtree.
-				const destination = targetContainer;
-				const nextZones = [ ...zoneMap ];
-				next.splice( source.index, 1 );
-				nextZones.splice( source.index, 1 );
-				destination.inner = Array.isArray( destination.inner ) ? destination.inner.map( ( column ) => [ ...column ] ) : [ [] ];
-				if ( ! destination.inner[ 0 ] ) destination.inner[ 0 ] = [];
-				destination.inner[ 0 ].push( moving );
-				setLayoutAndZoneMap( next, nextZones );
-				const destinationIndex = next.findIndex( ( root ) => root === destination || findNestedBlockPath( root, destination ) );
-				const movedPath = destinationIndex >= 0 ? findNestedBlockPath( next[ destinationIndex ], moving ) : null;
-				if ( destinationIndex >= 0 && movedPath ) {
-					setSelectedIndex( destinationIndex );
-					setSelectedNested( { ci: destinationIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } );
-				} else {
-					setSelectedNested( null );
-				}
-				return;
-			}
-			if ( target.kind !== 'root' ) return;
-			const from = source.index;
-			const to = target.index;
-			if ( ( zoneMap[ from ] || '' ) !== ( zoneMap[ to ] || '' ) ) return;
-			setLayoutAndZoneMap( arrayMove( layout, from, to ), arrayMove( zoneMap, from, to ) );
-			setSelectedIndex( to );
-			setSelectedNested( null );
-			return;
-		}
-		if ( source.kind === 'nested' && target.kind === 'nested' && Array.isArray( source.path ) && Array.isArray( target.path ) && source.path.length && target.path.length ) {
-			const sourceParentPath = source.path.slice( 0, -1 );
-			const targetParentPath = target.path.slice( 0, -1 );
-			const sourceAddress = source.path[ source.path.length - 1 ];
-			const targetAddress = target.path[ target.path.length - 1 ];
-			const sameParent = source.ci === target.ci && JSON.stringify( sourceParentPath ) === JSON.stringify( targetParentPath ) && sourceAddress.cj === targetAddress.cj;
-			if ( sameParent ) {
-				if ( sourceAddress.bi === targetAddress.bi ) return;
-				const next = layout.map( cloneBlockTree );
-				let parent = next[ source.ci ];
-				for ( const step of sourceParentPath ) parent = parent?.inner?.[ step.cj ]?.[ step.bi ];
-				const column = parent?.inner?.[ sourceAddress.cj ];
-				if ( ! Array.isArray( column ) ) return;
-				parent.inner[ sourceAddress.cj ] = arrayMove( column, sourceAddress.bi, targetAddress.bi );
-				setLayout( next );
-				const selectedPath = [ ...sourceParentPath, { cj: sourceAddress.cj, bi: targetAddress.bi } ];
-				setSelectedNested( { ci: source.ci, cj: selectedPath[ 0 ].cj, bi: selectedPath[ 0 ].bi, path: selectedPath } );
-				return;
-			}
-			if ( ! target.container ) return;
-			// Prevent a container from being dropped into itself or any descendant.
-			if ( source.ci === target.ci && target.path.length >= source.path.length && source.path.every( ( step, index ) => step.cj === target.path[ index ]?.cj && step.bi === target.path[ index ]?.bi ) ) return;
-			const next = layout.map( cloneBlockTree );
-			let movingParent = next[ source.ci ];
-			for ( const step of sourceParentPath ) movingParent = movingParent?.inner?.[ step.cj ]?.[ step.bi ];
-			const movingColumn = movingParent?.inner?.[ sourceAddress.cj ];
-			const moving = movingColumn?.[ sourceAddress.bi ];
-			let targetContainer = next[ target.ci ];
-			for ( const step of target.path ) targetContainer = targetContainer?.inner?.[ step.cj ]?.[ step.bi ];
-			if ( ! Array.isArray( movingColumn ) || ! moving || ! targetContainer || ! isContainerType( targetContainer.type ) ) return;
-			movingColumn.splice( sourceAddress.bi, 1 );
-			targetContainer.inner = Array.isArray( targetContainer.inner ) ? targetContainer.inner.map( ( column ) => [ ...column ] ) : [ [] ];
-			if ( ! targetContainer.inner[ 0 ] ) targetContainer.inner[ 0 ] = [];
-			targetContainer.inner[ 0 ].push( moving );
-			setLayout( next );
-			const movedPath = findNestedBlockPath( next[ target.ci ], moving );
-			if ( movedPath ) {
-				setSelectedIndex( target.ci );
-				setSelectedNested( { ci: target.ci, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } );
-			}
-		}
-		if ( source.kind === 'nested' && target.kind === 'root' && target.container && Array.isArray( source.path ) && source.path.length ) {
-			const next = layout.map( cloneBlockTree );
-			const sourceAddress = source.path[ source.path.length - 1 ];
-			let sourceParent = next[ source.ci ];
-			for ( const step of source.path.slice( 0, -1 ) ) sourceParent = sourceParent?.inner?.[ step.cj ]?.[ step.bi ];
-			const sourceColumn = sourceParent?.inner?.[ sourceAddress.cj ];
-			const moving = sourceColumn?.[ sourceAddress.bi ];
-			const destination = next[ target.index ];
-			if ( ! Array.isArray( sourceColumn ) || ! moving || ! destination || ! isContainerType( destination.type ) ) return;
+		const position = target.position || 'before';
+		const next = layout.map( cloneBlockTree );
+		const nextZones = [ ...zoneMap ];
+		const sourceRootIndex = source.kind === 'root' ? source.index : source.ci;
+		const sourceRoot = next[ sourceRootIndex ];
+		const resolvePath = ( root, path = [] ) => path.reduce( ( block, step ) => block?.inner?.[ step.cj ]?.[ step.bi ], root );
+		const moving = source.kind === 'root' ? sourceRoot : resolvePath( sourceRoot, source.path );
+		const targetRootIndex = target.kind === 'root' ? target.index : target.ci;
+		const targetRoot = next[ targetRootIndex ];
+		const targetBlock = target.kind === 'root' ? targetRoot : resolvePath( targetRoot, target.path );
+		if ( ! moving || ! targetBlock || moving === targetBlock ) return;
+		if ( source.kind === 'root' && target.kind === 'root' && position !== 'inside' && ( zoneMap[ source.index ] || '' ) !== ( zoneMap[ target.index ] || '' ) ) return;
+		// A container cannot be moved into or alongside one of its descendants.
+		if ( findNestedBlockPath( moving, targetBlock ) ) return;
+		if ( position === 'inside' && ! isContainerType( targetBlock.type ) ) return;
+
+		const targetZone = nextZones[ targetRootIndex ] || '';
+		let sourceColumn = null;
+		if ( source.kind === 'root' ) {
+			next.splice( source.index, 1 );
+			nextZones.splice( source.index, 1 );
+		} else {
+			const sourceAddress = source.path?.[ source.path.length - 1 ];
+			const sourceParent = resolvePath( sourceRoot, source.path?.slice( 0, -1 ) );
+			sourceColumn = sourceParent?.inner?.[ sourceAddress?.cj ];
+			if ( ! Array.isArray( sourceColumn ) || sourceColumn[ sourceAddress.bi ] !== moving ) return;
 			sourceColumn.splice( sourceAddress.bi, 1 );
-			destination.inner = Array.isArray( destination.inner ) ? destination.inner.map( ( column ) => [ ...column ] ) : [ [] ];
-			if ( ! destination.inner[ 0 ] ) destination.inner[ 0 ] = [];
-			destination.inner[ 0 ].push( moving );
-			setLayout( next );
-			const movedPath = findNestedBlockPath( next[ target.index ], moving );
-			if ( movedPath ) {
-				setSelectedIndex( target.index );
-				setSelectedNested( { ci: target.index, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } );
-			}
 		}
-	}, [ layout, zoneMap, setLayout, setLayoutAndZoneMap ] );
+
+		if ( position === 'inside' ) {
+			targetBlock.inner = Array.isArray( targetBlock.inner ) ? targetBlock.inner.map( ( column ) => [ ...column ] ) : [ [] ];
+			if ( ! Array.isArray( targetBlock.inner[ 0 ] ) ) targetBlock.inner[ 0 ] = [];
+			targetBlock.inner[ 0 ].push( moving );
+		} else if ( target.kind === 'root' ) {
+			const targetIndex = next.indexOf( targetBlock );
+			if ( targetIndex < 0 ) return;
+			const insertAt = targetIndex + ( position === 'after' ? 1 : 0 );
+			next.splice( insertAt, 0, moving );
+			nextZones.splice( insertAt, 0, targetZone );
+		} else {
+			const targetAddress = target.path?.[ target.path.length - 1 ];
+			const targetParent = resolvePath( targetRoot, target.path?.slice( 0, -1 ) );
+			const targetColumn = targetParent?.inner?.[ targetAddress?.cj ];
+			const targetIndex = Array.isArray( targetColumn ) ? targetColumn.indexOf( targetBlock ) : -1;
+			if ( targetIndex < 0 ) return;
+			targetColumn.splice( targetIndex + ( position === 'after' ? 1 : 0 ), 0, moving );
+		}
+
+		setLayoutAndZoneMap( next, nextZones );
+		const movedRootIndex = next.findIndex( ( block ) => block === moving || findNestedBlockPath( block, moving ) );
+		const movedPath = movedRootIndex >= 0 ? findNestedBlockPath( next[ movedRootIndex ], moving ) : null;
+		if ( movedRootIndex >= 0 ) {
+			setSelectedIndex( movedRootIndex );
+			setSelectedNested( movedPath ? { ci: movedRootIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } : null );
+		}
+	}, [ layout, zoneMap, setLayoutAndZoneMap ] );
 
 	// Duplicate a nested widget within its column.
 	const duplicateNestedBlock = useCallback( ( ci, cj, bi ) => {
@@ -1045,7 +1003,19 @@ function Editor( { config, structure: savedStructure } ) {
 		const navigatorSource = active.data.current?.navigatorMove;
 		const navigatorTarget = over?.data?.current?.navigatorMove;
 		if ( navigatorSource ) {
-			if ( navigatorTarget ) reorderNavigatorItem( navigatorSource, navigatorTarget );
+			if ( navigatorTarget ) {
+				const activeRect = document.getElementById( String( active.id ) )?.getBoundingClientRect() || active.rect?.current?.translated;
+				const targetRect = document.getElementById( String( over.id ) )?.getBoundingClientRect() || over.rect;
+				const activeCenter = activeRect ? activeRect.top + activeRect.height / 2 : null;
+				const targetRatio = activeCenter !== null && targetRect?.height
+					? ( activeCenter - targetRect.top ) / targetRect.height
+					: 0.5;
+				const insideContainer = navigatorTarget.container && targetRatio >= 0.24 && targetRatio <= 0.76;
+				reorderNavigatorItem( navigatorSource, {
+					...navigatorTarget,
+					position: insideContainer ? 'inside' : targetRatio < 0.5 ? 'before' : 'after',
+				} );
+			}
 			updateDropGuide( null );
 			return;
 		}
@@ -2171,11 +2141,11 @@ function Editor( { config, structure: savedStructure } ) {
 						{ navigatorOpen && (
 							<Navigator
 								layout={ layout }
+								zoneMap={ zoneMap }
 								selectedIndex={ selectedIndex }
 								selectedNested={ selectedNested }
 								onSelect={ selectBlock }
 								onSelectNested={ selectNestedBlock }
-								onReorder={ reorderNavigatorItem }
 								onClose={ () => setNavigatorOpen( false ) }
 							/>
 						) }
