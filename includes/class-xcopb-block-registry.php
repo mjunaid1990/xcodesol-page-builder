@@ -1678,6 +1678,104 @@ class XCOPB_Block_Registry {
 	}
 
 	/**
+	 * Resolve a WordPress value for text based widgets at render time.
+	 *
+	 * @param string $source Dynamic value key.
+	 * @return string
+	 */
+	public static function resolve_dynamic_value( $source ) {
+		$post_id = function_exists( 'get_queried_object_id' ) ? absint( get_queried_object_id() ) : 0;
+		if ( ! $post_id && function_exists( 'get_the_ID' ) ) {
+			$post_id = absint( get_the_ID() );
+		}
+
+		switch ( sanitize_key( $source ) ) {
+			case 'post_title':
+				return $post_id ? (string) get_the_title( $post_id ) : '';
+			case 'post_url':
+				return $post_id ? (string) get_permalink( $post_id ) : '';
+			case 'post_excerpt':
+				return $post_id ? (string) get_the_excerpt( $post_id ) : '';
+			case 'post_content':
+				return $post_id ? (string) apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) ) : '';
+			case 'site_title':
+				return (string) get_bloginfo( 'name' );
+			case 'site_url':
+				return (string) home_url( '/' );
+			case 'site_tagline':
+				return (string) get_bloginfo( 'description' );
+			case 'archive_title':
+				return function_exists( 'get_the_archive_title' ) ? (string) get_the_archive_title() : '';
+			case 'archive_description':
+				return function_exists( 'get_the_archive_description' ) ? (string) get_the_archive_description() : '';
+			case 'current_date':
+				return function_exists( 'wp_date' ) ? (string) wp_date( get_option( 'date_format' ) ) : (string) date_i18n( get_option( 'date_format' ) );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Build a validated CSS filter chain for an image widget.
+	 *
+	 * @param array $settings Widget settings.
+	 * @return string
+	 */
+	public static function image_filter_css( $settings ) {
+		$filters = array();
+	$range = function ( $key, $min, $max, $suffix = '%' ) use ( $settings ) {
+			if ( ! isset( $settings[ $key ] ) || ! is_numeric( $settings[ $key ] ) ) {
+				return null;
+			}
+			$value = min( $max, max( $min, (float) $settings[ $key ] ) );
+			return rtrim( rtrim( number_format( $value, 2, '.', '' ), '0' ), '.' ) . $suffix;
+		};
+		if ( ( $value = $range( 'grayscale', 0, 100 ) ) && 0 < (float) $value ) { $filters[] = 'grayscale(' . $value . ')'; }
+		if ( ( $value = $range( 'blur', 0, 40, 'px' ) ) && 0 < (float) $value ) { $filters[] = 'blur(' . $value . ')'; }
+		foreach ( array( 'brightness', 'contrast', 'saturate' ) as $key ) {
+			if ( isset( $settings[ $key ] ) && is_numeric( $settings[ $key ] ) && 100 !== (float) $settings[ $key ] ) {
+				$value = $range( $key, 0, 200 );
+				$filters[] = $key . '(' . $value . ')';
+			}
+		}
+		if ( ( $value = $range( 'hue_rotate', 0, 360, 'deg' ) ) && 0 < (float) $value ) { $filters[] = 'hue-rotate(' . $value . ')'; }
+		if ( ( $value = $range( 'sepia', 0, 100 ) ) && 0 < (float) $value ) { $filters[] = 'sepia(' . $value . ')'; }
+
+		return implode( ' ', $filters );
+	}
+
+	/**
+	 * Build the accessible overlay layer style for an image widget.
+	 *
+	 * @param array $settings Widget settings.
+	 * @return string Empty when no visible overlay is configured.
+	 */
+	public static function image_overlay_style( $settings ) {
+		$color = isset( $settings['overlay_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['overlay_color'] ) : '';
+		$opacity = isset( $settings['overlay_opacity'] ) && is_numeric( $settings['overlay_opacity'] ) ? min( 100, max( 0, (float) $settings['overlay_opacity'] ) ) / 100 : 0;
+		$blend = isset( $settings['overlay_blend_mode'] ) && in_array( $settings['overlay_blend_mode'], array( 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity' ), true ) ? $settings['overlay_blend_mode'] : 'normal';
+		if ( '' === $color || $opacity <= 0 ) {
+			return '';
+		}
+		return 'position:absolute;inset:0;background-color:' . esc_attr( $color ) . ';opacity:' . $opacity . ';mix-blend-mode:' . $blend . ';pointer-events:none;';
+	}
+
+	/**
+	 * Shared shadow presets used by image and button widgets.
+	 *
+	 * @param string $preset Preset key.
+	 * @return string
+	 */
+	public static function shadow_preset( $preset ) {
+		$shadows = array(
+			'soft'   => '0 4px 14px rgba(0,0,0,.12)',
+			'medium' => '0 10px 28px rgba(0,0,0,.18)',
+			'strong' => '0 18px 50px rgba(0,0,0,.28)',
+		);
+		return isset( $shadows[ $preset ] ) ? $shadows[ $preset ] : '';
+	}
+
+	/**
 	 * True when a device layer holds any banner background/overlay/placement
 	 * override (used to decide whether per-device banner rules are needed).
 	 *
@@ -2556,8 +2654,9 @@ class XCOPB_Block_Registry {
 		$widget_focus_fg = ! empty( $settings['focus_text_color'] ) ? $settings['focus_text_color'] : '';
 		$widget_hover_border = ! empty( $settings['hover_border_color'] ) ? $settings['hover_border_color'] : '';
 		$widget_focus_border = ! empty( $settings['focus_border_color'] ) ? $settings['focus_border_color'] : '';
+		$button_hover_lift = 'xcopb/gb-button' === $type && isset( $settings['hover_lift'] ) ? min( 30, max( 0, (float) $settings['hover_lift'] ) ) : 0;
 
-		if ( '' === $hover && ! $hide_d && ! $hide_t && ! $hide_m && '' === $btn_hbg && '' === $btn_hfg && '' === $button_hover_bg && '' === $button_hover_fg && '' === $button_focus_bg && '' === $button_focus_fg && '' === $button_hover_border && '' === $button_focus_border && '' === $widget_hover_bg && '' === $widget_hover_fg && '' === $widget_focus_bg && '' === $widget_focus_fg && '' === $widget_hover_border && '' === $widget_focus_border ) {
+		if ( '' === $hover && ! $hide_d && ! $hide_t && ! $hide_m && '' === $btn_hbg && '' === $btn_hfg && '' === $button_hover_bg && '' === $button_hover_fg && '' === $button_focus_bg && '' === $button_focus_fg && '' === $button_hover_border && '' === $button_focus_border && '' === $widget_hover_bg && '' === $widget_hover_fg && '' === $widget_focus_bg && '' === $widget_focus_fg && '' === $widget_hover_border && '' === $widget_focus_border && 0 === $button_hover_lift ) {
 			return $html;
 		}
 
@@ -2584,6 +2683,9 @@ class XCOPB_Block_Registry {
 			'xcopb/gb-container' => '',
 		);
 		$widget_target = isset( $widget_targets[ $type ] ) ? $sel . $widget_targets[ $type ] : '';
+		if ( '' !== $widget_target && $button_hover_lift > 0 ) {
+			$css .= $widget_target . ':hover{transform:translateY(-' . self::format_px( $button_hover_lift ) . 'px);}';
+		}
 		if ( '' !== $widget_target && ( '' !== $widget_hover_bg || '' !== $widget_hover_fg || '' !== $widget_hover_border ) ) {
 			$decls = array();
 			if ( '' !== $widget_hover_bg ) { $decls[] = 'background:' . $widget_hover_bg . ' !important'; }

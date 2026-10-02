@@ -62,11 +62,20 @@ if ( '' === trim( $url ) ) {
 
 $alt         = isset( $settings['alt'] ) ? (string) $settings['alt'] : ( is_array( $media ) ? (string) ( $media['alt'] ?? '' ) : '' );
 $caption     = isset( $settings['caption'] ) ? (string) $settings['caption'] : '';
+if ( 'dynamic' === ( $settings['alt_source'] ?? 'static' ) ) {
+	$alt = wp_strip_all_tags( XCOPB_Block_Registry::resolve_dynamic_value( $settings['alt_dynamic_source'] ?? 'post_title' ) );
+}
+if ( 'dynamic' === ( $settings['caption_source'] ?? 'static' ) ) {
+	$caption = wp_strip_all_tags( XCOPB_Block_Registry::resolve_dynamic_value( $settings['caption_dynamic_source'] ?? 'post_title' ) );
+}
 $link        = isset( $settings['link'] ) ? (string) $settings['link'] : '';
 $align       = ! empty( $settings['align'] ) ? $settings['align'] : 'left';
 $width       = isset( $settings['width'] ) && '' !== $settings['width'] ? $settings['width'] : '';
 $max_width   = isset( $settings['max_width'] ) && '' !== $settings['max_width'] && (float) $settings['max_width'] > 0 ? $settings['max_width'] : '100%';
 $border_rad  = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 0;
+$border_width = isset( $settings['border_width'] ) ? min( 30, absint( $settings['border_width'] ) ) : 0;
+$border_style = isset( $settings['border_style'] ) && in_array( $settings['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ? $settings['border_style'] : 'solid';
+$border_color = isset( $settings['border_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['border_color'] ) : '#e2e8f0';
 $box_shadow  = ! empty( $settings['box_shadow'] ) ? $settings['box_shadow'] : '';
 $object_fit = ! empty( $settings['object_fit'] ) ? $settings['object_fit'] : '';
 $object_position = ! empty( $settings['object_position'] ) ? $settings['object_position'] : '';
@@ -102,12 +111,26 @@ $img_styles = array_merge( $img_styles, $background_image_decls );
 if ( $border_rad > 0 ) {
 	$img_styles[] = 'border-radius:' . $border_rad . 'px';
 }
+if ( $border_width > 0 ) {
+	$img_styles[] = 'border:' . $border_width . 'px ' . $border_style . ' ' . esc_attr( $border_color );
+}
 if ( '' !== $box_shadow ) {
-	$img_styles[] = 'box-shadow:' . esc_attr( $box_shadow );
+	$image_shadow = XCOPB_Block_Registry::shadow_preset( $box_shadow );
+	if ( '' !== $image_shadow ) { $img_styles[] = 'box-shadow:' . $image_shadow; }
 }
-if ( isset( $settings['grayscale'] ) && (float) $settings['grayscale'] > 0 ) {
-	$img_styles[] = 'filter:grayscale(' . min( 100, max( 0, (float) $settings['grayscale'] ) ) . '%)';
+$image_filter = XCOPB_Block_Registry::image_filter_css( $settings );
+if ( '' !== $image_filter ) {
+	$img_styles[] = 'filter:' . $image_filter;
 }
+if ( isset( $settings['opacity'] ) && is_numeric( $settings['opacity'] ) ) {
+	$img_styles[] = 'opacity:' . min( 100, max( 0, (float) $settings['opacity'] ) ) / 100;
+}
+$image_transforms = array();
+if ( isset( $settings['scale'] ) && is_numeric( $settings['scale'] ) && 100 !== (float) $settings['scale'] ) { $image_transforms[] = 'scale(' . ( min( 150, max( 50, (float) $settings['scale'] ) ) / 100 ) . ')'; }
+if ( isset( $settings['rotate'] ) && is_numeric( $settings['rotate'] ) && 0 !== (float) $settings['rotate'] ) { $image_transforms[] = 'rotate(' . min( 180, max( -180, (float) $settings['rotate'] ) ) . 'deg)'; }
+if ( ! empty( $image_transforms ) ) { $img_styles[] = 'transform:' . implode( ' ', $image_transforms ); }
+$transform_origins = array( 'center center', 'left top', 'center top', 'right top', 'left center', 'right center', 'left bottom', 'center bottom', 'right bottom' );
+if ( isset( $settings['transform_origin'] ) && in_array( $settings['transform_origin'], $transform_origins, true ) ) { $img_styles[] = 'transform-origin:' . $settings['transform_origin']; }
 
 $wrap_styles = array(
 	'width:100%',
@@ -130,11 +153,19 @@ $img_tag = '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '" st
 if ( '' !== trim( $link ) ) {
 	$target = ! empty( $settings['link_target'] ) || ! empty( $settings['target_blank'] );
 	$rel = $target ? ' rel="noopener noreferrer"' : '';
-	$img_tag = '<a href="' . esc_url( $link ) . '"' . ( $target ? ' target="_blank"' : '' ) . $rel . ' style="display:inline-block;">' . $img_tag . '</a>';
+	$img_tag = '<a href="' . esc_url( $link ) . '"' . ( $target ? ' target="_blank"' : '' ) . $rel . ' style="display:block;">' . $img_tag . '</a>';
 }
 
+$frame_width = '' !== $width ? ( is_numeric( $width ) ? (float) $width . 'px' : esc_attr( $width ) ) : '100%';
+$frame_style = 'position:relative;display:inline-block;width:' . $frame_width . ';max-width:' . ( is_numeric( $max_width ) ? (float) $max_width . 'px' : esc_attr( $max_width ) ) . ';overflow:hidden;';
+if ( $border_rad > 0 ) { $frame_style .= 'border-radius:' . $border_rad . 'px;'; }
+$overlay_style = XCOPB_Block_Registry::image_overlay_style( $settings );
 $output = '<div class="xcopb-image-wrapper xsb-image-wrapper xcopb-widget" style="' . esc_attr( implode( ';', $wrap_styles ) ) . '">'
-	. $img_tag;
+	. '<div class="xsb-image-frame" style="' . esc_attr( $frame_style ) . '">' . $img_tag;
+if ( '' !== $overlay_style ) {
+	$output .= '<span class="xsb-image-overlay" aria-hidden="true" style="' . esc_attr( $overlay_style ) . '"></span>';
+}
+$output .= '</div>';
 
 if ( '' !== trim( $caption ) ) {
 	$output .= '<figcaption class="xcopb-image-caption" style="font-size:13px;color:#64748b;margin-top:6px;">' . esc_html( $caption ) . '</figcaption>';

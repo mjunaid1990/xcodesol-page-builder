@@ -20,6 +20,11 @@
 	position: relative;
 }
 
+.xsb-preview-button-interactive { transition-property: transform; }
+.xsb-preview-button-interactive:hover { transform: translateY(calc(-1 * var(--xsb-hover-lift, 0px))); }
+.xsb-preview-button-interactive:hover { background: var(--xsb-preview-hover-bg, revert); color: var(--xsb-preview-hover-fg, revert); }
+.xsb-preview-button-interactive:focus-visible { background: var(--xsb-preview-focus-bg, revert); color: var(--xsb-preview-focus-fg, revert); outline: 2px solid currentColor; outline-offset: 2px; }
+
 .xsb-container--has-video {
 	position: relative;
 	isolation: isolate;

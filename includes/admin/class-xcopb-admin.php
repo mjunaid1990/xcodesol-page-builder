@@ -393,6 +393,18 @@ class XCOPB_Admin {
 
 		$view_url = ( $post_obj && 'publish' === $post_obj->post_status ) ? get_permalink( $post_id ) : $this->get_template_view_url( $view_type );
 		$list_url = admin_url( 'edit.php?post_type=' . ( ( $post_obj && 'post' !== $post_obj->post_type ) ? $post_obj->post_type : '' ) );
+		$dynamic_preview_values = array(
+			'post_title'          => $post_obj ? get_the_title( $post_obj ) : __( 'Sample post title', 'xcodesol-page-builder' ),
+			'post_excerpt'        => $post_obj ? get_the_excerpt( $post_obj ) : __( 'A short summary of the current post.', 'xcodesol-page-builder' ),
+			'post_content'        => $post_obj ? wp_trim_words( wp_strip_all_tags( $post_obj->post_content ), 45 ) : __( 'The current post content will appear here.', 'xcodesol-page-builder' ),
+			'site_title'          => get_bloginfo( 'name' ),
+			'site_url'            => home_url( '/' ),
+			'post_url'            => $post_obj ? get_permalink( $post_obj ) : '',
+			'site_tagline'        => get_bloginfo( 'description' ),
+			'archive_title'       => __( 'Archive title', 'xcodesol-page-builder' ),
+			'archive_description' => __( 'The current archive description will appear here.', 'xcodesol-page-builder' ),
+			'current_date'        => wp_date( get_option( 'date_format' ) ),
+		);
 
 		$config = array(
 			'restUrl'           => esc_url_raw( rest_url( 'xcopb/v1/templates' ) ),
@@ -407,6 +419,7 @@ class XCOPB_Admin {
 			'productAttributes' => $this->get_product_attribute_options(),
 			'acfImageFields'   => $this->get_acf_image_fields( $post_id ),
 			'featuredImageUrl' => $post_id && has_post_thumbnail( $post_id ) ? (string) get_the_post_thumbnail_url( $post_id, 'medium' ) : '',
+			'dynamicPreviewValues' => $dynamic_preview_values,
 			'fontOptions'       => $this->get_theme_font_options(),
 			'siteSettings'      => $this->get_site_settings(),
 			'isWordPressPage'   => $post_obj && 'page' === $post_obj->post_type,

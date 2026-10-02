@@ -550,6 +550,10 @@ a.xsb-banner-btn:hover {
 	margin: 0 0 16px;
 }
 
+.xsb-text-block a { color: var(--xsb-text-link-color, inherit); }
+.xsb-text-block p { margin-block: 0 var(--xsb-text-paragraph-gap, 16px); }
+.xsb-text-block--drop-cap .xsb-text-drop-cap { float: left; margin: .06em .12em 0 0; font-size: 3.2em; line-height: .8; font-weight: 700; }
+
 .xsb-container {
 	box-sizing: border-box;
 	width: 100%;

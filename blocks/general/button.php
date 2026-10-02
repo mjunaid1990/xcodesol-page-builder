@@ -10,14 +10,28 @@ defined( 'ABSPATH' ) || exit;
 $settings = isset( $block['settings'] ) ? $block['settings'] : array();
 
 $text = isset( $settings['text'] ) ? (string) $settings['text'] : '';
+if ( 'dynamic' === ( $settings['text_source'] ?? 'static' ) ) {
+	$text = wp_strip_all_tags( XCOPB_Block_Registry::resolve_dynamic_value( $settings['dynamic_source'] ?? 'post_title' ) );
+}
 if ( '' === trim( $text ) ) {
 	$text = isset( $settings['button_text'] ) ? (string) $settings['button_text'] : __( 'Click here', 'xcodesol-page-builder' );
 }
 
 $link         = ! empty( $settings['link'] ) ? (string) $settings['link'] : '#';
+if ( 'dynamic' === ( $settings['link_source'] ?? 'static' ) ) {
+	$link = XCOPB_Block_Registry::resolve_dynamic_value( $settings['dynamic_url_source'] ?? 'post_url' );
+}
 $align        = ! empty( $settings['align'] ) ? $settings['align'] : 'left';
 $size         = ! empty( $settings['size'] ) ? $settings['size'] : 'md';
 $bg_color     = ! empty( $settings['bg_color'] ) ? $settings['bg_color'] : '#2563eb';
+$background_type = isset( $settings['background_type'] ) && 'gradient' === $settings['background_type'] ? 'gradient' : 'classic';
+$button_background = $bg_color;
+if ( 'gradient' === $background_type ) {
+	$gradient_start = isset( $settings['gradient_start'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['gradient_start'] ) : '#2563eb';
+	$gradient_end = isset( $settings['gradient_end'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['gradient_end'] ) : '#4f46e5';
+	$gradient_angle = isset( $settings['gradient_angle'] ) ? min( 360, max( 0, absint( $settings['gradient_angle'] ) ) ) : 90;
+	$button_background = 'linear-gradient(' . $gradient_angle . 'deg,' . $gradient_start . ',' . $gradient_end . ')';
+}
 $text_color   = ! empty( $settings['text_color'] ) ? $settings['text_color'] : '#ffffff';
 $border_rad   = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 6;
 $target_blank = ! empty( $settings['target_blank'] );
@@ -40,7 +54,7 @@ $size_map = array( 'xs' => array( 12, 6, 12 ), 'sm' => array( 13, 8, 16 ), 'md' 
 $size_values = isset( $size_map[ $size ] ) ? $size_map[ $size ] : $size_map['md'];
 
 $btn_style = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;'
-	. 'background-color:' . esc_attr( $bg_color ) . ';'
+	. 'background:' . esc_attr( $button_background ) . ';'
 	. 'color:' . esc_attr( $text_color ) . ';'
 	. 'padding:' . $size_values[1] . 'px ' . $size_values[2] . 'px;'
 	. 'border-radius:' . $border_rad . 'px;'
@@ -48,13 +62,20 @@ $btn_style = 'display:inline-flex;align-items:center;justify-content:center;gap:
 if ( null !== $padding_x || null !== $padding_y ) { $btn_style .= 'padding:' . ( null !== $padding_y ? $padding_y : $size_values[1] ) . 'px ' . ( null !== $padding_x ? $padding_x : $size_values[2] ) . 'px;'; }
 $btn_style .= 'font-size:' . ( null !== $font_size ? $font_size : $size_values[0] ) . 'px;';
 if ( ! empty( $settings['font_family'] ) ) { $btn_style .= 'font-family:' . esc_attr( $settings['font_family'] ) . ';'; }
+if ( isset( $settings['font_style'] ) && in_array( $settings['font_style'], array( 'normal', 'italic', 'oblique' ), true ) ) { $btn_style .= 'font-style:' . $settings['font_style'] . ';'; }
+if ( isset( $settings['line_height'] ) && is_numeric( $settings['line_height'] ) ) { $btn_style .= 'line-height:' . min( 3, max( 0.8, (float) $settings['line_height'] ) ) . ';'; }
 if ( isset( $settings['letter_spacing'] ) ) { $btn_style .= 'letter-spacing:' . (float) $settings['letter_spacing'] . 'px;'; }
+if ( ! empty( $settings['text_shadow'] ) && class_exists( 'XCOPB_Sanitizer' ) ) { $btn_style .= 'text-shadow:' . XCOPB_Sanitizer::sanitize_css_fragment( $settings['text_shadow'] ) . ';'; }
 if ( ! empty( $settings['text_transform'] ) && in_array( $settings['text_transform'], array( 'uppercase', 'lowercase', 'capitalize' ), true ) ) { $btn_style .= 'text-transform:' . $settings['text_transform'] . ';'; }
 if ( ! empty( $settings['border_style'] ) && 'none' !== $settings['border_style'] ) {
-	$btn_style .= 'border:' . max( 1, absint( $settings['border_width'] ?? 1 ) ) . 'px ' . esc_attr( $settings['border_style'] ) . ' ' . esc_attr( $settings['border_color'] ?? $bg_color ) . ';';
+	$border_style = in_array( $settings['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ? $settings['border_style'] : 'solid';
+	$btn_style .= 'border:' . max( 1, absint( $settings['border_width'] ?? 1 ) ) . 'px ' . $border_style . ' ' . esc_attr( $settings['border_color'] ?? $bg_color ) . ';';
 } else { $btn_style .= 'border:0;'; }
-$shadow_map = array( 'soft' => '0 4px 14px rgba(0,0,0,.12)', 'medium' => '0 10px 28px rgba(0,0,0,.18)', 'strong' => '0 18px 50px rgba(0,0,0,.28)' );
-if ( isset( $shadow_map[ $settings['box_shadow'] ?? '' ] ) ) { $btn_style .= 'box-shadow:' . $shadow_map[ $settings['box_shadow'] ] . ';'; }
+$btn_style .= 'transition:all ' . min( 2000, max( 0, absint( $settings['transition_duration'] ?? 200 ) ) ) . 'ms ease;';
+if ( ! empty( $settings['full_width'] ) ) { $btn_style .= 'width:100%;'; }
+if ( isset( $settings['min_width'] ) && is_numeric( $settings['min_width'] ) && (float) $settings['min_width'] > 0 ) { $btn_style .= 'min-width:' . min( 1200, (float) $settings['min_width'] ) . 'px;'; }
+$button_shadow = XCOPB_Block_Registry::shadow_preset( $settings['box_shadow'] ?? '' );
+if ( '' !== $button_shadow ) { $btn_style .= 'box-shadow:' . $button_shadow . ';'; }
 
 $wrap_style = 'text-align:' . esc_attr( $align ) . ';';
 foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
@@ -68,11 +89,12 @@ $rel = array();
 if ( $target_blank ) { $rel[] = 'noopener'; $rel[] = 'noreferrer'; }
 if ( $nofollow ) { $rel[] = 'nofollow'; }
 $target_attr = ( $target_blank ? ' target="_blank"' : '' ) . ( $rel ? ' rel="' . esc_attr( implode( ' ', $rel ) ) . '"' : '' );
-$icon = ! empty( $settings['icon'] ) && preg_match( '/^dashicons-[a-z0-9-]+$/', $settings['icon'] ) ? '<span class="dashicons ' . esc_attr( $settings['icon'] ) . '" aria-hidden="true"></span> ' : '';
+$icon = ! empty( $settings['icon'] ) && preg_match( '/^dashicons-[a-z0-9-]+$/', $settings['icon'] ) ? '<span class="dashicons ' . esc_attr( $settings['icon'] ) . '" aria-hidden="true" style="margin-inline-end:' . min( 60, absint( $settings['icon_gap'] ?? 8 ) ) . 'px"></span>' : '';
+$button_content = 'after' === ( $settings['icon_position'] ?? 'before' ) ? esc_html( $text ) . $icon : $icon . esc_html( $text );
 
 $output = '<div class="xcopb-button-wrapper xsb-button-wrapper" style="' . esc_attr( $wrap_style ) . '">'
 	. '<a href="' . esc_url( $link ) . '" class="xcopb-button xsb-button xcopb-widget" style="' . esc_attr( $btn_style ) . '"' . $target_attr . '>'
-	. $icon . esc_html( $text )
+	. $button_content
 	. '</a>'
 	. '</div>';
 

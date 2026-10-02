@@ -10,6 +10,9 @@ defined( 'ABSPATH' ) || exit;
 $settings = isset( $block['settings'] ) ? $block['settings'] : array();
 
 $content = isset( $settings['content'] ) ? $settings['content'] : '';
+if ( 'dynamic' === ( $settings['content_source'] ?? 'static' ) ) {
+	$content = XCOPB_Block_Registry::resolve_dynamic_value( $settings['dynamic_source'] ?? 'post_title' );
+}
 $tag     = ! empty( $settings['tag'] ) ? $settings['tag'] : 'p';
 $color   = ! empty( $settings['color'] ) ? $settings['color'] : '';
 $align   = ! empty( $settings['align'] ) ? $settings['align'] : 'left';
@@ -21,6 +24,7 @@ $line_height   = isset( $settings['line_height'] ) && '' !== $settings['line_hei
 $letter_spacing = isset( $settings['letter_spacing'] ) && '' !== $settings['letter_spacing'] ? $settings['letter_spacing'] : '';
 $font_family    = ! empty( $settings['font_family'] ) ? $settings['font_family'] : '';
 $text_transform = ! empty( $settings['text_transform'] ) ? $settings['text_transform'] : '';
+$font_style     = isset( $settings['font_style'] ) && in_array( $settings['font_style'], array( 'normal', 'italic', 'oblique' ), true ) ? $settings['font_style'] : 'normal';
 $text_columns   = isset( $settings['text_columns'] ) ? min( 3, max( 1, absint( $settings['text_columns'] ) ) ) : 1;
 $column_gap     = isset( $settings['column_gap'] ) ? absint( $settings['column_gap'] ) : 24;
 $paragraph_spacing = isset( $settings['paragraph_spacing'] ) ? absint( $settings['paragraph_spacing'] ) : 16;
@@ -29,7 +33,11 @@ $paragraph_spacing = isset( $settings['paragraph_spacing'] ) ? absint( $settings
 $border_width  = isset( $settings['border_width'] ) ? max( 0, absint( $settings['border_width'] ) ) : 0;
 $border_style  = ! empty( $settings['border_style'] ) ? $settings['border_style'] : 'solid';
 $border_color  = ! empty( $settings['border_color'] ) ? $settings['border_color'] : '';
+$border_style  = isset( $settings['border_style'] ) && in_array( $settings['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ? $settings['border_style'] : 'solid';
 $border_radius = isset( $settings['border_radius'] ) ? max( 0, absint( $settings['border_radius'] ) ) : 0;
+$padding       = isset( $settings['padding'] ) ? min( 100, absint( $settings['padding'] ) ) : 0;
+$background_color = isset( $settings['background_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['background_color'] ) : '';
+$opacity = isset( $settings['opacity'] ) && is_numeric( $settings['opacity'] ) ? min( 100, max( 0, (float) $settings['opacity'] ) ) / 100 : 1;
 $animation     = isset( $settings['animation'] ) ? $settings['animation'] : 'none';
 $anim_duration = isset( $settings['animation_duration'] ) ? absint( $settings['animation_duration'] ) : 600;
 $anim_delay    = isset( $settings['animation_delay'] ) ? absint( $settings['animation_delay'] ) : 0;
@@ -55,7 +63,7 @@ if ( '' === $content ) {
 }
 
 $style = '';
-$has_extra = '' !== $color || 'left' !== $align || '' !== $font_size || '' !== $font_weight || '' !== $line_height || '' !== $letter_spacing || '' !== $font_family || '' !== $text_transform || $border_width > 0 || $border_radius > 0 || ! empty( $margins ) || $text_columns > 1 || ! empty( $settings['blockquote_background'] );
+$has_extra = '' !== $color || 'left' !== $align || '' !== $font_size || '' !== $font_weight || '' !== $line_height || '' !== $letter_spacing || '' !== $font_family || '' !== $text_transform || 'normal' !== $font_style || $border_width > 0 || $border_radius > 0 || $padding > 0 || ! empty( $margins ) || $text_columns > 1 || 16 !== $paragraph_spacing || ! empty( $settings['blockquote_background'] ) || '' !== $background_color || ! empty( $settings['link_color'] ) || ! empty( $settings['text_shadow'] ) || 1 !== $opacity;
 if ( $has_extra ) {
 	$style .= ' style="';
 	if ( '' !== $color ) {
@@ -77,7 +85,16 @@ if ( $has_extra ) {
 		$style .= 'letter-spacing:' . (float) $letter_spacing . 'px;';
 	}
 	if ( '' !== $font_family ) { $style .= 'font-family:' . esc_attr( $font_family ) . ';'; }
+	if ( 'normal' !== $font_style ) { $style .= 'font-style:' . $font_style . ';'; }
 	if ( in_array( $text_transform, array( 'uppercase', 'lowercase', 'capitalize' ), true ) ) { $style .= 'text-transform:' . $text_transform . ';'; }
+	if ( isset( $settings['text_decoration'] ) && in_array( $settings['text_decoration'], array( 'none', 'underline', 'overline', 'line-through' ), true ) ) { $style .= 'text-decoration-line:' . $settings['text_decoration'] . ';'; }
+	if ( isset( $settings['text_decoration_style'] ) && in_array( $settings['text_decoration_style'], array( 'solid', 'double', 'dotted', 'dashed', 'wavy' ), true ) ) { $style .= 'text-decoration-style:' . $settings['text_decoration_style'] . ';'; }
+	if ( ! empty( $settings['text_decoration_color'] ) ) { $style .= 'text-decoration-color:' . esc_attr( $settings['text_decoration_color'] ) . ';'; }
+	if ( ! empty( $settings['text_shadow'] ) && class_exists( 'XCOPB_Sanitizer' ) ) { $style .= 'text-shadow:' . XCOPB_Sanitizer::sanitize_css_fragment( $settings['text_shadow'] ) . ';'; }
+	if ( isset( $settings['word_break'] ) && in_array( $settings['word_break'], array( 'normal', 'break-word', 'keep-all' ), true ) ) { $style .= 'overflow-wrap:' . ( 'break-word' === $settings['word_break'] ? 'anywhere' : 'normal' ) . ';word-break:' . ( 'keep-all' === $settings['word_break'] ? 'keep-all' : 'normal' ) . ';'; }
+	if ( '' !== $background_color ) { $style .= 'background-color:' . esc_attr( $background_color ) . ';'; }
+	if ( ! empty( $settings['link_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ) { $style .= '--xsb-text-link-color:' . XCOPB_Sanitizer::sanitize_color( $settings['link_color'] ) . ';'; }
+	if ( 1 !== $opacity ) { $style .= 'opacity:' . $opacity . ';'; }
 	if ( $text_columns > 1 ) { $style .= 'columns:' . $text_columns . ';column-gap:' . $column_gap . 'px;'; }
 	if ( ! empty( $settings['blockquote_background'] ) ) { $style .= 'background:' . esc_attr( $settings['blockquote_background'] ) . ';'; }
 	if ( ! empty( $settings['blockquote_color'] ) ) { $style .= 'border-left:' . max( 2, $border_width ) . 'px solid ' . esc_attr( $settings['blockquote_color'] ) . ';'; }
@@ -90,6 +107,7 @@ if ( $has_extra ) {
 	if ( $border_width > 0 || $border_radius > 0 ) {
 		$style .= 'box-sizing:border-box;';
 	}
+	if ( $padding > 0 ) { $style .= 'padding:' . $padding . 'px;'; }
 	if ( ! empty( $margins ) ) {
 		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 			if ( isset( $margins[ $side ] ) ) {

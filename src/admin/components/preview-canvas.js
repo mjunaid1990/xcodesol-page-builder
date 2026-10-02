@@ -19,7 +19,9 @@ import '../../../assets/shared/motion-presets.css';
 
 import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS, WIDGET_BLOCKS } from './block-palette';
 import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/columns';
-import { resolveBackgroundMedia, resolveImageWidgetMedia } from '../lib/background-media';
+import { resolveBackgroundMedia, resolveImageWidgetMedia, resolveImageFilter } from '../lib/background-media';
+import { resolveDynamicPreview } from '../lib/dynamic-content';
+import { resolveTextWidgetStyle, resolveButtonWidgetStyle, resolveDividerWidgetStyles } from '../lib/widget-styles';
 import { effectiveForDevice } from '../styles/responsive';
 import StylePopover, { hasStylePopover, SHADOW_VALUES } from './style-popover';
 import { IconPlus, IconLayoutFlex, IconLayoutGrid, IconCopy, IconTrash } from './icons';
@@ -686,7 +688,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 	switch (block.type) {
 		case 'xcopb/post-title': {
 			const Tag = settings.tag || 'h1';
-			const title = __('The Future of Web Design and Visual Building', 'xcodesol-page-builder');
+			const title = resolveDynamicPreview( 'post_title' ) || __('The Future of Web Design and Visual Building', 'xcodesol-page-builder');
 			const headingStyle = {
 				textAlign: settings.align || 'left',
 				margin: 0,
@@ -739,13 +741,11 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			);
 		}
 		case 'xcopb/post-content': {
+			const previewContent = resolveDynamicPreview( 'post_content' );
 			return (
 				<div className="xsb-bp xcopb-bp-post-content" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Post Content', 'xcodesol-page-builder')}</div>
-					<div style={{ color: '#334155', lineHeight: '1.7', fontSize: '16px' }}>
-						<p>{__('Designing web experiences should be intuitive, dynamic, and limitless. With modern page builders, creators can assemble modular components and publish pixel-perfect responsive layouts in minutes.', 'xcodesol-page-builder')}</p>
-						<p>{__('Clean semantics and performance-first architecture guarantee fast loading times and superior SEO scores across mobile and desktop devices alike.', 'xcodesol-page-builder')}</p>
-					</div>
+					<div style={{ color: '#334155', lineHeight: '1.7', fontSize: '16px' }}>{previewContent}</div>
 				</div>
 			);
 		}
@@ -767,11 +767,12 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			);
 		}
 		case 'xcopb/post-excerpt': {
+			const excerpt = resolveDynamicPreview( 'post_excerpt' );
 			return (
 				<div className="xsb-bp xcopb-bp-post-excerpt" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Post Excerpt', 'xcodesol-page-builder')}</div>
 					<p style={{ color: settings.color || '#475569', textAlign: settings.align || 'left', fontSize: `${ Number( settings.font_size ) || 16 }px`, lineHeight: settings.line_height || 1.6, margin: 0, ...marginInlineCss(settings) }}>
-						{__('An insightful overview exploring modern design systems and visual theme builders.', 'xcodesol-page-builder')}
+						{excerpt || __('An insightful overview exploring modern design systems and visual theme builders.', 'xcodesol-page-builder')}
 					</p>
 				</div>
 			);
@@ -810,21 +811,23 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/archive-title': {
 			const Tag = settings.tag || 'h1';
+			const archiveTitle = resolveDynamicPreview( 'archive_title' );
 			return (
 				<div className="xsb-bp xcopb-bp-archive-title" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Archive Title', 'xcodesol-page-builder')}</div>
 					<Tag style={{ margin: 0, textAlign: settings.align || 'left', color: settings.color || undefined, fontSize: settings.font_size ? `${ Number( settings.font_size ) }px` : undefined, fontWeight: settings.font_weight || undefined }}>
-						{settings.include_context === false ? __('Web Design', 'xcodesol-page-builder') : __('Category: Web Design', 'xcodesol-page-builder')}
+						{archiveTitle || ( settings.include_context === false ? __('Web Design', 'xcodesol-page-builder') : __('Category: Web Design', 'xcodesol-page-builder') )}
 					</Tag>
 				</div>
 			);
 		}
 		case 'xcopb/archive-description': {
+			const archiveDescription = resolveDynamicPreview( 'archive_description' );
 			return (
 				<div className="xsb-bp xcopb-bp-archive-desc" style={{ width: '100%', ...marginInlineCss(settings) }}>
 					<div className="xsb-bp-label-chip">{__('Archive Description', 'xcodesol-page-builder')}</div>
 					<p style={{ color: settings.color || '#64748b', textAlign: settings.align || 'left', margin: 0, fontSize: '15px', ...marginInlineCss(settings) }}>
-						{__('Explore the latest articles, tutorials, and insights about modern visual web design.', 'xcodesol-page-builder')}
+						{archiveDescription || __('Explore the latest articles, tutorials, and insights about modern visual web design.', 'xcodesol-page-builder')}
 					</p>
 				</div>
 			);
@@ -890,24 +893,16 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			);
 		}
 		case 'xcopb/gb-button': {
+			const buttonText = settings.text_source === 'dynamic' ? resolveDynamicPreview( settings.dynamic_source || 'post_title' ) : ( settings.text || __('Click Here', 'xcodesol-page-builder') );
+			const buttonBackground = settings.background_type === 'gradient'
+				? `linear-gradient(${ Math.min( 360, Math.max( 0, Number( settings.gradient_angle ) || 90 ) ) }deg, ${ settings.gradient_start || '#2563eb' }, ${ settings.gradient_end || '#4f46e5' })`
+				: ( settings.bg_color || '#2563eb' );
 			const btnStyle = {
-				display: 'inline-flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				gap: '8px',
-				backgroundColor: settings.bg_color || '#2563eb',
-				color: settings.text_color || '#ffffff',
-				padding: settings.padding_y !== undefined || settings.padding_x !== undefined ? `${ Number( settings.padding_y ?? 12 ) }px ${ Number( settings.padding_x ?? 24 ) }px` : ( settings.size === 'xs' ? '6px 12px' : settings.size === 'sm' || settings.size === 'small' ? '8px 16px' : settings.size === 'lg' || settings.size === 'large' ? '16px 32px' : settings.size === 'xl' ? '20px 40px' : '12px 24px' ),
-				fontSize: settings.font_size ? `${ Number( settings.font_size ) }px` : ( settings.size === 'xs' ? '12px' : settings.size === 'sm' || settings.size === 'small' ? '13px' : settings.size === 'lg' || settings.size === 'large' ? '17px' : settings.size === 'xl' ? '19px' : '15px' ),
-				fontWeight: settings.font_weight || 600,
-				fontFamily: settings.font_family || undefined,
-				letterSpacing: settings.letter_spacing ? `${ Number( settings.letter_spacing ) }px` : undefined,
-				textTransform: settings.text_transform || undefined,
-				borderRadius: `${ settings.border_radius !== undefined ? Number(settings.border_radius) : 6 }px`,
-				border: settings.border_style && settings.border_style !== 'none' ? `${ Number( settings.border_width ) || 1 }px ${ settings.border_style } ${ settings.border_color || '#2563eb' }` : 'none',
-				textDecoration: 'none',
-				cursor: 'pointer',
-				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
+				...resolveButtonWidgetStyle( settings, buttonBackground ),
+				'--xsb-preview-hover-bg': settings.hover_bg_color || undefined,
+				'--xsb-preview-hover-fg': settings.hover_text_color || undefined,
+				'--xsb-preview-focus-bg': settings.focus_bg_color || undefined,
+				'--xsb-preview-focus-fg': settings.focus_text_color || undefined,
 				...marginInlineCss( settings ),
 			};
 			const wrapStyle = {
@@ -919,8 +914,9 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				<div className="xsb-bp xcopb-bp-button" style={wrapStyle}>
 					<div className="xsb-bp-label-chip">{__('Button', 'xcodesol-page-builder')}</div>
 					<button type="button" className="xsb-preview-button-interactive" style={btnStyle}>
-						{settings.icon && <span className={`dashicons ${settings.icon}`} />}
-						<span>{settings.text || __('Click Here', 'xcodesol-page-builder')}</span>
+						{settings.icon && settings.icon_position !== 'after' && <span className={`dashicons ${settings.icon}`} />}
+						<span>{buttonText}</span>
+						{settings.icon && settings.icon_position === 'after' && <span className={`dashicons ${settings.icon}`} />}
 					</button>
 				</div>
 			);
@@ -936,7 +932,15 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				: settings.image_source === 'featured_image'
 					? featuredImageUrl
 					: savedMedia;
+			const imageAlt = settings.alt_source === 'dynamic' ? resolveDynamicPreview( settings.alt_dynamic_source || 'post_title' ) : ( settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || '' );
+			const imageCaption = settings.caption_source === 'dynamic' ? resolveDynamicPreview( settings.caption_dynamic_source || 'post_title' ) : settings.caption;
 			const imageMediaStyles = resolveImageWidgetMedia( settings, imageUrl || '' );
+			const imageFilter = resolveImageFilter( settings );
+			const imageBorder = Number( settings.border_width ) > 0 && settings.border_style !== 'none'
+				? `${ Math.min( 30, Number( settings.border_width ) ) }px ${ settings.border_style || 'solid' } ${ settings.border_color || '#e2e8f0' }`
+				: undefined;
+			const overlayOpacity = Math.min( 100, Math.max( 0, Number( settings.overlay_opacity || 0 ) ) ) / 100;
+			const hasOverlay = Boolean( settings.overlay_color ) && overlayOpacity > 0;
 			const wrapStyle = {
 				display: 'block',
 				width: '100%',
@@ -946,31 +950,52 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				...marginInlineCss(settings),
 			};
 			const imgStyle = {
-				maxWidth: Number( settings.max_width ) > 0 ? `${ Number( settings.max_width ) }px` : '100%',
-				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : '100%',
+				maxWidth: '100%',
+				width: '100%',
 				height: Number( settings.height ) > 0 ? `${ Number( settings.height ) }px` : '130px',
 				...imageMediaStyles.imageStyle,
 				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
+				border: imageBorder,
 				display: 'block',
+				position: 'relative',
+				zIndex: 0,
 				backgroundColor: settings.background || settings.bg_color || undefined,
 				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
 				opacity: Number.isFinite( Number( settings.opacity ) ) && settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
-				filter: Number( settings.grayscale ) > 0 ? `grayscale(${ Math.min( 100, Number( settings.grayscale ) ) }%)` : undefined,
+				filter: imageFilter,
 				...chromeInlineCss(settings),
 			};
+			const frameStyle = {
+				position: 'relative',
+				display: 'inline-block',
+				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : '100%',
+				maxWidth: Number( settings.max_width ) > 0 ? `${ Number( settings.max_width ) }px` : '100%',
+				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
+				overflow: 'hidden',
+			};
+			const overlayStyle = hasOverlay ? {
+				position: 'absolute', inset: 0, zIndex: 1,
+				backgroundColor: settings.overlay_color,
+				opacity: overlayOpacity,
+				mixBlendMode: settings.overlay_blend_mode || 'normal',
+				pointerEvents: 'none',
+			} : null;
 			return (
 				<div className="xsb-bp xcopb-bp-image" style={wrapStyle}>
 					<div className="xsb-bp-label-chip">{__('Image', 'xcodesol-page-builder')}</div>
-					{imageUrl ? (
-						<img src={imageUrl} alt={settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || ''} style={imgStyle} />
-					) : (
-						<div className="xsb-preview-img-box" style={{ ...imgStyle, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: settings.background || settings.bg_color || '#f1f5f9', border: '1px dashed #cbd5e1' }}>
-							<span className="dashicons dashicons-format-image" style={{ fontSize: '36px', color: '#94a3b8' }} aria-hidden="true" />
-							{settings.image_source === 'acf' && acfField && <span className="xsb-preview-img-box__label">{acfField.label}</span>}
-							{settings.image_source === 'featured_image' && <span className="xsb-preview-img-box__label">{__('Post Featured Image', 'xcodesol-page-builder')}</span>}
+					<div className="xsb-image-frame" style={frameStyle}>
+						{imageUrl ? (
+							<img src={imageUrl} alt={imageAlt} style={imgStyle} />
+						) : (
+							<div className="xsb-preview-img-box" style={{ ...imgStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: settings.background || settings.bg_color || '#f1f5f9', border: '1px dashed #cbd5e1' }}>
+								<span className="dashicons dashicons-format-image" style={{ fontSize: '36px', color: '#94a3b8' }} aria-hidden="true" />
+								{settings.image_source === 'acf' && acfField && <span className="xsb-preview-img-box__label">{acfField.label}</span>}
+								{settings.image_source === 'featured_image' && <span className="xsb-preview-img-box__label">{__('Post Featured Image', 'xcodesol-page-builder')}</span>}
 							</div>
-					)}
-					{settings.caption && <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>{settings.caption}</p>}
+						)}
+						{overlayStyle && <span className="xsb-image-overlay" aria-hidden="true" style={overlayStyle} />}
+					</div>
+					{imageCaption && <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>{imageCaption}</p>}
 				</div>
 			);
 		}
@@ -1376,14 +1401,12 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		case 'xcopb/gb-divider':
 		case 'xcosb/gb-divider':
 			{
-			const lineStyle = { width: `${ Number( settings.width ) || 100 }%`, height: `${ Math.max( 1, Number( settings.height ) || 2 ) }px`, margin: `${ Number( settings.margin ) || 24 }px 0`, background: settings.style === 'gradient' ? `linear-gradient(90deg, ${ settings.color || '#e6e9f0' }, ${ settings.gradient_color || '#4f46e5' })` : settings.color || '#e6e9f0', border: settings.style === 'double' ? `${ Math.max( 1, Number( settings.height ) || 2 ) / 3 }px double ${ settings.color || '#e6e9f0' }` : 'none' };
-			lineStyle.marginLeft = settings.align === 'left' ? '0' : settings.align === 'right' ? 'auto' : 'auto';
-			lineStyle.marginRight = settings.align === 'right' ? '0' : 'auto';
-			if ( [ 'dashed', 'dotted' ].includes( settings.style ) ) { lineStyle.height = '0'; lineStyle.borderTop = `${ Math.max( 1, Number( settings.height ) || 2 ) }px ${ settings.style } ${ settings.color || '#e6e9f0' }`; }
+			const { line: lineStyle, label: labelStyle } = resolveDividerWidgetStyles( settings );
+			const dividerLabel = settings.label_source === 'dynamic' ? resolveDynamicPreview( settings.label_dynamic_source || 'post_title' ) : settings.label;
 			return (
 				<div className="xsb-bp gb-divider">
 					<div className="xsb-bp-label-chip">{__('Divider', 'xcodesol-page-builder')}</div>
-					<div className="xsb-divider" style={lineStyle}>{settings.label && <span style={{ position: 'relative', top: '-0.75em', padding: '0 10px', color: settings.label_color || '#64748b', background: settings.label_background || '#fff', fontSize: `${ Number( settings.label_size ) || 14 }px` }}>{settings.label}</span>}</div>
+					<div className="xsb-divider" style={lineStyle}>{dividerLabel && <span style={labelStyle}>{dividerLabel}</span>}</div>
 				</div>
 			);
 			}
@@ -1404,42 +1427,8 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/gb-text':
 		case 'xcosb/gb-text': {
-			const textStyle = {
-				textAlign: settings.align || 'left',
-			};
-			if (settings.color) {
-				textStyle.color = settings.color;
-			}
-			if (settings.font_size !== undefined && settings.font_size !== '') {
-				textStyle.fontSize = `${Number(settings.font_size)}px`;
-			}
-			if (settings.font_weight) {
-				textStyle.fontWeight = settings.font_weight;
-			}
-			if (settings.font_family) { textStyle.fontFamily = settings.font_family; }
-			if (settings.text_transform && settings.text_transform !== 'none') { textStyle.textTransform = settings.text_transform; }
-			if (Number( settings.text_columns ) > 1) { textStyle.columns = Number( settings.text_columns ); textStyle.columnGap = `${ Number( settings.column_gap ) || 24 }px`; }
-			if (Number.isFinite( Number( settings.paragraph_spacing ) )) { textStyle['--xsb-text-paragraph-gap'] = `${ Number( settings.paragraph_spacing ) }px`; }
-			if (settings.blockquote_background) { textStyle.background = settings.blockquote_background; }
-			if (settings.blockquote_color) { textStyle.borderLeft = `${ Math.max( 2, Number( settings.border_width ) || 0 ) }px solid ${ settings.blockquote_color }`; }
-			if (settings.line_height !== undefined && settings.line_height !== '') {
-				textStyle.lineHeight = settings.line_height;
-			}
-			if (settings.letter_spacing !== undefined && settings.letter_spacing !== '') {
-				textStyle.letterSpacing = `${Number(settings.letter_spacing)}px`;
-			}
-			const textBorderWidth = Number(settings.border_width) || 0;
-			if (textBorderWidth > 0) {
-				textStyle.border = `${textBorderWidth}px ${settings.border_style || 'solid'} ${settings.border_color || '#000000'}`;
-			}
-			if (Number(settings.border_radius) > 0) {
-				textStyle.borderRadius = `${Number(settings.border_radius)}px`;
-			}
-			const textAnim = settings.animation || 'none';
-			if (textAnim !== 'none') {
-				textStyle.animation = `xsb-motion-${textAnim} ${Number(settings.animation_duration) || 600}ms ${settings.animation_easing || 'ease'} ${settings.animation_repeat || '1'} both`;
-				textStyle.animationDelay = `${Number(settings.animation_delay) || 0}ms`;
-			}
+			const textContent = settings.content_source === 'dynamic' ? resolveDynamicPreview( settings.dynamic_source || 'post_title' ) : ( settings.content || __('Add your text here.', 'xcodesol-page-builder') );
+			const textStyle = { ...resolveTextWidgetStyle( settings ), ...chromeInlineCss( settings ), ...marginInlineCss( settings ) };
 			['top', 'right', 'bottom', 'left'].forEach((side) => {
 				const marginValue = settings[`margin_${side}`];
 				if (marginValue !== undefined && marginValue !== '') {
@@ -1450,7 +1439,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				<div className="xsb-bp gb-text">
 					<div className="xsb-bp-label-chip">{__('Text', 'xcodesol-page-builder')}</div>
 					<div className="xsb-bp-text" style={textStyle}>
-						{settings.drop_cap ? <span className="xsb-text-drop-cap">{( settings.content || __('Add your text here.', 'xcodesol-page-builder') ).charAt( 0 )}</span> : null}{settings.content || __('Add your text here.', 'xcodesol-page-builder')}
+						{settings.drop_cap ? <span className="xsb-text-drop-cap">{textContent.charAt( 0 )}</span> : null}{textContent}
 					</div>
 				</div>
 			);
