@@ -2256,6 +2256,7 @@ function NestedBlock({
 		<div
 			ref={setNodeRef}
 			style={style}
+			data-xsb-block-id={ block.id || undefined }
 			data-nested-id={`nested-${containerIndex}-${colIndex}-${blockIndex}`}
 			data-nesting-level="1"
 			className={`xsb-nested-block${isNestedContainer ? ' xsb-nested-block--container' : ''}${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}${isHiddenOnDevice ? ' is-hidden-on-device' : ''}`}
@@ -3471,6 +3472,7 @@ function ContainerBlock({
 		<div
 			ref={setNodeRef}
 			style={dragStyle}
+			data-xsb-block-id={ block.id || undefined }
 			data-cv-block={index}
 			id={viewSettings.css_id || undefined}
 			className={`xsb-live-block xsb-live-block--gb-container xsb-layout--${layoutMode}${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}${isHiddenOnDevice ? ' is-hidden-on-device' : ''}${hoverAnimClass}${viewSettings.css_class ? ' ' + viewSettings.css_class : ''}`}
@@ -4009,6 +4011,7 @@ function BlockPreview({
 		<div
 			ref={setNodeRef}
 			style={style}
+			data-xsb-block-id={ block.id || undefined }
 			data-cv-block={index}
 			id={settings.css_id || undefined}
 			className={`xsb-live-block xsb-live-block--${block.type.replace(/\//g, '-')}${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}${isFloatingBadge ? ' is-badge-float' : ''}${isHiddenOnDevice ? ' is-hidden-on-device' : ''}${settings.css_class ? ' ' + settings.css_class : ''}`}

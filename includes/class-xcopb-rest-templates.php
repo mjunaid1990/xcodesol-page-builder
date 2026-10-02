@@ -818,8 +818,14 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	 * @param array $layout Layout array.
 	 * @return array
 	 */
-	private function sanitize_layout( $layout, $depth = 0 ) {
+	private function sanitize_layout( $layout, $depth = 0, &$used_ids = null ) {
 		$clean = array();
+		if ( ! is_array( $used_ids ) ) {
+			$used_ids = array();
+		}
+		if ( ! is_array( $layout ) ) {
+			return $clean;
+		}
 		if ( $depth > 5 ) {
 			return $clean;
 		}
@@ -835,13 +841,22 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 				continue;
 			}
 
+			$block_id = isset( $block['id'] ) ? sanitize_key( $block['id'] ) : '';
+			if ( '' === $block_id || isset( $used_ids[ $block_id ] ) ) {
+				do {
+					$block_id = 'xsb-' . str_replace( '-', '', wp_generate_uuid4() );
+				} while ( isset( $used_ids[ $block_id ] ) );
+			}
+			$used_ids[ $block_id ] = true;
+
 			$clean_block = array(
+				'id'       => $block_id,
 				'type'     => $type,
 				'settings' => isset( $block['settings'] ) && is_array( $block['settings'] ) ? $this->sanitize_block_settings( $type, $block['settings'] ) : array(),
 			);
 
 			if ( 'xcosb/gb-container' === $this->canonical_block_type( $type ) && isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
-				$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'], $depth + 1 );
+				$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'], $depth + 1, $used_ids );
 			}
 
 			$clean[] = $clean_block;
@@ -868,8 +883,14 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	 * @param array $inner Raw inner columns.
 	 * @return array
 	 */
-	private function sanitize_container_inner( $inner, $depth = 0 ) {
+	private function sanitize_container_inner( $inner, $depth = 0, &$used_ids = null ) {
 		$clean_inner = array();
+		if ( ! is_array( $used_ids ) ) {
+			$used_ids = array();
+		}
+		if ( ! is_array( $inner ) ) {
+			return $clean_inner;
+		}
 		if ( $depth > 5 ) {
 			return $clean_inner;
 		}
@@ -893,12 +914,21 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 					continue;
 				}
 
+				$block_id = isset( $block['id'] ) ? sanitize_key( $block['id'] ) : '';
+				if ( '' === $block_id || isset( $used_ids[ $block_id ] ) ) {
+					do {
+						$block_id = 'xsb-' . str_replace( '-', '', wp_generate_uuid4() );
+					} while ( isset( $used_ids[ $block_id ] ) );
+				}
+				$used_ids[ $block_id ] = true;
+
 				$clean_block = array(
+					'id'       => $block_id,
 					'type'     => $type,
 					'settings' => isset( $block['settings'] ) && is_array( $block['settings'] ) ? $this->sanitize_block_settings( $type, $block['settings'] ) : array(),
 				);
 				if ( 'xcosb/gb-container' === $this->canonical_block_type( $type ) && isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
-					$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'], $depth + 1 );
+					$clean_block['inner'] = $this->sanitize_container_inner( $block['inner'], $depth + 1, $used_ids );
 				}
 				$clean_column[] = $clean_block;
 			}

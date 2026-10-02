@@ -24,6 +24,7 @@ import {
 	useSensors,
 	DragOverlay,
 	closestCenter,
+	pointerWithin,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 
@@ -173,6 +174,73 @@ function cloneBlockTree( block ) {
 	};
 }
 
+let generatedBlockId = 0;
+
+function createBlockId( usedIds ) {
+	let id = '';
+	do {
+		generatedBlockId += 1;
+		id = `xsb-${ Date.now().toString( 36 ) }-${ generatedBlockId.toString( 36 ) }-${ Math.random().toString( 36 ).slice( 2, 8 ) }`;
+	} while ( usedIds.has( id ) );
+	return id;
+}
+
+/** Give every block in a layout a persistent, unique identity. */
+function ensureUniqueBlockIds( layout ) {
+	const usedIds = new Set();
+	const normalizeBlock = ( block ) => {
+		if ( ! block || typeof block !== 'object' || Array.isArray( block ) ) return block;
+		const existingId = typeof block.id === 'string' ? block.id.trim().replace( /[^a-zA-Z0-9_-]/g, '' ) : '';
+		const id = existingId && ! usedIds.has( existingId ) ? existingId : createBlockId( usedIds );
+		usedIds.add( id );
+		return {
+			...block,
+			id,
+			...( Array.isArray( block.inner ) ? {
+				inner: block.inner.map( ( column ) => Array.isArray( column ) ? column.map( normalizeBlock ) : [] ),
+			} : {} ),
+		};
+	};
+	return Array.isArray( layout ) ? layout.map( normalizeBlock ) : [];
+}
+
+function findBlockAddressById( layout, blockId ) {
+	if ( ! blockId || ! Array.isArray( layout ) ) return null;
+	const walk = ( block, rootIndex, path ) => {
+		if ( block?.id === blockId ) {
+			return path.length ? { kind: 'nested', ci: rootIndex, path } : { kind: 'root', index: rootIndex };
+		}
+		if ( ! Array.isArray( block?.inner ) ) return null;
+		for ( let cj = 0; cj < block.inner.length; cj++ ) {
+			const column = Array.isArray( block.inner[ cj ] ) ? block.inner[ cj ] : [];
+			for ( let bi = 0; bi < column.length; bi++ ) {
+				const found = walk( column[ bi ], rootIndex, [ ...path, { cj, bi } ] );
+				if ( found ) return found;
+			}
+		}
+		return null;
+	};
+	for ( let index = 0; index < layout.length; index++ ) {
+		const found = walk( layout[ index ], index, [] );
+		if ( found ) return found;
+	}
+	return null;
+}
+
+function editorCollisionDetection( args ) {
+	if ( args.active?.data?.current?.navigatorMove ) {
+		const navigatorRows = args.droppableContainers.filter( ( container ) => container.data.current?.navigatorMove );
+		if ( navigatorRows.length ) {
+			const candidates = { ...args, droppableContainers: navigatorRows };
+			const pointerCollisions = pointerWithin( candidates );
+			if ( pointerCollisions.length ) return pointerCollisions;
+			const nearestNavigatorRow = closestCenter( candidates );
+			if ( nearestNavigatorRow.length ) return nearestNavigatorRow;
+		}
+	}
+	return closestCenter( args );
+}
+
 function nestedBlockSettings( block ) {
 	const settings = { ...( block?.defaults || {} ) };
 	if ( isContainerType( block?.type ) ) {
@@ -270,7 +338,7 @@ function Editor( { config, structure: savedStructure } ) {
 	const [ viewType, setViewType ] = useState( config.viewType || 'page' );
 
 	const initialHistoryState = useMemo( () => ( {
-		layout: savedStructure ? [ ...savedStructure.defaultLayout ] : [],
+		layout: ensureUniqueBlockIds( savedStructure ? savedStructure.defaultLayout : [] ),
 		zoneMap: savedStructure ? buildDefaultZoneMap( savedStructure, savedStructure.defaultLayout ) : [],
 	} ), [ savedStructure ] );
 
@@ -288,16 +356,18 @@ function Editor( { config, structure: savedStructure } ) {
 	const zoneMap = historyState.zoneMap;
 
 	const setLayoutAndZoneMap = useCallback( ( nextLayout, nextZoneMap, options = {} ) => {
+		const preparedLayout = typeof nextLayout === 'function' ? nextLayout : ensureUniqueBlockIds( nextLayout );
 		setHistoryState( ( prev ) => ( {
-			layout: typeof nextLayout === 'function' ? nextLayout( prev.layout ) : nextLayout,
+			layout: ensureUniqueBlockIds( typeof preparedLayout === 'function' ? preparedLayout( prev.layout ) : preparedLayout ),
 			zoneMap: typeof nextZoneMap === 'function' ? nextZoneMap( prev.zoneMap ) : ( nextZoneMap !== undefined ? nextZoneMap : prev.zoneMap ),
 		} ), options );
 	}, [ setHistoryState ] );
 
 	const setLayout = useCallback( ( nextLayout, options = {} ) => {
+		const preparedLayout = typeof nextLayout === 'function' ? nextLayout : ensureUniqueBlockIds( nextLayout );
 		setHistoryState( ( prev ) => ( {
 			...prev,
-			layout: typeof nextLayout === 'function' ? nextLayout( prev.layout ) : nextLayout,
+			layout: ensureUniqueBlockIds( typeof preparedLayout === 'function' ? preparedLayout( prev.layout ) : preparedLayout ),
 		} ), options );
 	}, [ setHistoryState ] );
 
@@ -429,6 +499,7 @@ function Editor( { config, structure: savedStructure } ) {
 		setGlobalSettingsOpen( false );
 		if ( index !== null && index !== undefined ) {
 			setInspectorOpen( true );
+			setNavigatorOpen( true );
 		}
 		closeStylePanel();
 	}, [ closeStylePanel ] );
@@ -440,15 +511,16 @@ function Editor( { config, structure: savedStructure } ) {
 		setPageSettingsOpen( false );
 		setGlobalSettingsOpen( false );
 		setInspectorOpen( true );
+		setNavigatorOpen( true );
 		closeStylePanel();
 	}, [ closeStylePanel ] );
 
-	const handleCanvasSelectNested = useCallback( ( ci, cj, bi, point ) => {
+	const handleCanvasSelectNested = useCallback( ( ci, cj, bi, point, path ) => {
 		if ( ci === null || ci === undefined ) {
 			setSelectedNested( null );
 			return;
 		}
-		selectNestedBlock( ci, cj, bi, point );
+		selectNestedBlock( ci, cj, bi, point, path );
 	}, [ selectNestedBlock ] );
 
 	const handleAddPreset = useCallback( ( blocks ) => {
@@ -559,46 +631,48 @@ function Editor( { config, structure: savedStructure } ) {
 		const position = target.position || 'before';
 		const next = layout.map( cloneBlockTree );
 		const nextZones = [ ...zoneMap ];
-		const sourceRootIndex = source.kind === 'root' ? source.index : source.ci;
+		const sourceAddress = findBlockAddressById( next, source.blockId ) || source;
+		const targetAddress = findBlockAddressById( next, target.blockId ) || target;
+		const sourceRootIndex = sourceAddress.kind === 'root' ? sourceAddress.index : sourceAddress.ci;
 		const sourceRoot = next[ sourceRootIndex ];
 		const resolvePath = ( root, path = [] ) => path.reduce( ( block, step ) => block?.inner?.[ step.cj ]?.[ step.bi ], root );
-		const moving = source.kind === 'root' ? sourceRoot : resolvePath( sourceRoot, source.path );
-		const targetRootIndex = target.kind === 'root' ? target.index : target.ci;
+		const moving = sourceAddress.kind === 'root' ? sourceRoot : resolvePath( sourceRoot, sourceAddress.path );
+		const targetRootIndex = targetAddress.kind === 'root' ? targetAddress.index : targetAddress.ci;
 		const targetRoot = next[ targetRootIndex ];
-		const targetBlock = target.kind === 'root' ? targetRoot : resolvePath( targetRoot, target.path );
+		const targetBlock = targetAddress.kind === 'root' ? targetRoot : resolvePath( targetRoot, targetAddress.path );
 		if ( ! moving || ! targetBlock || moving === targetBlock ) return;
-		if ( source.kind === 'root' && target.kind === 'root' && position !== 'inside' && ( zoneMap[ source.index ] || '' ) !== ( zoneMap[ target.index ] || '' ) ) return;
+		const targetItemAddress = targetAddress.kind === 'nested' ? targetAddress.path?.[ targetAddress.path.length - 1 ] : null;
+		const targetParent = targetAddress.kind === 'nested' ? resolvePath( targetRoot, targetAddress.path?.slice( 0, -1 ) ) : null;
+		const targetColumn = targetParent?.inner?.[ targetItemAddress?.cj ];
+		if ( sourceAddress.kind === 'root' && targetAddress.kind === 'root' && position !== 'inside' && ( zoneMap[ sourceAddress.index ] || '' ) !== ( zoneMap[ targetAddress.index ] || '' ) ) return;
 		// A container cannot be moved into or alongside one of its descendants.
 		if ( findNestedBlockPath( moving, targetBlock ) ) return;
 		if ( position === 'inside' && ! isContainerType( targetBlock.type ) ) return;
 
 		const targetZone = nextZones[ targetRootIndex ] || '';
 		let sourceColumn = null;
-		if ( source.kind === 'root' ) {
-			next.splice( source.index, 1 );
-			nextZones.splice( source.index, 1 );
+		if ( sourceAddress.kind === 'root' ) {
+			next.splice( sourceAddress.index, 1 );
+			nextZones.splice( sourceAddress.index, 1 );
 		} else {
-			const sourceAddress = source.path?.[ source.path.length - 1 ];
-			const sourceParent = resolvePath( sourceRoot, source.path?.slice( 0, -1 ) );
-			sourceColumn = sourceParent?.inner?.[ sourceAddress?.cj ];
-			if ( ! Array.isArray( sourceColumn ) || sourceColumn[ sourceAddress.bi ] !== moving ) return;
-			sourceColumn.splice( sourceAddress.bi, 1 );
+			const sourceItemAddress = sourceAddress.path?.[ sourceAddress.path.length - 1 ];
+			const sourceParent = resolvePath( sourceRoot, sourceAddress.path?.slice( 0, -1 ) );
+			sourceColumn = sourceParent?.inner?.[ sourceItemAddress?.cj ];
+			if ( ! Array.isArray( sourceColumn ) || sourceColumn[ sourceItemAddress.bi ] !== moving ) return;
+			sourceColumn.splice( sourceItemAddress.bi, 1 );
 		}
 
 		if ( position === 'inside' ) {
 			targetBlock.inner = Array.isArray( targetBlock.inner ) ? targetBlock.inner.map( ( column ) => [ ...column ] ) : [ [] ];
 			if ( ! Array.isArray( targetBlock.inner[ 0 ] ) ) targetBlock.inner[ 0 ] = [];
 			targetBlock.inner[ 0 ].push( moving );
-		} else if ( target.kind === 'root' ) {
+		} else if ( targetAddress.kind === 'root' ) {
 			const targetIndex = next.indexOf( targetBlock );
 			if ( targetIndex < 0 ) return;
 			const insertAt = targetIndex + ( position === 'after' ? 1 : 0 );
 			next.splice( insertAt, 0, moving );
 			nextZones.splice( insertAt, 0, targetZone );
 		} else {
-			const targetAddress = target.path?.[ target.path.length - 1 ];
-			const targetParent = resolvePath( targetRoot, target.path?.slice( 0, -1 ) );
-			const targetColumn = targetParent?.inner?.[ targetAddress?.cj ];
 			const targetIndex = Array.isArray( targetColumn ) ? targetColumn.indexOf( targetBlock ) : -1;
 			if ( targetIndex < 0 ) return;
 			targetColumn.splice( targetIndex + ( position === 'after' ? 1 : 0 ), 0, moving );
@@ -610,6 +684,7 @@ function Editor( { config, structure: savedStructure } ) {
 		if ( movedRootIndex >= 0 ) {
 			setSelectedIndex( movedRootIndex );
 			setSelectedNested( movedPath ? { ci: movedRootIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } : null );
+			setNavigatorOpen( true );
 		}
 	}, [ layout, zoneMap, setLayoutAndZoneMap ] );
 
@@ -734,7 +809,7 @@ function Editor( { config, structure: savedStructure } ) {
 			}
 		}
 
-		resetHistory( { layout: layoutToUse, zoneMap: nextZones } );
+		resetHistory( { layout: ensureUniqueBlockIds( layoutToUse ), zoneMap: nextZones } );
 
 		setConditions(
 			template.conditions && template.conditions.mode
@@ -1491,8 +1566,10 @@ function Editor( { config, structure: savedStructure } ) {
 		child.inner = inner;
 		setLayout( next );
 		setSelectedIndex( ci );
-		setSelectedNested( path.length ? { ci, cj: path[ 0 ].cj, bi: path[ 0 ].bi } : null );
+		const selectedPath = [ ...path, { cj: columnIndex, bi: at } ];
+		setSelectedNested( { ci, cj: selectedPath[ 0 ].cj, bi: selectedPath[ 0 ].bi, path: selectedPath } );
 		setInspectorOpen( true );
+		setNavigatorOpen( true );
 	}
 
 	// Remove a widget from a container column.
@@ -1680,7 +1757,7 @@ function Editor( { config, structure: savedStructure } ) {
 	return (
 		<DndContext
 			sensors={ sensors }
-			collisionDetection={ closestCenter }
+			collisionDetection={ editorCollisionDetection }
 			onDragStart={ handleDragStart }
 			onDragEnd={ handleDragEnd }
 			onDragCancel={ handleDragCancel }

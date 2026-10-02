@@ -377,10 +377,15 @@ class XCOPB_Block_Registry {
 		$handler = $this->blocks[ $type ];
 		$settings = isset( $block['settings'] ) ? $block['settings'] : array();
 		$settings = wp_parse_args( $settings, $handler['defaults'] );
+		$block_id = isset( $block['id'] ) ? sanitize_key( $block['id'] ) : '';
+		if ( '' === $block_id ) {
+			$block_id = 'xsb-' . wp_generate_uuid4();
+		}
 
 		$merged_block = array(
 			'type'     => $type,
 			'settings' => $settings,
+			'id'       => $block_id,
 		);
 
 		if ( isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
@@ -399,7 +404,20 @@ class XCOPB_Block_Registry {
 
 		$html = self::apply_responsive( $type, $html, $settings );
 
-		return self::apply_interaction( $type, $html, $settings );
+		$html = self::apply_interaction( $type, $html, $settings );
+		$html = preg_replace_callback(
+			'/<([a-z][a-z0-9:-]*)([^>]*)>/i',
+			static function ( $matches ) use ( $block_id ) {
+				if ( preg_match( '/\bdata-xsb-block-id\s*=/i', $matches[2] ) ) {
+					return $matches[0];
+				}
+				return '<' . $matches[1] . $matches[2] . ' data-xsb-block-id="' . esc_attr( $block_id ) . '">';
+			},
+			$html,
+			1
+		);
+
+		return $html;
 	}
 
 	/**

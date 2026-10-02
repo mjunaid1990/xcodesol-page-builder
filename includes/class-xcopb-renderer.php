@@ -88,6 +88,7 @@ class XCOPB_Renderer {
 		if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $blocks ) ) {
 			return '';
 		}
+		$blocks = $this->ensure_block_ids( $blocks );
 
 		$settings = json_decode( XCOPB_Registrar::get_field( $template_id, '_xcopb_settings', '{}' ), true );
 		$classes  = array( 'xcopb-template-wrapper', 'xsb-template-wrapper', 'xcopb-full-width' );
@@ -139,6 +140,50 @@ class XCOPB_Renderer {
 	}
 
 	/**
+	 * Ensure legacy and directly imported layouts have unique block identities
+	 * before their widgets are rendered to the public page.
+	 *
+	 * @param array $blocks Layout blocks.
+	 * @return array
+	 */
+	private function ensure_block_ids( $blocks ) {
+		$used_ids = array();
+		$normalize_block = function ( $block ) use ( &$normalize_block, &$used_ids ) {
+			if ( ! is_array( $block ) ) {
+				return $block;
+			}
+
+			$block_id = isset( $block['id'] ) ? sanitize_key( $block['id'] ) : '';
+			if ( '' === $block_id || isset( $used_ids[ $block_id ] ) ) {
+				do {
+					$block_id = 'xsb-' . str_replace( '-', '', wp_generate_uuid4() );
+				} while ( isset( $used_ids[ $block_id ] ) );
+			}
+			$used_ids[ $block_id ] = true;
+			$block['id'] = $block_id;
+
+			if ( isset( $block['inner'] ) && is_array( $block['inner'] ) ) {
+				foreach ( $block['inner'] as $column_index => $column ) {
+					if ( ! is_array( $column ) ) {
+						$block['inner'][ $column_index ] = array();
+						continue;
+					}
+					foreach ( $column as $block_index => $child ) {
+						$block['inner'][ $column_index ][ $block_index ] = $normalize_block( $child );
+					}
+				}
+			}
+			return $block;
+		};
+
+		foreach ( $blocks as $index => $block ) {
+			$blocks[ $index ] = $normalize_block( $block );
+		}
+
+		return $blocks;
+	}
+
+	/**
 	 * Render a list of block arrays (used for nested layouts such as the
 	 * product-card template rendered inside an archive loop item).
 	 *
@@ -150,6 +195,7 @@ class XCOPB_Renderer {
 		if ( ! is_array( $blocks ) ) {
 			return '';
 		}
+		$blocks = $this->ensure_block_ids( $blocks );
 
 		$output = '';
 

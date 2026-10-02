@@ -4,7 +4,7 @@
  * @package Xcodesol_Page_Builder
  */
 
-import { useRef, useState } from '@wordpress/element';
+import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { useDndContext } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -44,9 +44,8 @@ const widgetIcons = {
 	'ar-description': IconWidgetText,
 	'ar-loop': IconWidgetProduct,
 };
-const sortableId = ( rootIndex, path, root = false ) => root
-	? `nav-root-${ rootIndex }`
-	: `nav-node-${ rootIndex }-${ path.map( ( step ) => `${ step.cj }_${ step.bi }` ).join( '__' ) }`;
+const sortableId = ( block, rootIndex, path = [] ) => `navigator-item-${ block?.id || `${ rootIndex }-${ path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '-' ) }` }`;
+const blockNodeKey = ( block, rootIndex, path = [] ) => `container-${ block?.id || `${ rootIndex }-${ path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '-' ) }` }`;
 const blockTitle = ( block ) => {
 	if ( isContainer( block ) ) return __( 'Container', 'xcodesol-page-builder' );
 	const slug = ( block?.type || '' ).split( '/' ).pop().replace( /^gb-/, '' );
@@ -109,12 +108,12 @@ function SortableTreeItem( { id, moveData, className, children } ) {
 function NavigatorItem( props ) {
 	const {
 		block, rootIndex, path, root, columnIndex, itemIndex, selectedIndex, selectedNested,
-		onSelect, onSelectNested, collapsed, toggle,
+		onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn,
 	} = props;
 	const container = isContainer( block );
 	const ItemIcon = container ? IconWidgetContainer : widgetIcons[ ( block?.type || '' ).split( '/' ).pop().replace( /^gb-/, '' ) ];
-	const nodeKey = root ? `root-${ rootIndex }` : `tree-${ rootIndex }-${ path.map( ( step ) => `${ step.cj }-${ step.bi }` ).join( '-' ) }`;
-	const expanded = ! collapsed[ nodeKey ];
+	const nodeKey = blockNodeKey( block, rootIndex, path );
+	const expanded = !! expandedContainers[ nodeKey ];
 	const children = container && Array.isArray( block.inner ) ? block.inner : [];
 	const hasChildren = children.some( ( column ) => Array.isArray( column ) && column.length );
 	const selectedPath = Array.isArray( selectedNested?.path ) && selectedNested.path.length
@@ -127,15 +126,15 @@ function NavigatorItem( props ) {
 		root || ( path.length < selectedPath.length && path.every( ( step, index ) => step.cj === selectedPath[ index ]?.cj && step.bi === selectedPath[ index ]?.bi ) )
 	);
 	const moveData = root
-		? { kind: 'root', index: rootIndex, container, zone: props.zoneMap?.[ rootIndex ] || '' }
-		: { kind: 'nested', ci: rootIndex, path, container };
-	const itemSortableId = sortableId( rootIndex, path, root );
+		? { kind: 'root', blockId: block.id, index: rootIndex, container, zone: props.zoneMap?.[ rootIndex ] || '' }
+		: { kind: 'nested', blockId: block.id, ci: rootIndex, path, container };
+	const itemSortableId = sortableId( block, rootIndex, path );
 
 	return (
 		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch">
 			{ ( dragAttributes, dragListeners, rowRef, dropClass ) => <>
 				<div ref={ rowRef } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container && hasChildren ? expanded : undefined }>
-					{ container && hasChildren ? <button type="button" className="xsb-navigator__disclosure" onClick={ () => toggle( nodeKey ) } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
+					{ container && hasChildren ? <button type="button" className="xsb-navigator__disclosure" onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
 					<button type="button" className="xsb-navigator__select" onClick={ () => root ? onSelect?.( rootIndex ) : onSelectNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }>
 						{ ItemIcon && <span className="xsb-navigator__item-icon"><ItemIcon width={ 14 } height={ 14 } /></span> }
 						<span className="xsb-navigator__label">{ blockTitle( block ) }</span>
@@ -147,14 +146,15 @@ function NavigatorItem( props ) {
 							const items = Array.isArray( column ) ? column : [];
 							const showColumn = children.length > 1;
 							const colKey = `${ nodeKey }-column-${ cj }`;
+							const columnExpanded = ! collapsedColumns[ colKey ];
 							return <div className="xsb-navigator__column" key={ colKey }>
-								{ showColumn && <button type="button" className="xsb-navigator__column-label" onClick={ () => toggle( colKey ) }><IconChevronDown width={ 12 } height={ 12 } /><span>{ sprintf( __( 'Column %d', 'xcodesol-page-builder' ), cj + 1 ) }</span><span className="xsb-navigator__count">{ items.length }</span></button> }
-								{ ( ! showColumn || ! collapsed[ colKey ] ) && <SortableContext
-									items={ items.map( ( _, bi ) => sortableId( rootIndex, [ ...path, { cj, bi } ] ) ) }
+								{ showColumn && <button type="button" className="xsb-navigator__column-label" onClick={ () => toggleColumn( colKey ) } aria-expanded={ columnExpanded }>{ columnExpanded ? <IconChevronDown width={ 12 } height={ 12 } /> : <IconChevronRight width={ 12 } height={ 12 } />}<span>{ sprintf( __( 'Column %d', 'xcodesol-page-builder' ), cj + 1 ) }</span><span className="xsb-navigator__count">{ items.length }</span></button> }
+								{ ( ! showColumn || columnExpanded ) && <SortableContext
+									items={ items.map( ( child, bi ) => sortableId( child, rootIndex, [ ...path, { cj, bi } ] ) ) }
 									strategy={ verticalListSortingStrategy }
 								>
 									{ items.map( ( child, bi ) => <NavigatorItem
-										key={ `${ nodeKey }-${ cj }-${ bi }` }
+										key={ child.id || `${ nodeKey }-${ cj }-${ bi }` }
 										{ ...props }
 										block={ child }
 										root={ false }
@@ -173,15 +173,62 @@ function NavigatorItem( props ) {
 }
 
 export default function Navigator( { layout = [], zoneMap = [], selectedIndex, selectedNested, onSelect, onSelectNested, onClose } ) {
-	const [ collapsed, setCollapsed ] = useState( {} );
-	const toggle = ( key ) => setCollapsed( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
-	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, collapsed, toggle };
+	const [ expandedContainers, setExpandedContainers ] = useState( {} );
+	const [ collapsedColumns, setCollapsedColumns ] = useState( {} );
+	const toggleContainer = ( key ) => setExpandedContainers( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
+	const toggleColumn = ( key ) => setCollapsedColumns( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
+	const selectedPath = useMemo( () => Array.isArray( selectedNested?.path ) && selectedNested.path.length
+		? selectedNested.path
+		: selectedNested ? [ { cj: selectedNested.cj, bi: selectedNested.bi } ] : [], [ selectedNested ] );
+	const selectedBlock = selectedNested
+		? selectedPath.reduce( ( current, step ) => current?.inner?.[ step.cj ]?.[ step.bi ], layout[ selectedNested.ci ] )
+		: layout[ selectedIndex ];
+	const selectedNodeId = selectedBlock?.id ? sortableId( selectedBlock, selectedNested?.ci ?? selectedIndex, selectedPath ) : null;
+
+	// Containers start folded. Selecting an element in the canvas or in this
+	// tree opens its path so the matching row is always visible in Navigator.
+	useEffect( () => {
+		if ( ! selectedBlock ) return;
+		const keys = [];
+		if ( selectedNested ) {
+			let current = layout[ selectedNested.ci ];
+			if ( isContainer( current ) ) keys.push( blockNodeKey( current, selectedNested.ci, [] ) );
+			selectedPath.forEach( ( step, index ) => {
+				current = current?.inner?.[ step.cj ]?.[ step.bi ];
+				if ( isContainer( current ) && index < selectedPath.length ) {
+					keys.push( blockNodeKey( current, selectedNested.ci, selectedPath.slice( 0, index + 1 ) ) );
+				}
+			} );
+		} else if ( isContainer( selectedBlock ) ) {
+			keys.push( blockNodeKey( selectedBlock, selectedIndex, [] ) );
+		}
+		if ( keys.length ) {
+			setExpandedContainers( ( current ) => {
+				const next = { ...current };
+				let changed = false;
+				keys.forEach( ( key ) => {
+					if ( ! next[ key ] ) { next[ key ] = true; changed = true; }
+				} );
+				return changed ? next : current;
+			} );
+		}
+	}, [ layout, selectedIndex, selectedNested, selectedBlock, selectedPath ] );
+
+	useEffect( () => {
+		if ( ! selectedNodeId ) return undefined;
+		const frame = window.requestAnimationFrame( () => {
+			document.getElementById( selectedNodeId )?.scrollIntoView( { block: 'nearest', inline: 'nearest', behavior: 'smooth' } );
+		} );
+		return () => window.cancelAnimationFrame( frame );
+	}, [ selectedNodeId, expandedContainers ] );
+
+	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn };
 	return (
 		<section className="xsb-navigator" aria-label={ __( 'Navigator', 'xcodesol-page-builder' ) }>
 			<header className="xsb-navigator__header"><span className="xsb-navigator__heading-icon"><IconLayers width={ 15 } height={ 15 } /></span><strong>{ __( 'Navigator', 'xcodesol-page-builder' ) }</strong><button type="button" className="xsb-navigator__close" onClick={ onClose } aria-label={ __( 'Close Navigator', 'xcodesol-page-builder' ) } title={ __( 'Close', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></header>
 			<div className="xsb-navigator__tree" role="tree" aria-label={ __( 'Page structure', 'xcodesol-page-builder' ) }>
-				{ ! layout.length ? <div className="xsb-navigator__empty">{ __( 'Add a container or widget to start building.', 'xcodesol-page-builder' ) }</div> : <SortableContext items={ layout.map( ( _, index ) => sortableId( index, [], true ) ) } strategy={ verticalListSortingStrategy }>
-					{ layout.map( ( block, index ) => <NavigatorItem key={ `navigator-root-${ index }` } { ...shared } block={ block } rootIndex={ index } root path={ [] } /> ) }
+				{ ! layout.length ? <div className="xsb-navigator__empty">{ __( 'Add a container or widget to start building.', 'xcodesol-page-builder' ) }</div> : <SortableContext items={ layout.map( ( block, index ) => sortableId( block, index ) ) } strategy={ verticalListSortingStrategy }>
+					{ layout.map( ( block, index ) => <NavigatorItem key={ block.id || `navigator-root-${ index }` } { ...shared } block={ block } rootIndex={ index } root path={ [] } /> ) }
 				</SortableContext> }
 			</div>
 		</section>
