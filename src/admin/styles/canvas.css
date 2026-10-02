@@ -565,15 +565,13 @@
 
 .xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover))::after,
 .xsb-live-block--nested-container:focus-within:not(:has(.xsb-nested-container-item:focus-within))::after {
-	border: 1px solid #f0abfc;
+	border: 1px dotted #f0abfc;
 	opacity: 1;
-	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
 
 .xsb-live-block--nested-container.is-over::after {
-	border: 1px solid var(--xsb-accent, #635bff);
+	border: 1px dotted var(--xsb-accent, #635bff);
 	opacity: 1;
-	box-shadow: 0 0 0 1px rgba(255, 255, 255, .9);
 }
 
 /* When hovering a deeper child, keep ancestor containers quiet. This leaves
@@ -584,13 +582,13 @@
 	border-color: transparent;
 }
 
-.xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover)) > .xsb-nested-container-column,
-.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container > .xsb-nested-container-column {
+.xsb-live-block--nested-container[data-column-count]:not([data-column-count="1"]):hover:not(:has(.xsb-nested-container-item:hover)) > .xsb-nested-container-column,
+.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container[data-column-count]:not([data-column-count="1"]) > .xsb-nested-container-column {
 	border-color: rgba(100, 116, 139, .28);
 }
 
-.xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover)) > .xsb-nested-container-column::after,
-.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container > .xsb-nested-container-column::after {
+.xsb-live-block--nested-container[data-column-count]:not([data-column-count="1"]):hover:not(:has(.xsb-nested-container-item:hover)) > .xsb-nested-container-column::after,
+.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container[data-column-count]:not([data-column-count="1"]) > .xsb-nested-container-column::after {
 	opacity: .58;
 }
 
@@ -605,9 +603,8 @@
 }
 
 .xsb-nested-block--container.is-selected > .xsb-live-block--nested-container::after {
-	border: 1px solid #f0abfc;
+	border: 1px dotted #f0abfc;
 	opacity: 1;
-	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
 
 /* Show one dotted boundary on the container itself; the outer nested item is
@@ -650,9 +647,8 @@
 }
 
 .xsb-nested-container-item.is-selected:has(> .xsb-live-block--nested-container) > .xsb-live-block--nested-container::after {
-	border: 1px solid #f0abfc;
+	border: 1px dotted #f0abfc;
 	opacity: 1;
-	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
 
 /* ------------------------------------------------------------------ *
