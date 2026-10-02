@@ -1471,6 +1471,7 @@ export function PopoverGroupControl( {
  */
 export function DynamicControlRenderer( {
 	control,
+	blockType = '',
 	settings = {},
 	dynamicPreview = {},
 	activeDevice = 'desktop',
@@ -1700,7 +1701,10 @@ export function DynamicControlRenderer( {
 		case 'text':
 			field = <TextControl { ...commonProps } placeholder={ control.placeholder } />; break;
 		case 'textarea':
-			field = control.richText
+			// The text widget is always rich text, even if a schema manifest has
+			// been serialized by an older editor build that dropped custom flags.
+			// Keep the control metadata check for other widgets that opt in.
+			field = ( control.richText || ( control.id === 'content' && [ 'xcopb/gb-text', 'xcosb/gb-text' ].includes( blockType ) ) )
 				? <RichTextEditorControl { ...commonProps } placeholder={ control.placeholder } />
 				: <TextareaControl { ...commonProps } rows={ control.rows } placeholder={ control.placeholder } />; break;
 		case 'number':
@@ -1853,6 +1857,7 @@ export function SchemaInspectorRenderer( {
 							<DynamicControlRenderer
 								key={ `${ control.id }-${ control.condition?.type?.join?.( '-' ) || control.condition?.type || '' }` }
 								control={ control }
+								blockType={ blockType }
 								settings={ settings }
 								activeDevice={ activeDevice }
 								activeState={ activeState }

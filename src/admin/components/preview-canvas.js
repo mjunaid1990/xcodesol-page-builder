@@ -1476,7 +1476,10 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		case 'xcosb/gb-text': {
 			const isDynamicText = settings.content_source === 'dynamic';
 			const textContent = isDynamicText ? resolveDynamicPreview( settings.dynamic_source || 'post_title' ) : ( settings.content || __('Add your text here.', 'xcodesol-page-builder') );
+			const safeTextMarkup = isDynamicText ? '' : sanitizeRichPreviewMarkup( textContent );
 			const textStyle = { ...resolveTextWidgetStyle( settings ), ...chromeInlineCss( settings ), ...marginInlineCss( settings ) };
+			const allowedTextTags = [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'blockquote' ];
+			const TextTag = allowedTextTags.includes( settings.tag ) ? settings.tag : 'p';
 			['top', 'right', 'bottom', 'left'].forEach((side) => {
 				const marginValue = settings[`margin_${side}`];
 				if (marginValue !== undefined && marginValue !== '') {
@@ -1486,9 +1489,11 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			return (
 				<div className="xsb-bp gb-text">
 					<div className="xsb-bp-label-chip">{__('Text', 'xcodesol-page-builder')}</div>
-					<div className="xsb-bp-text" style={textStyle}>
-						{ isDynamicText ? textContent : <div dangerouslySetInnerHTML={ { __html: sanitizeRichPreviewMarkup( textContent ) } } /> }
-					</div>
+					{ isDynamicText ? (
+						<TextTag className="xsb-bp-text" style={textStyle}>{ textContent }</TextTag>
+					) : (
+						<TextTag className="xsb-bp-text" style={textStyle} dangerouslySetInnerHTML={ { __html: safeTextMarkup } } />
+					) }
 				</div>
 			);
 		}

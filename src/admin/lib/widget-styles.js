@@ -27,7 +27,7 @@ export function resolveTextWidgetStyle( settings = {} ) {
 		lineHeight: settings.line_height || undefined,
 		letterSpacing: settings.letter_spacing !== undefined && settings.letter_spacing !== '' ? `${ Number( settings.letter_spacing ) }px` : undefined,
 		backgroundColor: settings.background_color || settings.blockquote_background || undefined,
-		opacity: settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
+		opacity: settings.opacity !== undefined && settings.opacity !== '' && Number.isFinite( Number( settings.opacity ) ) ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
 		border: Number( settings.border_width ) > 0 ? `${ Math.min( 20, Number( settings.border_width ) ) }px ${ settings.border_style || 'solid' } ${ settings.border_color || settings.blockquote_color || '#000' }` : undefined,
 		borderLeft: settings.blockquote_color ? `${ Math.max( 2, Number( settings.border_width ) || 0 ) }px solid ${ settings.blockquote_color }` : undefined,
 		borderRadius: Number( settings.border_radius ) > 0 ? `${ Math.min( 100, Number( settings.border_radius ) ) }px` : undefined,
