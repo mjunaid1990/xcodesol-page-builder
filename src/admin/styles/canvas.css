@@ -324,6 +324,21 @@
 	transition: border-color 160ms ease;
 }
 
+/* Keep nested boundaries visible over both light and dark container fills.
+ * Difference blending adapts the dotted guide to the canvas underneath it. */
+.xsb-live-block--nested-container::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	border: 1px dotted #fff;
+	border-radius: inherit;
+	mix-blend-mode: difference;
+	opacity: .72;
+	pointer-events: none;
+	transition: opacity 140ms ease, border-color 140ms ease, border-style 140ms ease;
+}
+
 .xsb-nested-block,
 .xsb-nested-container-item {
 	--xsb-depth-color: #8b5cf6;
@@ -472,12 +487,25 @@
 }
 
 .xsb-nested-container-column {
+	position: relative;
 	min-width: 0;
 	min-height: 72px;
 	padding: 4px;
 	border: 1px dashed transparent;
 	border-radius: 0;
 	background: transparent;
+}
+
+.xsb-nested-container-column::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border: 1px dashed #fff;
+	mix-blend-mode: difference;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 140ms ease;
 }
 
 .xsb-nested-container-column--empty {
@@ -496,7 +524,7 @@
 .xsb-live-block--nested-container:hover,
 .xsb-live-block--nested-container:focus-within,
 .xsb-live-block--nested-container.is-over {
-	border-color: rgba(100, 116, 139, .48);
+	border-color: transparent;
 	border-style: dotted;
 	border-width: 1px;
 	border-radius: 0;
@@ -505,9 +533,24 @@
 }
 
 .xsb-live-block--nested-container.is-over {
-	border-color: var(--xsb-accent, #635bff);
+	border-color: transparent;
 	border-style: dotted;
 	border-width: 1px;
+}
+
+.xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover))::after,
+.xsb-live-block--nested-container:focus-within:not(:has(.xsb-nested-container-item:focus-within))::after {
+	border: 1px solid #f0abfc;
+	mix-blend-mode: normal;
+	opacity: 1;
+	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
+}
+
+.xsb-live-block--nested-container.is-over::after {
+	border: 1px solid var(--xsb-accent, #635bff);
+	mix-blend-mode: normal;
+	opacity: 1;
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, .9);
 }
 
 /* When hovering a deeper child, keep ancestor containers quiet. This leaves
@@ -523,14 +566,26 @@
 	border-color: rgba(100, 116, 139, .28);
 }
 
+.xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover)) > .xsb-nested-container-column::after,
+.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container > .xsb-nested-container-column::after {
+	opacity: .58;
+}
+
 /* The real nested container gets its own selection state, separate from its
  * outer item wrapper, so nested levels remain easy to identify at a glance. */
 .xsb-nested-block--container.is-selected > .xsb-live-block--nested-container {
-	border-color: #a855f7;
+	border-color: transparent;
 	border-style: dotted;
 	border-width: 1px;
 	outline: none;
 	box-shadow: none;
+}
+
+.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container::after {
+	border: 1px solid #f0abfc;
+	mix-blend-mode: normal;
+	opacity: 1;
+	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
 
 /* Show one dotted boundary on the container itself; the outer nested item is
@@ -569,7 +624,14 @@
 }
 
 .xsb-nested-container-item.is-selected:has(> .xsb-live-block--nested-container) > .xsb-live-block--nested-container {
-	border-color: #a855f7;
+	border-color: transparent;
+}
+
+.xsb-nested-container-item.is-selected:has(> .xsb-live-block--nested-container) > .xsb-live-block--nested-container::after {
+	border: 1px solid #f0abfc;
+	mix-blend-mode: normal;
+	opacity: 1;
+	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
 
 /* ------------------------------------------------------------------ *
