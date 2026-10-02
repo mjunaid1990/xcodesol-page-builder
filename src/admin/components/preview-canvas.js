@@ -74,6 +74,33 @@ function getBlockDisplayLabel(type) {
 	return slug.replace( /[-_]+/g, ' ' ).replace( /\b\w/g, ( letter ) => letter.toUpperCase() ) || __( 'Widget', 'xcodesol-page-builder' );
 }
 
+function nestedCanvasId( containerIndex, path ) {
+	const address = path.length === 1
+		? `${ path[ 0 ].cj }-${ path[ 0 ].bi }`
+		: path.map( ( step ) => `${ step.cj }.${ step.bi }` ).join( '_' );
+	return `nested-${ containerIndex }-${ address }`;
+}
+
+function SortableNestedCanvasItem( { containerIndex, path, block, className, style, onClick, children, ...rest } ) {
+	const id = nestedCanvasId( containerIndex, path );
+	const isContainer = [ 'xcopb/gb-container', 'xcopb/container', 'xcosb/gb-container' ].includes( block?.type );
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable( {
+		id,
+		data: { canvasNested: { ci: containerIndex, path, container: isContainer } },
+	} );
+	return <div
+		ref={ setNodeRef }
+		{ ...attributes }
+		{ ...listeners }
+		{ ...rest }
+		data-nested-id={ id.slice( 7 ) }
+		data-nested-path={ JSON.stringify( { ci: containerIndex, path } ) }
+		className={ `${ className }${ isDragging ? ' is-dragging' : '' }` }
+		style={ { ...style, transform: [ CSS.Transform.toString( transform ), style?.transform ].filter( Boolean ).join( ' ' ), transition } }
+		onClick={ onClick }
+	>{ children }</div>;
+}
+
 function nestingAccent(depth = 1) {
 	const level = Math.max(1, Number(depth) || 1);
 	const hue = (263 + (level - 1) * 67) % 360;
@@ -2233,6 +2260,7 @@ function NestedBlock({
 
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: `nested-${containerIndex}-${colIndex}-${blockIndex}`,
+		data: { canvasNested: { ci: containerIndex, path: [ { cj: colIndex, bi: blockIndex } ], container: isNestedContainer } },
 	});
 	const widgetSpacing = widgetSpacingInlineCss( bodySettings );
 	// Container content padding belongs to its visual container element. The
@@ -2258,6 +2286,8 @@ function NestedBlock({
 			style={style}
 			data-xsb-block-id={ block.id || undefined }
 			data-nested-id={`nested-${containerIndex}-${colIndex}-${blockIndex}`}
+			data-nested-path={ JSON.stringify( { ci: containerIndex, path: [ { cj: colIndex, bi: blockIndex } ] } ) }
+			data-nesting-column-index={ colIndex }
 			data-nesting-level="1"
 			className={`xsb-nested-block${isNestedContainer ? ' xsb-nested-block--container' : ''}${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}${isHiddenOnDevice ? ' is-hidden-on-device' : ''}`}
 			onClick={(e) => {
@@ -3035,7 +3065,7 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 	);
 	const renderNestedItems = ( items, columnIndex ) => {
 		const guideMatches = dropGuide?.kind === 'inner-container' && dropTarget?.path && JSON.stringify( dropGuide.path ) === JSON.stringify( dropTarget.path ) && Number( dropGuide.columnIndex || 0 ) === columnIndex;
-		return <>
+		return <SortableContext items={ items.map( ( entry ) => nestedCanvasId( containerIndex, [ ...containerPath, { cj: entry.cj, bi: entry.bi } ] ) ) } strategy={ verticalListSortingStrategy }><>
 		{ items.map( ( entry, itemIndex ) => {
 		const { nested, cj, bi } = entry;
 		const nestedPath = [ ...containerPath, { cj, bi } ];
@@ -3045,10 +3075,14 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 		const nestedBaseSettings = { ...( nestedMeta.defaults || {} ), ...( nested.settings || {} ) };
 		const nestedSettings = device !== 'desktop' ? effectiveForDevice( nestedBaseSettings, device ) : nestedBaseSettings;
 		return (
-		<div
+		<SortableNestedCanvasItem
 			key={ `${ depth }-${ columnIndex }-${ itemIndex }` }
+			containerIndex={ containerIndex }
+			path={ nestedPath }
+			block={ nested }
 			className={ `xsb-nested-container-item${ isNestedSelected ? ' is-selected' : '' }` }
 			data-nesting-level={ depth + 1 }
+			data-nesting-column-index={ columnIndex }
 			style={ { ...childPlacementStyle( nestedSettings, layoutMode, scrollItemWidth, viewSettings.scroll_snap_align, viewSettings ), '--xsb-depth-color': nestingAccent( depth + 1 ) } }
 			aria-label={ getBlockDisplayLabel( nested.type ) }
 			onClick={ ( event ) => {
@@ -3076,11 +3110,11 @@ function NestedContainerPreview({ block, settings, device = 'desktop', onAddWidg
 					dropTarget: [ 'xcopb/gb-container', 'xcopb/container', 'xcosb/gb-container' ].includes( nested.type ) ? nestedDropTarget : null,
 				}
 			) }
-		</div>
+		</SortableNestedCanvasItem>
 		);
 		} ) }
 		{ guideMatches && dropGuide.slot >= items.length && <DropGuideLine /> }
-	</>;
+	</></SortableContext>;
 	};
 
 	return (

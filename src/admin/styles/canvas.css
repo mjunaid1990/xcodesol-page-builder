@@ -466,6 +466,11 @@
 .xsb-nested-container-item {
 	min-width: 0;
 }
+.xsb-nested-container-item.is-dragging {
+	z-index: 4;
+	opacity: .55;
+	cursor: grabbing;
+}
 
 .xsb-nested-preview-popover {
 	position: absolute;

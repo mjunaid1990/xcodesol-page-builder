@@ -119,7 +119,7 @@ export function computeDropGuide( px, py, rootEl, opts ) {
 	// A container already inside a column owns its own inner column. Resolve
 	// these targets before their parent column so a drop inside a nested
 	// container cannot silently land beside it.
-	if ( isPalette ) {
+	if ( isPalette || isNestedDrag ) {
 		const innerContainers = Array.from( rootEl.querySelectorAll( '[data-inner-container-path], [data-inner-container-id]' ) );
 		for ( let i = innerContainers.length - 1; i >= 0; i-- ) {
 			const el = innerContainers[ i ];
@@ -129,6 +129,51 @@ export function computeDropGuide( px, py, rootEl, opts ) {
 				let address;
 				try { address = JSON.parse( rawPath ); } catch ( error ) { address = null; }
 				if ( address && Array.isArray( address.path ) ) {
+					if ( isNestedDrag ) {
+						const item = el.closest( '[data-nested-path]' );
+					let itemAddress;
+					try { itemAddress = JSON.parse( item?.getAttribute( 'data-nested-path' ) || '' ); } catch ( error ) { itemAddress = null; }
+					if ( itemAddress?.path?.length && item.getAttribute( 'data-nested-id' ) !== nestedActive ) {
+						const itemRect = item.getBoundingClientRect();
+						const ratio = itemRect.height ? ( py - itemRect.top ) / itemRect.height : 0.5;
+						if ( ratio < 0.3 || ratio > 0.7 ) {
+							const lastStep = itemAddress.path[ itemAddress.path.length - 1 ];
+							const parentPath = itemAddress.path.slice( 0, -1 );
+							let siblingContainer;
+							let renderedColumn = Number( item.getAttribute( 'data-nesting-column-index' ) ) || 0;
+							if ( parentPath.length ) {
+								siblingContainer = Array.from( rootEl.querySelectorAll( '[data-inner-container-path]' ) ).find( ( candidate ) => {
+									try {
+										const candidateAddress = JSON.parse( candidate.getAttribute( 'data-inner-container-path' ) || '' );
+										return candidateAddress.ci === itemAddress.ci && JSON.stringify( candidateAddress.path ) === JSON.stringify( parentPath );
+									} catch ( error ) { return false; }
+								} );
+							} else {
+								const rootColumnId = `${ itemAddress.ci }-${ lastStep.cj }`;
+								siblingContainer = Array.from( rootEl.querySelectorAll( '[data-col-id]' ) ).find( ( candidate ) => candidate.getAttribute( 'data-col-id' ) === rootColumnId );
+							}
+							const columns = siblingContainer ? Array.from( siblingContainer.querySelectorAll( ':scope > .xsb-nested-container-column' ) ) : [];
+							const siblingColumn = parentPath.length ? ( columns[ renderedColumn ] || columns[ 0 ] ) : siblingContainer;
+							const selector = parentPath.length ? ':scope > .xsb-nested-container-item' : ':scope > [data-nested-id]';
+							const siblings = siblingColumn ? Array.from( siblingColumn.querySelectorAll( selector ) ).filter( ( sibling ) => sibling.getAttribute( 'data-nested-id' ) !== nestedActive ) : [];
+							const targetIndex = siblings.findIndex( ( sibling ) => sibling.getAttribute( 'data-nested-id' ) === item.getAttribute( 'data-nested-id' ) );
+							if ( targetIndex >= 0 ) {
+								const slot = targetIndex + ( ratio > 0.7 ? 1 : 0 );
+								return parentPath.length
+									? { kind: 'inner-container', ci: itemAddress.ci, path: parentPath, columnIndex: renderedColumn, slot }
+									: { kind: 'col', ci: itemAddress.ci, cj: lastStep.cj, slot };
+							}
+						}
+					}
+					}
+					const source = data.canvasNested;
+					const sourcePath = Array.isArray( source?.path ) ? source.path : [];
+					const targetPath = address.path;
+					const targetInsideSource = isNestedDrag && source?.container && source.ci === address.ci &&
+						targetPath.length >= sourcePath.length && sourcePath.every( ( step, index ) =>
+							step.cj === targetPath[ index ]?.cj && step.bi === targetPath[ index ]?.bi
+						);
+					if ( targetInsideSource ) continue;
 					const columns = Array.from( el.querySelectorAll( ':scope > .xsb-nested-container-column' ) );
 					let columnIndex = 0;
 					if ( columns.length > 1 ) {
@@ -139,7 +184,8 @@ export function computeDropGuide( px, py, rootEl, opts ) {
 					const childEls = targetColumn
 						? Array.from( targetColumn.querySelectorAll( ':scope > .xsb-nested-container-item' ) )
 						: Array.from( el.querySelectorAll( ':scope > .xsb-nested-container-item' ) );
-					return { kind: 'inner-container', ...address, columnIndex, slot: slotFromRects( childEls.map( ( child ) => child.getBoundingClientRect() ), py ) };
+					const siblings = childEls.filter( ( child ) => child.getAttribute( 'data-nested-id' ) !== nestedActive );
+					return { kind: 'inner-container', ...address, columnIndex, slot: slotFromRects( siblings.map( ( child ) => child.getBoundingClientRect() ), py ) };
 				}
 			}
 			const [ ci, cj, bi ] = ( el.getAttribute( 'data-inner-container-id' ) || '' ).split( '-' ).map( parseNum );

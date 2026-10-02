@@ -1263,6 +1263,22 @@ function Editor( { config, structure: savedStructure } ) {
 
 		// Nested widget drag: move it within/between container columns.
 		if ( typeof active.id === 'string' && active.id.startsWith( 'nested-' ) ) {
+			const source = active.data.current?.canvasNested;
+			const target = over.data?.current?.canvasNested;
+			if ( source?.path?.length && target?.path?.length ) {
+				const activeRect = active.rect?.current?.translated;
+				const targetRect = over.rect;
+				const activeCenter = activeRect ? activeRect.top + activeRect.height / 2 : null;
+				const pointerY = Number.isFinite( navigatorDragPointerYRef.current ) ? navigatorDragPointerYRef.current : activeCenter;
+				const ratio = pointerY !== null && pointerY !== undefined && targetRect?.height ? ( pointerY - targetRect.top ) / targetRect.height : 0.5;
+				reorderNavigatorItem( { kind: 'nested', ci: source.ci, path: source.path }, { kind: 'nested', ci: target.ci, path: target.path, position: ratio < 0.5 ? 'before' : 'after' } );
+				return;
+			}
+			if ( source?.path?.length && typeof over.id === 'string' && over.id.startsWith( 'col-' ) ) {
+				const [ ci, cj ] = over.id.slice( 4 ).split( '-' ).map( Number );
+				moveNestedToSlot( active, { kind: 'col', ci, cj, slot: Number.MAX_SAFE_INTEGER } );
+				return;
+			}
 			moveNestedWidget( active.id, over );
 			return;
 		}
@@ -1337,7 +1353,7 @@ function Editor( { config, structure: savedStructure } ) {
 
 		const id = typeof active.id === 'string' ? active.id : '';
 		if ( id.startsWith( 'nested-' ) ) {
-			moveNestedToSlot( id, guide );
+			moveNestedToSlot( active, guide );
 			return;
 		}
 		moveTopLevelToSlot( id, guide );
@@ -1428,65 +1444,72 @@ function Editor( { config, structure: savedStructure } ) {
 	}
 
 	// Move a nested widget to the guide's column/slot (remove-then-insert).
-	function moveNestedToSlot( activeId, guide ) {
-		if ( ! guide || 'col' !== guide.kind ) {
-			return;
+	function moveNestedToSlot( active, guide ) {
+		if ( ! guide || ! [ 'col', 'inner-container' ].includes( guide.kind ) ) return;
+		const activeId = typeof active === 'string' ? active : String( active?.id || '' );
+		let sourceAddress = active?.data?.current?.canvasNested;
+		if ( ! sourceAddress?.path?.length ) {
+			const encoded = activeId.slice( 7 );
+			const separator = encoded.indexOf( '-' );
+			const ci = Number( encoded.slice( 0, separator ) );
+			const encodedPath = encoded.slice( separator + 1 );
+			const path = encodedPath.includes( '.' )
+				? encodedPath.split( '_' ).map( ( step ) => { const [ cj, bi ] = step.split( '.' ).map( Number ); return { cj, bi }; } )
+				: [ { cj: Number( encodedPath.split( '-' )[ 0 ] ), bi: Number( encodedPath.split( '-' )[ 1 ] ) } ];
+			sourceAddress = { ci, path };
 		}
-		const parts = String( activeId ).slice( 7 ).split( '-' ).map( Number );
-		const ci = parts[ 0 ];
-		const cj = parts[ 1 ];
-		const bi = parts[ 2 ];
-		if ( ! Number.isInteger( ci ) || ! Number.isInteger( cj ) || ! Number.isInteger( bi ) ) {
-			return;
-		}
-		if ( guide.ci === ci && guide.cj === cj && guide.slot === bi ) {
-			return; // Dropped back in place.
-		}
+		const sourcePath = sourceAddress.path;
+		if ( ! Number.isInteger( sourceAddress.ci ) || ! sourcePath.length || sourcePath.some( ( step ) => ! Number.isInteger( step.cj ) || ! Number.isInteger( step.bi ) ) ) return;
 
-		const next = layout.map( ( b ) => ( {
-			...b,
-			inner: b.inner ? b.inner.map( ( c ) => [ ...c ] ) : undefined,
-		} ) );
-		const source = next[ ci ];
-		if ( ! source || ! isContainerType( source.type ) || ! Array.isArray( source.inner ) || ! source.inner[ cj ] || ! source.inner[ cj ][ bi ] ) {
-			return;
-		}
+		const next = layout.map( cloneBlockTree );
+		const resolvePath = ( root, path ) => path.reduce( ( block, step ) => block?.inner?.[ step.cj ]?.[ step.bi ], root );
+		const sourceRoot = next[ sourceAddress.ci ];
+		const sourceParent = resolvePath( sourceRoot, sourcePath.slice( 0, -1 ) );
+		const sourceStep = sourcePath[ sourcePath.length - 1 ];
+		const sourceColumn = sourceParent?.inner?.[ sourceStep.cj ];
+		const moving = sourceColumn?.[ sourceStep.bi ];
+		if ( ! moving || ! Array.isArray( sourceColumn ) ) return;
 
-		// Resolve the destination address before mutating: flow-mode
-		// containers report a flattened slot, columns report a real column.
-		const targetContainer = next[ guide.ci ];
-		if ( ! targetContainer || ! isContainerType( targetContainer.type ) ) {
-			return;
+		let targetContainer;
+		let targetPath = [];
+		let targetRootIndex;
+		let targetColumnIndex;
+		if ( guide.kind === 'col' ) {
+			targetRootIndex = guide.ci;
+			targetContainer = next[ guide.ci ];
+			targetColumnIndex = guide.cj;
+		} else {
+			targetRootIndex = guide.ci;
+			targetPath = guide.path || [];
+			targetContainer = resolvePath( next[ guide.ci ], targetPath );
+			targetColumnIndex = guide.columnIndex || 0;
 		}
-		let targetCj = guide.cj;
-		let targetBi = guide.slot;
-		if ( containerLayoutMode( targetContainer.settings ) !== 'columns' ) {
-			const resolved = flatInsertTarget(
-				targetContainer.inner,
-				guide.slot,
-				guide.ci === ci ? { cj, bi } : null
-			);
-			targetCj = resolved.cj;
-			targetBi = resolved.bi;
-		} else if ( guide.ci === ci && guide.cj === cj && targetBi > bi ) {
-			targetBi -= 1; // Removal below shifts later blocks up.
-		}
+		if ( ! targetContainer || ! isContainerType( targetContainer.type ) ) return;
+		const isMovingIntoOwnTree = sourceAddress.container && sourceAddress.ci === targetRootIndex && targetPath.length >= sourcePath.length &&
+			sourcePath.every( ( step, index ) => step.cj === targetPath[ index ]?.cj && step.bi === targetPath[ index ]?.bi );
+		if ( isMovingIntoOwnTree ) return;
 
-		const [ moved ] = source.inner[ cj ].splice( bi, 1 );
+		sourceColumn.splice( sourceStep.bi, 1 );
+		targetContainer.inner = Array.isArray( targetContainer.inner ) ? targetContainer.inner : [];
+		while ( targetContainer.inner.length <= targetColumnIndex ) targetContainer.inner.push( [] );
+		if ( ! Array.isArray( targetContainer.inner[ targetColumnIndex ] ) ) targetContainer.inner[ targetColumnIndex ] = [];
 
-		if ( ! Array.isArray( targetContainer.inner ) ) {
-			targetContainer.inner = [];
+		let targetBlockIndex = guide.slot;
+		if ( guide.kind === 'inner-container' && containerLayoutMode( targetContainer.settings ) !== 'columns' ) {
+			const address = flatInsertTarget( targetContainer.inner, guide.slot, null );
+			targetColumnIndex = address.cj;
+			targetBlockIndex = address.bi;
 		}
-		if ( ! Array.isArray( targetContainer.inner[ targetCj ] ) ) {
-			targetContainer.inner[ targetCj ] = [];
-		}
-		const at = Math.max( 0, Math.min( targetBi, targetContainer.inner[ targetCj ].length ) );
-		targetContainer.inner[ targetCj ].splice( at, 0, moved );
+		const targetColumn = targetContainer.inner[ targetColumnIndex ];
+		const at = Math.max( 0, Math.min( Number( targetBlockIndex ) || 0, targetColumn.length ) );
+		targetColumn.splice( at, 0, moving );
 
 		setLayout( next );
-		setSelectedIndex( guide.ci );
-		setSelectedNested( { ci: guide.ci, cj: targetCj, bi: at } );
+		setSelectedIndex( targetRootIndex );
+		const movedPath = findNestedBlockPath( next[ targetRootIndex ], moving );
+		setSelectedNested( movedPath ? { ci: targetRootIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } : null );
 		setInspectorOpen( true );
+		setNavigatorOpen( true );
 	}
 
 	// ---- Derived data ----
