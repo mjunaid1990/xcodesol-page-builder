@@ -925,13 +925,14 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			const acfFields = window.xcopbBuilderConfig?.acfImageFields || window.xcosbBuilderConfig?.acfImageFields || [];
 			const acfField = settings.image_source === 'acf' ? acfFields.find( ( field ) => field.name === settings.acf_field ) : null;
 			const savedMedia = typeof settings.url === 'object' ? settings.url?.url : settings.url;
+			const legacyImage = typeof settings.image === 'object' ? settings.image?.url : settings.image;
 			const configuredFeaturedImage = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
 			const featuredImageUrl = canvasActions.featuredImageUrl !== undefined ? canvasActions.featuredImageUrl : configuredFeaturedImage;
 			const imageUrl = settings.image_source === 'acf'
 				? ( acfField?.preview_url || '' )
 				: settings.image_source === 'featured_image'
 					? featuredImageUrl
-					: savedMedia;
+					: ( savedMedia || legacyImage || '' );
 			const imageAlt = settings.alt_source === 'dynamic' ? resolveDynamicPreview( settings.alt_dynamic_source || 'post_title' ) : ( settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || '' );
 			const imageCaption = settings.caption_source === 'dynamic' ? resolveDynamicPreview( settings.caption_dynamic_source || 'post_title' ) : settings.caption;
 			const imageMediaStyles = resolveImageWidgetMedia( settings, imageUrl || '' );
