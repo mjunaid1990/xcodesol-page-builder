@@ -3163,6 +3163,7 @@ function ContainerBlock({
 	onStyleDevice,
 	onMove,
 	onDuplicate,
+	onAddContainer,
 	onOpenStyle,
 	onMoveNested,
 	onDuplicateNested,
@@ -3684,11 +3685,11 @@ function ContainerBlock({
 					<button
 						type="button"
 						className="xsb-container-quick-add-btn"
-						title={__('Add new section or container below', 'xcodesol-page-builder')}
-						onClick={() => onDuplicate && onDuplicate(index)}
+						title={__('Add a new container below', 'xcodesol-page-builder')}
+						onClick={() => onAddContainer && onAddContainer(index)}
 					>
 						<IconPlus width={12} height={12} />
-						<span>{__('Add Section', 'xcodesol-page-builder')}</span>
+						<span>{__('Add Container', 'xcodesol-page-builder')}</span>
 					</button>
 				</div>
 			)}
@@ -4012,8 +4013,9 @@ function BlockPreview({
 				onRemoveFromColumn={callbacks.onRemoveFromColumn}
 				dropGuide={dropGuide}
 				activeDragId={activeDragId}
-				onMove={onMove}
+					onMove={onMove}
 				onDuplicate={onDuplicate}
+				onAddContainer={callbacks.onAddContainer}
 				onOpenStyle={onOpenStyle}
 				onMoveNested={onMoveNested}
 				onDuplicateNested={onDuplicateNested}

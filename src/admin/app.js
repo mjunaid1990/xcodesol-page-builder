@@ -630,6 +630,22 @@ function Editor( { config, structure: savedStructure } ) {
 		setSelectedIndex( index + 1 );
 	}, [ layout, zoneMap, setLayoutAndZoneMap ] );
 
+	const addContainerBelow = useCallback( ( index ) => {
+		if ( index < 0 || index >= layout.length ) return;
+		const definition = CONTAINER_BLOCKS[ 0 ];
+		const nextLayout = [ ...layout ];
+		const nextZone = [ ...zoneMap ];
+		const zone = zoneMap[ index ] || structure?.zones?.[ 0 ]?.id || '';
+		nextLayout.splice( index + 1, 0, {
+			type: definition.type,
+			settings: { ...definition.defaults },
+			inner: [ [] ],
+		} );
+		nextZone.splice( index + 1, 0, zone );
+		setLayoutAndZoneMap( nextLayout, nextZone );
+		selectBlock( index + 1 );
+	}, [ layout, zoneMap, structure, setLayoutAndZoneMap, selectBlock ] );
+
 	// Move a nested widget within its column.
 	const moveNestedBlock = useCallback( ( ci, cj, bi, direction ) => {
 		const targetBi = bi + direction;
@@ -2193,6 +2209,7 @@ function Editor( { config, structure: savedStructure } ) {
 											onOpenStyleNested={ openStylePanelForNested }
 							callbacks={ {
 								onAddToColumn: addBlockToColumn,
+								onAddContainer: addContainerBelow,
 								onRemoveFromColumn: removeBlockFromColumn,
 								onAddPreset: handleAddPreset,
 														onOpenWidgetPanel: openWidgetPanel,
@@ -2229,6 +2246,7 @@ function Editor( { config, structure: savedStructure } ) {
 											onOpenStyleNested={ openStylePanelForNested }
 							callbacks={ {
 								onAddToColumn: addBlockToColumn,
+								onAddContainer: addContainerBelow,
 								onRemoveFromColumn: removeBlockFromColumn,
 								onAddPreset: handleAddPreset,
 														onOpenWidgetPanel: openWidgetPanel,
@@ -2264,6 +2282,7 @@ function Editor( { config, structure: savedStructure } ) {
 										onOpenStyleNested={ openStylePanelForNested }
 						callbacks={ {
 							onAddToColumn: addBlockToColumn,
+							onAddContainer: addContainerBelow,
 							onRemoveFromColumn: removeBlockFromColumn,
 							onAddPreset: handleAddPreset,
 														onOpenWidgetPanel: openWidgetPanel,
