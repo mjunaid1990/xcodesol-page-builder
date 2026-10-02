@@ -2125,6 +2125,12 @@ function Editor( { config, structure: savedStructure } ) {
 								structure={ structure }
 								allowedBlockTypes={ allowedBlockTypes }
 								layout={ layout }
+								sidebarPinned={ sidebarPinned }
+								onTogglePin={ () => {
+									const nextPinned = ! sidebarPinned;
+									setSidebarPinned( nextPinned );
+									if ( nextPinned ) setSidebarOpen( true );
+								} }
 								selectedIndex={ selectedIndex }
 								selectedNested={ selectedNested }
 								onSelectBlockIndex={ selectBlock }

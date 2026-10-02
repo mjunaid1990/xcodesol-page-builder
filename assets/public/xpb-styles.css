@@ -512,6 +512,60 @@ a.xsb-banner-btn:hover {
 	color: #171c26 !important;
 }
 
+/* Shared Hero Banner slide, media, overlay and navigation styles. */
+.xsb-banner-slider { isolation: isolate; }
+.xsb-banner-slide { position: relative; box-sizing: border-box; min-height: inherit; width: 100%; }
+.xsb-banner-slider > .xsb-banner-slide { position: absolute; inset: 0; visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .45s ease, transform .45s ease; }
+.xsb-banner-slider > .xsb-banner-slide.is-active { position: relative; visibility: visible; opacity: 1; pointer-events: auto; }
+.xsb-banner-slider[data-transition="zoom"] > .xsb-banner-slide { transform: scale(1.035); }
+.xsb-banner-slider[data-transition="zoom"] > .xsb-banner-slide.is-active { transform: scale(1); }
+.xsb-banner-slider[data-transition="slide"] > .xsb-banner-slide { transform: translateX(18px); }
+.xsb-banner-slider[data-transition="slide"] > .xsb-banner-slide.is-active { transform: translateX(0); }
+.xsb-banner-media,
+.xsb-banner-media img,
+.xsb-banner-slide > video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.xsb-banner-media,
+.xsb-banner-slide > video { z-index: 0; }
+.xsb-banner-media img,
+.xsb-banner-slide > video { object-fit: cover; }
+.xsb-banner-overlay { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
+.xsb-banner-slide-link { position: absolute; z-index: 1; inset: 0; }
+.xsb-banner-content { z-index: 2; }
+.xsb-banner-actions { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: inherit; gap: 12px; }
+.xsb-banner-btn.is-primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.xsb-banner-btn.is-secondary { background: #fff; color: #172033; border-color: #fff; }
+.xsb-banner-btn.is-outline { background: transparent; color: inherit; border-color: currentColor; }
+.xsb-banner-btn.is-ghost { background: transparent; color: inherit; border-color: transparent; }
+.xsb-banner-badge { position: relative; z-index: 2; margin: 0 0 10px; font-size: .85em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.xsb-banner-meta { position: relative; z-index: 2; display: flex; gap: 14px; margin: 16px 0 0; font-size: 13px; }
+.xsb-banner-arrow,
+.xsb-banner-pause { position: absolute; z-index: 5; display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(15,23,42,.72); color: #fff; cursor: pointer; }
+.xsb-banner-arrow { top: 50%; transform: translateY(-50%); font-size: 23px; }
+.xsb-banner-arrow--previous { left: 16px; }
+.xsb-banner-arrow--next { right: 16px; }
+.xsb-banner-pause { right: 16px; bottom: 16px; width: 34px; height: 34px; font-size: 13px; }
+.xsb-banner-pagination { position: absolute; z-index: 5; right: 0; bottom: 18px; left: 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.xsb-banner-pagination button { display: grid; place-items: center; min-width: 10px; min-height: 10px; padding: 4px; border: 0; border-radius: 999px; background: rgba(255,255,255,.5); color: #fff; cursor: pointer; }
+.xsb-banner-pagination.is-dots button span { display: block; width: 9px; height: 9px; border-radius: inherit; }
+.xsb-banner-pagination button.is-active { background: #fff; }
+.xsb-banner-pagination.is-numbers button { min-width: 28px; min-height: 28px; padding: 4px 8px; background: rgba(15,23,42,.6); }
+.xsb-banner-pagination.is-numbers button.is-active { background: #4f46e5; }
+.xsb-banner-pagination.is-fraction { color: #fff; font-weight: 600; }
+.xsb-banner-pagination.is-fraction span + span { margin: 0 5px; }
+.xsb-banner-pagination.is-progress { right: 18px; bottom: 0; left: 18px; height: 4px; background: rgba(255,255,255,.35); }
+.xsb-banner-pagination.is-progress span { display: block; width: 0; height: 100%; background: #fff; transition: width .25s ease; }
+.xsb-banner-empty { position: relative; z-index: 2; }
+.xsb-banner-arrow:focus-visible,
+.xsb-banner-pause:focus-visible,
+.xsb-banner-pagination button:focus-visible,
+.xsb-banner-btn:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
+.xsb-banner-layout--left .xsb-banner-content { text-align: left; }
+.xsb-banner-layout--split-left .xsb-banner-content { align-self: flex-start; width: min(50%, 640px); text-align: left; }
+.xsb-banner-layout--split-right .xsb-banner-content { align-self: flex-end; width: min(50%, 640px); text-align: left; }
+.xsb-banner-layout--card-over-image .xsb-banner-content { max-width: min(560px, 90%); padding: clamp(20px, 4vw, 44px); border-radius: 16px; background: rgba(15,23,42,.72); backdrop-filter: blur(10px); }
+@media (max-width: 767px) { .xsb-banner-arrow { width: 36px; height: 36px; } .xsb-banner-arrow--previous { left: 8px; } .xsb-banner-arrow--next { right: 8px; } .xsb-banner-layout--split-left .xsb-banner-content, .xsb-banner-layout--split-right .xsb-banner-content { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .xsb-banner-slider > .xsb-banner-slide, .xsb-banner-pagination.is-progress span { transition: none !important; } }
+
 /* Banner entrance animations */
 @keyframes xsb-fade-in {
 	from { opacity: 0; }

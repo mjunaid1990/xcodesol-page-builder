@@ -22,6 +22,7 @@ import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS,
 import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/columns';
 import { resolveBackgroundMedia, resolveImageWidgetMedia, resolveImageFilter } from '../lib/background-media';
 import { resolveDynamicPreview } from '../lib/dynamic-content';
+import BannerPreview from './banner-preview';
 import { resolveTextWidgetStyle, resolveButtonWidgetStyle, resolveDividerWidgetStyles } from '../lib/widget-styles';
 import { effectiveForDevice } from '../styles/responsive';
 import StylePopover, { hasStylePopover, SHADOW_VALUES } from './style-popover';
@@ -1355,124 +1356,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/gb-banner':
 		case 'xcosb/gb-banner': {
-			const align = settings.align || 'center';
-			const bgType = settings.bg_type || 'color';
-			const bgColor = settings.bg_color || settings.background || '#2563eb';
-			const { imageUrl: bgImage, videoUrl: bgVideo, imageStyle: bgImageStyle, videoStyle: bgVideoStyle } = resolveBackgroundMedia( settings );
-			const overlay = settings.overlay_color || '';
-			const isArchiveTitle = settings.title_source === 'archive_title';
-			const title = isArchiveTitle
-				? SAMPLE.archiveTitle
-				: (settings.title || '');
-			const subtitle = settings.subtitle || '';
-			const buttonText = settings.button_text || '';
-			const showButton = !(settings.show_button === false);
-
-			// Background color always sits behind; image/video layer on top.
-			const bgStyle = {
-				backgroundColor: bgColor,
-				color: settings.text_color || '#fff',
-				minHeight: settings.min_height ? Number(settings.min_height) : undefined,
-				paddingTop: settings.padding_top ? Number(settings.padding_top) : undefined,
-				paddingBottom: settings.padding_bottom ? Number(settings.padding_bottom) : undefined,
-				paddingLeft: settings.padding_left ? Number(settings.padding_left) : undefined,
-				paddingRight: settings.padding_right ? Number(settings.padding_right) : undefined,
-				borderRadius: settings.border_radius ? Number(settings.border_radius) : undefined,
-				boxShadow: SHADOW_VALUES[settings.box_shadow || 'none'] || undefined,
-			};
-
-			const borderWidth = Number(settings.border_width) || 0;
-			if (borderWidth > 0) {
-				bgStyle.border = `${borderWidth}px ${settings.border_style || 'solid'} ${settings.border_color || '#000000'}`;
-				bgStyle.boxSizing = 'border-box';
-			}
-
-			const anim = settings.animation || 'none';
-			if (anim !== 'none') {
-				// Keyframes are namespaced (xsb-fade-in, xsb-slide-up, ...).
-				bgStyle.animation = `xsb-motion-${anim} ${Number(settings.animation_duration) || 600}ms ${settings.animation_easing || 'ease'} ${settings.animation_repeat || '1'} both`;
-				bgStyle.animationDelay = `${Number(settings.animation_delay) || 0}ms`;
-			}
-
-			// Flex placement of the content inside the banner.
-			const flexX = { left: 'flex-start', center: 'center', right: 'flex-end' };
-			const flexY = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
-			bgStyle.display = 'flex';
-			bgStyle.flexDirection = 'column';
-			bgStyle.justifyContent = flexY[settings.content_position_y || 'center'];
-			bgStyle.alignItems = flexX[settings.content_position_x || 'center'];
-
-			const contentBox = !!settings.content_box;
-			const overlayOpacity = Math.min(100, Math.max(0, Number(settings.overlay_opacity ?? 45))) / 100;
-
-			if (bgType === 'gradient') {
-				const gA = settings.gradient_color_a || '#2563eb';
-				const gB = settings.gradient_color_b || '#4f46e5';
-				if ((settings.gradient_type || 'linear') === 'radial') {
-					bgStyle.backgroundImage = `radial-gradient(${settings.gradient_radial_shape || 'circle'} at ${settings.gradient_position || 'center'}, ${gA}, ${gB})`;
-				} else {
-					bgStyle.backgroundImage = `linear-gradient(${Number(settings.gradient_angle) || 180}deg, ${gA}, ${gB})`;
-				}
-			}
-			if ( bgType === 'color' && settings.bg_color ) { bgStyle.backgroundColor = settings.bg_color; }
-
-			if (bgType === 'image' && bgImage) {
-			}
-
-			return (
-				<div className="xsb-bp gb-banner" style={bgStyle}>
-					{bgType === 'image' && bgImage && (
-						<div
-							className="xsb-banner-bg"
-							style={{ ...bgImageStyle, backgroundImage: `url("${bgImage}")` }}
-						/>
-					)}
-					{bgType === 'video' && bgVideo && (
-						<video className="xsb-banner-video xsb-background-media-video" style={bgVideoStyle} src={bgVideo} muted loop autoPlay playsInline />
-					)}
-					{overlay && (bgType === 'image' || bgType === 'video') && (
-						// z-index 1: above the media (0) but below the content (2).
-						<div className="xsb-banner-overlay" style={{ backgroundColor: overlay, opacity: overlayOpacity, zIndex: 1 }} />
-					)}
-					<div className="xsb-bp-label-chip xsb-bp-label-chip--dark">{__('Banner', 'xcodesol-page-builder')}</div>
-					{isArchiveTitle && (
-						<span className="xsb-banner-source-tag">{__('Archive title', 'xcodesol-page-builder')}</span>
-					)}
-					<div
-						className="xsb-banner-inner"
-						style={{
-							textAlign: align,
-							// margin:0 lets the parent's flex alignment place the box
-							// (the stylesheet default `0 auto` would always center it).
-							margin: 0,
-							position: 'relative',
-							zIndex: 2,
-							...(contentBox
-								? {
-									background: settings.content_box_bg || 'rgba(0,0,0,0.35)',
-									padding: `${Number(settings.content_box_padding) || 28}px`,
-									borderRadius: `${Number(settings.content_box_radius) || 16}px`,
-									boxSizing: 'border-box',
-								}
-								: {}),
-						}}
-					>
-						{title !== '' && (
-							<h3 className="xsb-banner-title" style={{ color: settings.title_color || settings.text_color || '#fff' }}>
-								{title}
-							</h3>
-						)}
-						{subtitle !== '' && (
-							<p className="xsb-banner-subtitle" style={{ color: settings.subtitle_color || settings.text_color || '#fff' }}>
-								{subtitle}
-							</p>
-						)}
-						{showButton && buttonText !== '' && (
-							<a className="xsb-banner-btn" href="#">{buttonText}</a>
-						)}
-					</div>
-				</div>
-			);
+			return <BannerPreview settings={ settings } archiveTitle={ SAMPLE.archiveTitle } />;
 		}
 		case 'xcopb/gb-divider':
 		case 'xcosb/gb-divider':

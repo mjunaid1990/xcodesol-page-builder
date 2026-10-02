@@ -2255,31 +2255,14 @@ class XCOPB_Block_Registry {
 		}, array( 'core_block_name' => 'core/paragraph', 'core_markup' => '' ) );
 
 		// Hero Banner
+		$hero_defaults_path = XCOPB_PLUGIN_DIR . 'includes/data/hero-banner-defaults.json';
+		$hero_defaults = is_readable( $hero_defaults_path ) ? json_decode( file_get_contents( $hero_defaults_path ), true ) : array();
+		if ( ! is_array( $hero_defaults ) ) {
+			$hero_defaults = array();
+		}
 		$this->register_block( 'xcopb/gb-banner', function ( $block, $context ) {
 			return $this->render_block_file( XCOPB_PLUGIN_DIR . 'blocks/general/banner.php', $block, $context );
-		}, array(
-			'title'          => __( 'Designed for Creators', 'xcodesol-page-builder' ),
-			'subtitle'       => __( 'Add your call to action here.', 'xcodesol-page-builder' ),
-			'link'           => '',
-			'button_text'    => __( 'Get Started', 'xcodesol-page-builder' ),
-			'align'          => 'center',
-			'padding_top'    => 80,
-			'padding_bottom' => 80,
-			'padding_left'   => 20,
-			'padding_right'  => 20,
-			'min_height'     => 400,
-			'bg_type'        => 'color',
-			'bg_color'       => '#2563eb',
-			'gradient_type'  => 'linear',
-			'gradient_angle' => 180,
-			'gradient_color_a' => '#2563eb',
-			'gradient_color_b' => '#4f46e5',
-			'overlay_color'  => 'rgba(0,0,0,0.5)',
-			'title_color'    => '#ffffff',
-			'subtitle_color' => '#ffffff',
-			'button_text_color' => '#ffffff',
-			'button_border_color' => '#ffffff',
-		) );
+		}, $hero_defaults );
 
 		// Divider
 		$this->register_block( 'xcopb/gb-divider', function ( $block, $context ) {

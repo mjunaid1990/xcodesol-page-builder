@@ -1589,6 +1589,84 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			$clean[ $font_key ] = $this->sanitize_font_family( isset( $settings[ $font_key ] ) ? $settings[ $font_key ] : '' );
 		}
 
+		// Keep the complete Hero Banner configuration as one safe JSON object.
+		$clean['source_mode'] = isset( $settings['source_mode'] ) && in_array( $settings['source_mode'], array( 'custom', 'posts', 'mixed' ), true ) ? $settings['source_mode'] : 'custom';
+		$clean['slides'] = array();
+		$raw_slides = isset( $settings['slides'] ) && is_array( $settings['slides'] ) ? array_slice( $settings['slides'], 0, 20 ) : array();
+		foreach ( $raw_slides as $index => $slide ) {
+			if ( ! is_array( $slide ) ) {
+				continue;
+			}
+			$item = array(
+				'id' => isset( $slide['id'] ) ? sanitize_key( $slide['id'] ) : 'hero-slide-' . ( $index + 1 ),
+				'type' => isset( $slide['type'] ) && in_array( $slide['type'], array( 'custom', 'linked-post', 'dynamic' ), true ) ? $slide['type'] : 'custom',
+				'title' => isset( $slide['title'] ) ? sanitize_text_field( $slide['title'] ) : '',
+				'title_tag' => isset( $slide['title_tag'] ) && in_array( $slide['title_tag'], array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div' ), true ) ? $slide['title_tag'] : ( 0 === $index ? 'h1' : 'h2' ),
+				'subtitle' => isset( $slide['subtitle'] ) ? wp_kses_post( (string) $slide['subtitle'] ) : '',
+				'badge' => isset( $slide['badge'] ) ? sanitize_text_field( $slide['badge'] ) : '',
+				'background_type' => isset( $slide['background_type'] ) && in_array( $slide['background_type'], array( 'inherit', 'color', 'image', 'video' ), true ) ? $slide['background_type'] : 'inherit',
+				'background_color' => isset( $slide['background_color'] ) ? ( sanitize_hex_color( $slide['background_color'] ) ?: '' ) : '',
+				'overlay_color' => isset( $slide['overlay_color'] ) ? ( sanitize_hex_color( $slide['overlay_color'] ) ?: '' ) : '',
+				'overlay_opacity' => isset( $slide['overlay_opacity'] ) ? min( 100, absint( $slide['overlay_opacity'] ) ) : null,
+				'image_alt' => isset( $slide['image_alt'] ) ? sanitize_text_field( $slide['image_alt'] ) : '',
+				'link' => isset( $slide['link'] ) ? esc_url_raw( $slide['link'] ) : '',
+				'button_text' => isset( $slide['button_text'] ) ? sanitize_text_field( $slide['button_text'] ) : '',
+				'button_url' => isset( $slide['button_url'] ) ? esc_url_raw( $slide['button_url'] ) : '',
+				'post_id' => isset( $slide['post_id'] ) ? absint( $slide['post_id'] ) : 0,
+				'dynamic_post_id' => isset( $slide['dynamic_post_id'] ) ? absint( $slide['dynamic_post_id'] ) : 0,
+			);
+			foreach ( array( 'image', 'mobile_image', 'video' ) as $media_key ) {
+				$media = $slide[ $media_key ] ?? '';
+				$item[ $media_key ] = esc_url_raw( is_array( $media ) ? ( $media['url'] ?? '' ) : $media );
+			}
+			$item['buttons'] = array();
+			if ( isset( $slide['buttons'] ) && is_array( $slide['buttons'] ) ) {
+				foreach ( array_slice( $slide['buttons'], 0, 3 ) as $button ) {
+					if ( ! is_array( $button ) ) continue;
+					$item['buttons'][] = array(
+						'label' => isset( $button['label'] ) ? sanitize_text_field( $button['label'] ) : '',
+						'url' => isset( $button['url'] ) ? esc_url_raw( $button['url'] ) : '',
+						'style' => isset( $button['style'] ) && in_array( $button['style'], array( 'primary', 'secondary', 'outline', 'ghost' ), true ) ? $button['style'] : 'primary',
+						'new_tab' => ! empty( $button['new_tab'] ),
+						'nofollow' => ! empty( $button['nofollow'] ),
+					);
+				}
+			}
+			$clean['slides'][] = $item;
+		}
+
+		$clean['slider_enabled'] = ! empty( $settings['slider_enabled'] );
+		$clean['loop'] = ! isset( $settings['loop'] ) || ! empty( $settings['loop'] );
+		$clean['autoplay'] = ! empty( $settings['autoplay'] );
+		$clean['pause_on_interaction'] = ! isset( $settings['pause_on_interaction'] ) || ! empty( $settings['pause_on_interaction'] );
+		$clean['pause_on_hover'] = ! isset( $settings['pause_on_hover'] ) || ! empty( $settings['pause_on_hover'] );
+		$clean['show_arrows'] = ! isset( $settings['show_arrows'] ) || ! empty( $settings['show_arrows'] );
+		$clean['autoplay_delay'] = isset( $settings['autoplay_delay'] ) ? min( 30000, max( 1000, absint( $settings['autoplay_delay'] ) ) ) : 5000;
+		$clean['transition'] = isset( $settings['transition'] ) && in_array( $settings['transition'], array( 'slide', 'fade', 'zoom' ), true ) ? $settings['transition'] : 'slide';
+		$clean['pagination'] = isset( $settings['pagination'] ) && in_array( $settings['pagination'], array( 'none', 'dots', 'numbers', 'fraction', 'progress' ), true ) ? $settings['pagination'] : 'dots';
+		$clean['layout_variant'] = isset( $settings['layout_variant'] ) && in_array( $settings['layout_variant'], array( 'centered', 'left', 'split-left', 'split-right', 'card-over-image' ), true ) ? $settings['layout_variant'] : 'centered';
+
+		$post_type = isset( $settings['posts_post_type'] ) ? sanitize_key( $settings['posts_post_type'] ) : 'post';
+		$public_post_types = get_post_types( array( 'public' => true ), 'names' );
+		$clean['posts_post_type'] = in_array( $post_type, $public_post_types, true ) ? $post_type : 'post';
+		$clean['posts_count'] = isset( $settings['posts_count'] ) ? min( 20, max( 1, absint( $settings['posts_count'] ) ) ) : 3;
+		$clean['posts_offset'] = isset( $settings['posts_offset'] ) ? min( 500, absint( $settings['posts_offset'] ) ) : 0;
+		$clean['posts_orderby'] = isset( $settings['posts_orderby'] ) && in_array( $settings['posts_orderby'], array( 'date', 'title', 'rand', 'menu_order', 'comment_count' ), true ) ? $settings['posts_orderby'] : 'date';
+		$clean['posts_order'] = isset( $settings['posts_order'] ) && 'ASC' === strtoupper( $settings['posts_order'] ) ? 'ASC' : 'DESC';
+		foreach ( array( 'posts_category', 'posts_tag', 'posts_author' ) as $query_id ) $clean[ $query_id ] = absint( $settings[ $query_id ] ?? 0 );
+		foreach ( array( 'posts_include_ids', 'posts_exclude_ids' ) as $query_ids ) {
+			$ids = preg_split( '/[,\s]+/', (string) ( $settings[ $query_ids ] ?? '' ) );
+			$clean[ $query_ids ] = implode( ',', array_values( array_filter( array_map( 'absint', $ids ) ) ) );
+		}
+		$clean['posts_has_image'] = ! empty( $settings['posts_has_image'] );
+		$clean['posts_sticky_only'] = ! empty( $settings['posts_sticky_only'] );
+		foreach ( array( 'query_title_field' => array( 'title', 'excerpt', 'category' ), 'query_description_field' => array( 'excerpt', 'content', 'date', 'author', 'category', 'none' ), 'query_image_field' => array( 'featured_image', 'category_image', 'none' ), 'query_link_field' => array( 'permalink', 'none' ) ) as $query_field => $valid_values ) {
+			$value = isset( $settings[ $query_field ] ) ? sanitize_key( $settings[ $query_field ] ) : '';
+			$clean[ $query_field ] = in_array( $value, $valid_values, true ) ? $value : ( 'query_title_field' === $query_field ? 'title' : ( 'query_description_field' === $query_field ? 'excerpt' : ( 'query_image_field' === $query_field ? 'featured_image' : 'permalink' ) ) );
+		}
+		$clean['query_empty_message'] = isset( $settings['query_empty_message'] ) ? sanitize_text_field( $settings['query_empty_message'] ) : __( 'No posts found.', 'xcodesol-page-builder' );
+		$clean['fallback_image'] = esc_url_raw( is_array( $settings['fallback_image'] ?? '' ) ? ( $settings['fallback_image']['url'] ?? '' ) : ( $settings['fallback_image'] ?? '' ) );
+
 		return $clean;
 	}
 

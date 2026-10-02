@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-hero-banner.php';
+
 $settings = isset( $block['settings'] ) ? $block['settings'] : array();
 
 $xsb_banner_color = static function ( $value, $fallback ) {
@@ -132,7 +134,7 @@ $xsb_shadow_map = array(
 );
 $xsb_anim_list = class_exists( 'XCOPB_Motion_Presets' ) ? array_slice( XCOPB_Motion_Presets::ids(), 1 ) : array( 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
 
-if ( '' === $title && '' === $subtitle && '' === $button_text ) {
+if ( '' === $title && '' === $subtitle && '' === $button_text && empty( $settings['slides'] ) && ! in_array( $settings['source_mode'] ?? 'custom', array( 'posts', 'mixed' ), true ) ) {
 	return;
 }
 
@@ -141,7 +143,7 @@ if ( '' === $title && '' === $subtitle && '' === $button_text ) {
 $bg_styles = XCOPB_Block_Registry::banner_bg_decls( $settings );
 
 $container_style  = 'padding:' . absint( $padding_top ) . 'px ' . absint( $padding_right ) . 'px ' . absint( $padding_bottom ) . 'px ' . absint( $padding_left ) . 'px;';
-$container_style .= 'height:' . absint( $min_height ) . 'px;';
+$container_style .= 'min-height:' . absint( $min_height ) . 'px;';
 $container_style .= 'text-align:' . esc_attr( $align ) . ';';
 $container_style .= 'display:flex;flex-direction:column;justify-content:' . $xsb_flex_y[ $content_position_y ] . ';align-items:' . $xsb_flex_x[ $content_position_x ] . ';';
 $container_style .= 'border-radius:' . absint( $border_radius ) . 'px;';
@@ -152,6 +154,7 @@ if ( isset( $xsb_shadow_map[ $box_shadow ] ) && '' !== $xsb_shadow_map[ $box_sha
 	$container_style .= 'box-shadow:' . $xsb_shadow_map[ $box_shadow ] . ';';
 }
 $container_style .= implode( ';', $bg_styles ) . ';';
+$container_style = preg_replace( '/padding:[^;]+;/', '', $container_style );
 
 $title_style = sprintf(
 	'color:%1$s;font-size:%2$dpx;font-weight:%3$s;line-height:%4$s;letter-spacing:%5$spx;text-transform:%6$s;margin:0 0 16px;',
@@ -208,47 +211,31 @@ if ( 'none' !== $animation && in_array( $animation, $xsb_anim_list, true ) ) {
 	$container_style .= 'animation-iteration-count:' . ( isset( $settings['animation_repeat'] ) && in_array( (string) $settings['animation_repeat'], array( '1', '2', '3', 'infinite' ), true ) ? $settings['animation_repeat'] : '1' ) . ';';
 }
 
-$content  = '';
-$content .= '<div class="xsb-banner' . $xsb_anim_class . '" style="' . $container_style . '">';
+$legacy_slide = array(
+	'type'        => 'custom',
+	'title'       => $title,
+	'title_tag'   => 'h2',
+	'subtitle'    => $subtitle,
+	'button_text' => $button_text,
+	'link'        => $link,
+);
 
-// Video background
-if ( 'video' === $bg_type && $bg_video ) {
-	$content .= '<video class="xsb-banner-video xsb-background-media-video" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;' . esc_attr( $bg_video_style ) . 'z-index:0;">';
-	$content .= '<source src="' . esc_url( $bg_video ) . '" type="video/mp4">';
-	$content .= '</video>';
-}
+$content = XCOPB_Hero_Banner::render(
+	$settings,
+	$legacy_slide,
+	$container_style,
+	$overlay_color,
+	$overlay_opacity / 100,
+	array( 'x' => $content_position_x, 'y' => $content_position_y )
+);
 
-// Overlay
-if ( $overlay_style ) {
-	$content .= '<div class="xsb-banner-overlay" style="position:absolute;inset:0;z-index:1;' . $overlay_style . '"></div>';
-}
-
-$xsb_content_style = 'position:relative;z-index:2;box-sizing:border-box;max-width:100%;';
-if ( $content_box ) {
-	$xsb_content_style .= 'background:' . esc_attr( $content_box_bg ) . ';';
-	$xsb_content_style .= 'padding:' . absint( $content_box_padding ) . 'px;';
-	$xsb_content_style .= 'border-radius:' . absint( $content_box_radius ) . 'px;';
-}
-
-$content .= '<div class="xsb-banner-content" style="' . $xsb_content_style . '">';
-
-if ( '' !== $title ) {
-	$content .= '<h2 class="xsb-banner-title" style="' . $title_style . '">' . esc_html( $title ) . '</h2>';
-}
-
-if ( '' !== $subtitle ) {
-	$content .= '<p class="xsb-banner-subtitle" style="' . $subtitle_style . '">' . esc_html( $subtitle ) . '</p>';
-}
-
-if ( '' !== $button_text ) {
-	if ( '' !== $link ) {
-		$content .= '<a class="xsb-banner-btn" href="' . esc_url( $link ) . '" style="' . $button_style . '">' . esc_html( $button_text ) . '</a>';
-	} else {
-		$content .= '<span class="xsb-banner-btn" style="' . $button_style . '">' . esc_html( $button_text ) . '</span>';
-	}
-}
-
-$content .= '</div>';
-$content .= '</div>';
-
-echo wp_kses( $content, XCOPB_Block_Registry::allowed_output_html() );
+$allowed = XCOPB_Block_Registry::allowed_output_html();
+$global_attributes = array( 'class' => true, 'id' => true, 'style' => true, 'role' => true, 'tabindex' => true, 'data-*' => true, 'aria-*' => true );
+$allowed['article'] = array_merge( $global_attributes, array( 'aria-roledescription' => true, 'aria-label' => true, 'aria-hidden' => true, 'inert' => true ) );
+$allowed['picture'] = $global_attributes;
+$allowed['source'] = array_merge( $global_attributes, array( 'media' => true, 'src' => true, 'srcset' => true, 'type' => true, 'sizes' => true ) );
+$allowed['time'] = array_merge( $global_attributes, array( 'datetime' => true ) );
+$allowed['img'] = array_merge( $allowed['img'] ?? array(), array( 'src' => true, 'srcset' => true, 'sizes' => true, 'alt' => true, 'loading' => true, 'fetchpriority' => true, 'decoding' => true ) );
+$allowed['button'] = array_merge( $allowed['button'] ?? array(), array( 'type' => true, 'aria-label' => true, 'aria-pressed' => true, 'aria-current' => true, 'data-*' => true ) );
+$allowed['video'] = array_merge( $allowed['video'] ?? array(), array( 'class' => true, 'autoplay' => true, 'muted' => true, 'loop' => true, 'playsinline' => true, 'preload' => true, 'aria-hidden' => true ) );
+echo wp_kses( $content, $allowed );

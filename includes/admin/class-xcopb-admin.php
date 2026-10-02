@@ -333,10 +333,10 @@ class XCOPB_Admin {
 			$deps = array( 'wp-element', 'wp-components', 'wp-data', 'wp-i18n', 'wp-api-fetch', 'wp-hooks', 'react', 'react-dom' );
 		}
 
-		// Version the admin stylesheets by file mtime so every deploy busts the
-		// browser cache (XCOPB_VERSION is constant between deploys).
-		$admin_css_ver   = filemtime( XCOPB_PLUGIN_DIR . 'assets/admin/builder.css' );
-		$popover_css_ver = filemtime( XCOPB_PLUGIN_DIR . 'assets/admin/popover.css' );
+		// Content hashes avoid stale admin styles when multiple rebuilds happen
+		// within the same filesystem timestamp interval.
+		$admin_css_ver   = file_exists( XCOPB_PLUGIN_DIR . 'assets/admin/builder.css' ) ? md5_file( XCOPB_PLUGIN_DIR . 'assets/admin/builder.css' ) : XCOPB_VERSION;
+		$popover_css_ver = file_exists( XCOPB_PLUGIN_DIR . 'assets/admin/popover.css' ) ? md5_file( XCOPB_PLUGIN_DIR . 'assets/admin/popover.css' ) : XCOPB_VERSION;
 		wp_enqueue_style( 'dashicons' );
 		wp_enqueue_style( 'wp-components' );
 		if ( function_exists( 'wp_enqueue_code_editor' ) ) {

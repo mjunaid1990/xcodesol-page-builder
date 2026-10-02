@@ -1,0 +1,77 @@
+[
+	{
+		"id": "centered-gradient",
+		"label": "Centered gradient",
+		"settings": {
+			"layout_variant": "centered",
+			"content_position_x": "center",
+			"content_position_y": "center",
+			"bg_type": "gradient",
+			"gradient_type": "linear",
+			"gradient_angle": 120,
+			"gradient_color_a": "#1d4ed8",
+			"gradient_color_b": "#7c3aed",
+			"title_color": "#ffffff",
+			"subtitle_color": "#ffffff",
+			"min_height": 440
+		}
+	},
+	{
+		"id": "left-image",
+		"label": "Left aligned image",
+		"settings": {
+			"layout_variant": "left",
+			"content_position_x": "left",
+			"content_position_y": "center",
+			"bg_type": "image",
+			"overlay_color": "#0f172a",
+			"overlay_opacity": 50,
+			"align": "left",
+			"min_height": 460
+		}
+	},
+	{
+		"id": "split-image-right",
+		"label": "Split with image right",
+		"settings": {
+			"layout_variant": "split-right",
+			"content_position_x": "left",
+			"content_position_y": "center",
+			"bg_type": "color",
+			"bg_color": "#f1f5f9",
+			"title_color": "#0f172a",
+			"subtitle_color": "#334155",
+			"min_height": 420
+		}
+	},
+	{
+		"id": "bold-dark",
+		"label": "Bold dark",
+		"settings": {
+			"layout_variant": "card-over-image",
+			"content_box": true,
+			"content_box_bg": "rgba(15,23,42,0.72)",
+			"title_color": "#ffffff",
+			"subtitle_color": "#e2e8f0",
+			"bg_type": "color",
+			"bg_color": "#0f172a",
+			"min_height": 460
+		}
+	},
+	{
+		"id": "soft-minimal",
+		"label": "Soft minimal",
+		"settings": {
+			"layout_variant": "centered",
+			"bg_type": "gradient",
+			"gradient_type": "radial",
+			"gradient_color_a": "#dbeafe",
+			"gradient_color_b": "#f5f3ff",
+			"title_color": "#172554",
+			"subtitle_color": "#334155",
+			"button_bg_color": "#2563eb",
+			"button_text_color": "#ffffff",
+			"min_height": 380
+		}
+	}
+]

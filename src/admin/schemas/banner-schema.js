@@ -1,10 +1,130 @@
-export const manifest = { widget: 'banner', type: 'xcopb/gb-banner', aliases: [ 'xcosb/gb-banner' ], controls: [ 'text', 'textarea', 'toggle', 'color', 'gradient', 'media', 'select', 'number', 'dimensions', 'choose', 'visibility', 'code', 'slider', 'border', 'box-shadow' ] };
-const c = ( id, type, label, tab, section, extra = {} ) => ( { id, type, label, tab, section, ...extra } );
-export const BANNER_SCHEMA = { type: manifest.type, version: 1, manifest,
-	sections: [ { id: 'content', tab: 'content', title: 'Content', defaultOpen: true }, { id: 'action', tab: 'content', title: 'Call to action' }, { id: 'background', tab: 'style', title: 'Background', defaultOpen: true }, { id: 'overlay', tab: 'style', title: 'Overlay' }, { id: 'layout', tab: 'style', title: 'Content layout' }, { id: 'spacing', tab: 'style', title: 'Spacing' }, { id: 'visibility', tab: 'advanced', title: 'Responsive visibility' }, { id: 'attributes', tab: 'advanced', title: 'Attributes' } ],
+/**
+ * Hero Banner settings schema. Saved values remain one JSON object on the
+ * existing `xcopb/gb-banner` block so older pages keep rendering unchanged.
+ *
+ * @package Xcodesol_Page_Builder
+ */
+import { __ } from '@wordpress/i18n';
+import bannerDefaults from '../../../includes/data/hero-banner-defaults.json';
+
+export const BANNER_DEFAULTS = bannerDefaults;
+export const manifest = {
+	widget: 'banner',
+	type: 'xcopb/gb-banner',
+	aliases: [ 'xcosb/gb-banner' ],
+	controls: [ 'text', 'textarea', 'toggle', 'color', 'media', 'select', 'number', 'choose', 'code', 'slider', 'repeater', 'banner-preset' ],
+};
+
+const control = ( id, type, label, tab, section, extra = {} ) => ( { id, type, label, tab, section, ...extra } );
+const optionList = ( values ) => values.map( ( value ) => ( { value, label: value.replace( /-/g, ' ' ).replace( /^\w/, ( char ) => char.toUpperCase() ) } ) );
+const buttonSchema = [
+	{ id: 'label', type: 'text', label: __( 'Button label', 'xcodesol-page-builder' ), default: '' },
+	{ id: 'url', type: 'text', label: __( 'Link URL', 'xcodesol-page-builder' ), default: '#' },
+	{ id: 'style', type: 'select', label: __( 'Button style', 'xcodesol-page-builder' ), default: 'primary', options: optionList( [ 'primary', 'secondary', 'outline', 'ghost' ] ) },
+	{ id: 'new_tab', type: 'toggle', label: __( 'Open in a new tab', 'xcodesol-page-builder' ), default: false },
+	{ id: 'nofollow', type: 'toggle', label: __( 'Add nofollow', 'xcodesol-page-builder' ), default: false },
+];
+
+const slideSchema = [
+	{ id: 'type', type: 'select', label: __( 'Slide type', 'xcodesol-page-builder' ), default: 'custom', options: optionList( [ 'custom', 'linked-post', 'dynamic' ] ) },
+	{ id: 'badge', type: 'text', label: __( 'Eyebrow / badge', 'xcodesol-page-builder' ), default: '' },
+	{ id: 'title', type: 'text', label: __( 'Heading', 'xcodesol-page-builder' ), default: __( 'Your headline', 'xcodesol-page-builder' ) },
+	{ id: 'post_id', type: 'number', label: __( 'Linked post ID', 'xcodesol-page-builder' ), default: 0, min: 0, condition: { type: 'linked-post' } },
+	{ id: 'dynamic_post_id', type: 'number', label: __( 'Dynamic post ID', 'xcodesol-page-builder' ), default: 0, min: 0, condition: { type: 'dynamic' } },
+	{ id: 'title_tag', type: 'select', label: __( 'Heading HTML tag', 'xcodesol-page-builder' ), default: 'h2', options: optionList( [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div' ] ) },
+	{ id: 'subtitle', type: 'textarea', label: __( 'Description', 'xcodesol-page-builder' ), rows: 3, default: '', help: __( 'Dynamic tags: {post_title}, {post_excerpt}, {post_url}, {post_date}, {author}, {category}.', 'xcodesol-page-builder' ) },
+	{ id: 'background_type', type: 'select', label: __( 'Slide background', 'xcodesol-page-builder' ), default: 'inherit', options: optionList( [ 'inherit', 'color', 'image', 'video' ] ) },
+	{ id: 'background_color', type: 'color', label: __( 'Background color', 'xcodesol-page-builder' ), default: '' },
+	{ id: 'image', type: 'media', label: __( 'Background image', 'xcodesol-page-builder' ), allowedTypes: [ 'image' ], default: '' },
+	{ id: 'image_alt', type: 'text', label: __( 'Image alt text', 'xcodesol-page-builder' ), default: '' },
+	{ id: 'mobile_image', type: 'media', label: __( 'Mobile image', 'xcodesol-page-builder' ), allowedTypes: [ 'image' ], default: '' },
+	{ id: 'video', type: 'media', label: __( 'Background video', 'xcodesol-page-builder' ), allowedTypes: [ 'video' ], default: '' },
+	{ id: 'link', type: 'text', label: __( 'Whole-slide link', 'xcodesol-page-builder' ), default: '' },
+	{ id: 'buttons', type: 'repeater', label: __( 'Buttons (up to 3)', 'xcodesol-page-builder' ), addLabel: __( 'Add button', 'xcodesol-page-builder' ), itemSchema: buttonSchema, default: [], maxItems: 3 },
+];
+
+export const BANNER_SCHEMA = {
+	type: manifest.type,
+	version: 2,
+	manifest,
+	sections: [
+		{ id: 'preset', tab: 'content', title: __( 'Quick start presets', 'xcodesol-page-builder' ), defaultOpen: true },
+		{ id: 'source', tab: 'content', title: __( 'Content source', 'xcodesol-page-builder' ), defaultOpen: true },
+		{ id: 'slides', tab: 'content', title: __( 'Slides', 'xcodesol-page-builder' ), defaultOpen: true, condition: { source_mode: [ 'custom', 'mixed' ] } },
+		{ id: 'post-query', tab: 'content', title: __( 'Posts query', 'xcodesol-page-builder' ), condition: { source_mode: [ 'posts', 'mixed' ] } },
+		{ id: 'slider', tab: 'content', title: __( 'Slider behavior', 'xcodesol-page-builder' ) },
+		{ id: 'background', tab: 'style', title: __( 'Default background', 'xcodesol-page-builder' ), defaultOpen: true },
+		{ id: 'layout', tab: 'style', title: __( 'Layout and placement', 'xcodesol-page-builder' ) },
+		{ id: 'typography', tab: 'style', title: __( 'Typography and colors', 'xcodesol-page-builder' ) },
+		{ id: 'spacing', tab: 'style', title: __( 'Spacing and shape', 'xcodesol-page-builder' ) },
+		{ id: 'visibility', tab: 'advanced', title: __( 'Responsive visibility', 'xcodesol-page-builder' ) },
+		{ id: 'attributes', tab: 'advanced', title: __( 'Attributes and CSS', 'xcodesol-page-builder' ) },
+	],
 	controls: [
-		c( 'title', 'text', 'Title', 'content', 'content' ), c( 'subtitle', 'textarea', 'Description', 'content', 'content', { rows: 3 } ), c( 'title_source', 'select', 'Title source', 'content', 'content', { default: 'custom', options: [ { value: 'custom', label: 'Custom text' }, { value: 'archive_title', label: 'Archive title' } ] } ),
-		c( 'show_button', 'toggle', 'Show button', 'content', 'action', { default: true } ), c( 'button_text', 'text', 'Button label', 'content', 'action', { condition: { show_button: true } } ), c( 'link', 'text', 'Button link', 'content', 'action', { condition: { show_button: true }, placeholder: 'https://example.com' } ),
-		c( 'bg_type', 'select', 'Background type', 'style', 'background', { default: 'color', options: [ 'color', 'gradient', 'image', 'video' ].map( value => ( { value, label: value[ 0 ].toUpperCase() + value.slice( 1 ) } ) ) } ), c( 'bg_color', 'color', 'Background color', 'style', 'background', { default: '#2563eb', condition: { bg_type: 'color' } } ), c( 'gradient_color_a', 'color', 'First color', 'style', 'background', { condition: { bg_type: 'gradient' } } ), c( 'gradient_color_b', 'color', 'Second color', 'style', 'background', { condition: { bg_type: 'gradient' } } ), c( 'gradient_type', 'select', 'Gradient shape', 'style', 'background', { default: 'linear', condition: { bg_type: 'gradient' }, options: [ { value: 'linear', label: 'Linear' }, { value: 'radial', label: 'Radial' } ] } ), c( 'gradient_angle', 'number', 'Gradient angle', 'style', 'background', { min: 0, max: 360, default: 180, condition: { bg_type: 'gradient', gradient_type: 'linear' } } ), c( 'bg_image', 'media', 'Background image', 'style', 'background', { allowedTypes: [ 'image' ], condition: { bg_type: 'image' } } ), c( 'bg_video', 'media', 'Background video', 'style', 'background', { allowedTypes: [ 'video' ], condition: { bg_type: 'video' } } ), c( 'bg_size', 'select', 'Image fit', 'style', 'background', { default: 'cover', condition: { bg_type: 'image' }, options: [ 'cover', 'contain', 'auto' ].map( value => ( { value, label: value[ 0 ].toUpperCase() + value.slice( 1 ) } ) ) } ), c( 'bg_position', 'select', 'Image position', 'style', 'background', { default: 'center center', condition: { bg_type: 'image' }, options: [ 'center center', 'top center', 'bottom center', 'left center', 'right center' ].map( value => ( { value, label: value } ) ) } ), c( 'overlay_color', 'color', 'Overlay color', 'style', 'overlay', { condition: { bg_type: [ 'image', 'video' ] } } ), c( 'overlay_opacity', 'slider', 'Overlay strength', 'style', 'overlay', { min: 0, max: 100, default: 45, unit: '%', condition: { bg_type: [ 'image', 'video' ] } } ),
-		c( 'align', 'choose', 'Text alignment', 'style', 'layout', { default: 'center', options: [ 'left', 'center', 'right' ].map( value => ( { value, label: value[ 0 ].toUpperCase() + value.slice( 1 ) } ) ) } ), c( 'content_position_x', 'select', 'Horizontal placement', 'style', 'layout', { default: 'center', options: [ 'left', 'center', 'right' ].map( value => ( { value, label: value[ 0 ].toUpperCase() + value.slice( 1 ) } ) ) } ), c( 'content_position_y', 'select', 'Vertical placement', 'style', 'layout', { default: 'center', options: [ 'top', 'center', 'bottom' ].map( value => ( { value, label: value[ 0 ].toUpperCase() + value.slice( 1 ) } ) ) } ), c( 'min_height', 'number', 'Minimum height (px)', 'style', 'layout', { min: 0, max: 1600, default: 320 } ), c( 'padding_top', 'number', 'Top padding (px)', 'style', 'spacing', { min: 0, max: 300 } ), c( 'padding_bottom', 'number', 'Bottom padding (px)', 'style', 'spacing', { min: 0, max: 300 } ), c( 'padding_left', 'number', 'Side padding (px)', 'style', 'spacing', { min: 0, max: 300 } ), c( 'padding_right', 'number', 'Right padding (px)', 'style', 'spacing', { min: 0, max: 300 } ), c( 'border_radius', 'number', 'Corner roundness (px)', 'style', 'spacing', { min: 0, max: 200 } ), c( 'hide_desktop', 'toggle', 'Hide on desktop', 'advanced', 'visibility' ), c( 'hide_tablet', 'toggle', 'Hide on tablet', 'advanced', 'visibility' ), c( 'hide_mobile', 'toggle', 'Hide on mobile', 'advanced', 'visibility' ), c( 'css_id', 'text', 'CSS ID', 'advanced', 'attributes' ), c( 'css_class', 'text', 'CSS classes', 'advanced', 'attributes' ),
-	] };
+		control( 'banner_preset', 'banner-preset', __( 'Choose a preset', 'xcodesol-page-builder' ), 'content', 'preset' ),
+		control( 'source_mode', 'select', __( 'Content source', 'xcodesol-page-builder' ), 'content', 'source', { default: 'custom', options: [ [ 'custom', __( 'Custom slides', 'xcodesol-page-builder' ) ], [ 'posts', __( 'Posts query', 'xcodesol-page-builder' ) ], [ 'mixed', __( 'Custom slides + posts', 'xcodesol-page-builder' ) ] ].map( ( [ value, label ] ) => ( { value, label } ) ) } ),
+		control( 'slides', 'repeater', __( 'Slides', 'xcodesol-page-builder' ), 'content', 'slides', { addLabel: __( 'Add slide', 'xcodesol-page-builder' ), itemSchema: slideSchema, default: BANNER_DEFAULTS.slides, maxItems: 20 } ),
+		control( 'posts_post_type', 'text', __( 'Post type slug', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'post', help: __( 'Use post, page, or the slug of a public custom post type.', 'xcodesol-page-builder' ) } ),
+		control( 'posts_count', 'number', __( 'Number of posts', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 3, min: 1, max: 20 } ),
+		control( 'posts_offset', 'number', __( 'Offset', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 0, min: 0, max: 500 } ),
+		control( 'posts_orderby', 'select', __( 'Order by', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'date', options: optionList( [ 'date', 'title', 'rand', 'menu_order', 'comment_count' ] ) } ),
+		control( 'posts_order', 'select', __( 'Order', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'DESC', options: [ { value: 'DESC', label: __( 'Descending', 'xcodesol-page-builder' ) }, { value: 'ASC', label: __( 'Ascending', 'xcodesol-page-builder' ) } ] } ),
+		control( 'posts_category', 'number', __( 'Category ID', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 0, min: 0 } ),
+		control( 'posts_tag', 'number', __( 'Tag ID', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 0, min: 0 } ),
+		control( 'posts_author', 'number', __( 'Author ID', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 0, min: 0 } ),
+		control( 'posts_include_ids', 'text', __( 'Include post IDs', 'xcodesol-page-builder' ), 'content', 'post-query', { placeholder: '12, 18, 24' } ),
+		control( 'posts_exclude_ids', 'text', __( 'Exclude post IDs', 'xcodesol-page-builder' ), 'content', 'post-query', { placeholder: '5, 9' } ),
+		control( 'posts_has_image', 'toggle', __( 'Only posts with a featured image', 'xcodesol-page-builder' ), 'content', 'post-query' ),
+		control( 'posts_sticky_only', 'toggle', __( 'Sticky posts only', 'xcodesol-page-builder' ), 'content', 'post-query' ),
+		control( 'query_title_field', 'select', __( 'Heading field', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'title', options: optionList( [ 'title', 'excerpt', 'category' ] ) } ),
+		control( 'query_description_field', 'select', __( 'Description field', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'excerpt', options: optionList( [ 'excerpt', 'content', 'date', 'author', 'category', 'none' ] ) } ),
+		control( 'query_image_field', 'select', __( 'Image field', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'featured_image', options: optionList( [ 'featured_image', 'category_image', 'none' ] ) } ),
+		control( 'query_link_field', 'select', __( 'Link field', 'xcodesol-page-builder' ), 'content', 'post-query', { default: 'permalink', options: optionList( [ 'permalink', 'none' ] ) } ),
+		control( 'query_empty_message', 'text', __( 'No results message', 'xcodesol-page-builder' ), 'content', 'post-query', { default: BANNER_DEFAULTS.query_empty_message } ),
+		control( 'fallback_image', 'media', __( 'Fallback image', 'xcodesol-page-builder' ), 'content', 'post-query', { allowedTypes: [ 'image' ] } ),
+		control( 'slider_enabled', 'toggle', __( 'Enable slider', 'xcodesol-page-builder' ), 'content', 'slider', { default: false } ),
+		control( 'loop', 'toggle', __( 'Loop slides', 'xcodesol-page-builder' ), 'content', 'slider', { default: true, condition: { slider_enabled: true } } ),
+		control( 'transition', 'select', __( 'Transition', 'xcodesol-page-builder' ), 'content', 'slider', { default: 'slide', options: optionList( [ 'slide', 'fade', 'zoom' ] ) } ),
+		control( 'autoplay', 'toggle', __( 'Autoplay', 'xcodesol-page-builder' ), 'content', 'slider', { default: false, condition: { slider_enabled: true } } ),
+		control( 'autoplay_delay', 'number', __( 'Delay (ms)', 'xcodesol-page-builder' ), 'content', 'slider', { default: 5000, min: 1000, max: 30000, step: 500, condition: { autoplay: true } } ),
+		control( 'pause_on_hover', 'toggle', __( 'Pause on hover and focus', 'xcodesol-page-builder' ), 'content', 'slider', { default: true, condition: { autoplay: true } } ),
+		control( 'pause_on_interaction', 'toggle', __( 'Pause after user interaction', 'xcodesol-page-builder' ), 'content', 'slider', { default: true, condition: { autoplay: true } } ),
+		control( 'show_arrows', 'toggle', __( 'Show previous / next arrows', 'xcodesol-page-builder' ), 'content', 'slider', { default: true, condition: { slider_enabled: true } } ),
+		control( 'pagination', 'select', __( 'Pagination style', 'xcodesol-page-builder' ), 'content', 'slider', { default: 'dots', condition: { slider_enabled: true }, options: optionList( [ 'none', 'dots', 'numbers', 'fraction', 'progress' ] ) } ),
+		control( 'bg_type', 'select', __( 'Background type', 'xcodesol-page-builder' ), 'style', 'background', { default: 'color', options: optionList( [ 'color', 'gradient', 'image', 'video' ] ) } ),
+		control( 'bg_color', 'color', __( 'Background color', 'xcodesol-page-builder' ), 'style', 'background', { default: '#2563eb', condition: { bg_type: 'color' } } ),
+		control( 'gradient_color_a', 'color', __( 'First gradient color', 'xcodesol-page-builder' ), 'style', 'background', { condition: { bg_type: 'gradient' } } ),
+		control( 'gradient_color_b', 'color', __( 'Second gradient color', 'xcodesol-page-builder' ), 'style', 'background', { condition: { bg_type: 'gradient' } } ),
+		control( 'gradient_type', 'select', __( 'Gradient type', 'xcodesol-page-builder' ), 'style', 'background', { default: 'linear', condition: { bg_type: 'gradient' }, options: optionList( [ 'linear', 'radial' ] ) } ),
+		control( 'gradient_angle', 'number', __( 'Gradient angle', 'xcodesol-page-builder' ), 'style', 'background', { min: 0, max: 360, default: 180, condition: { bg_type: 'gradient', gradient_type: 'linear' } } ),
+		control( 'bg_image', 'media', __( 'Background image', 'xcodesol-page-builder' ), 'style', 'background', { allowedTypes: [ 'image' ], condition: { bg_type: 'image' } } ),
+		control( 'bg_video', 'media', __( 'Background video', 'xcodesol-page-builder' ), 'style', 'background', { allowedTypes: [ 'video' ], condition: { bg_type: 'video' } } ),
+		control( 'bg_size', 'select', __( 'Image fit', 'xcodesol-page-builder' ), 'style', 'background', { default: 'cover', condition: { bg_type: 'image' }, options: optionList( [ 'cover', 'contain', 'auto' ] ) } ),
+		control( 'bg_position', 'select', __( 'Image position', 'xcodesol-page-builder' ), 'style', 'background', { default: 'center center', condition: { bg_type: 'image' }, options: optionList( [ 'left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom' ] ) } ),
+		control( 'overlay_color', 'color', __( 'Overlay color', 'xcodesol-page-builder' ), 'style', 'background' ),
+		control( 'overlay_opacity', 'slider', __( 'Overlay strength', 'xcodesol-page-builder' ), 'style', 'background', { min: 0, max: 100, default: 40, unit: '%' } ),
+		control( 'layout_variant', 'select', __( 'Layout variant', 'xcodesol-page-builder' ), 'style', 'layout', { default: 'centered', options: optionList( [ 'centered', 'left', 'split-left', 'split-right', 'card-over-image' ] ) } ),
+		control( 'align', 'choose', __( 'Text alignment', 'xcodesol-page-builder' ), 'style', 'layout', { default: 'center', options: optionList( [ 'left', 'center', 'right' ] ) } ),
+		control( 'content_position_x', 'select', __( 'Horizontal position', 'xcodesol-page-builder' ), 'style', 'layout', { default: 'center', options: optionList( [ 'left', 'center', 'right' ] ) } ),
+		control( 'content_position_y', 'select', __( 'Vertical position', 'xcodesol-page-builder' ), 'style', 'layout', { default: 'center', options: optionList( [ 'top', 'center', 'bottom' ] ) } ),
+		control( 'min_height', 'number', __( 'Minimum height (px)', 'xcodesol-page-builder' ), 'style', 'layout', { min: 180, max: 1600, default: 400, responsive: true } ),
+		control( 'padding_top', 'number', __( 'Top padding (px)', 'xcodesol-page-builder' ), 'style', 'spacing', { min: 0, max: 300, default: 80, responsive: true } ),
+		control( 'padding_bottom', 'number', __( 'Bottom padding (px)', 'xcodesol-page-builder' ), 'style', 'spacing', { min: 0, max: 300, default: 80, responsive: true } ),
+		control( 'padding_left', 'number', __( 'Left padding (px)', 'xcodesol-page-builder' ), 'style', 'spacing', { min: 0, max: 300, default: 24, responsive: true } ),
+		control( 'padding_right', 'number', __( 'Right padding (px)', 'xcodesol-page-builder' ), 'style', 'spacing', { min: 0, max: 300, default: 24, responsive: true } ),
+		control( 'title_color', 'color', __( 'Heading color', 'xcodesol-page-builder' ), 'style', 'typography', { default: '#ffffff' } ),
+		control( 'subtitle_color', 'color', __( 'Description color', 'xcodesol-page-builder' ), 'style', 'typography', { default: '#ffffff' } ),
+		control( 'title_font_size', 'number', __( 'Heading size (px)', 'xcodesol-page-builder' ), 'style', 'typography', { min: 14, max: 120, default: 48, responsive: true } ),
+		control( 'subtitle_font_size', 'number', __( 'Description size (px)', 'xcodesol-page-builder' ), 'style', 'typography', { min: 10, max: 48, default: 18, responsive: true } ),
+		control( 'border_radius', 'number', __( 'Corner radius (px)', 'xcodesol-page-builder' ), 'style', 'spacing', { min: 0, max: 200, default: 12, responsive: true } ),
+		control( 'content_box', 'toggle', __( 'Use content box', 'xcodesol-page-builder' ), 'style', 'layout' ),
+		control( 'content_box_bg', 'text', __( 'Content box color', 'xcodesol-page-builder' ), 'style', 'layout', { default: 'rgba(0,0,0,0.35)', condition: { content_box: true } } ),
+		control( 'content_box_padding', 'number', __( 'Content box padding (px)', 'xcodesol-page-builder' ), 'style', 'layout', { default: 28, min: 0, max: 120, condition: { content_box: true } } ),
+		control( 'hide_desktop', 'toggle', __( 'Hide on desktop', 'xcodesol-page-builder' ), 'advanced', 'visibility' ),
+		control( 'hide_tablet', 'toggle', __( 'Hide on tablet', 'xcodesol-page-builder' ), 'advanced', 'visibility' ),
+		control( 'hide_mobile', 'toggle', __( 'Hide on mobile', 'xcodesol-page-builder' ), 'advanced', 'visibility' ),
+		control( 'css_id', 'text', __( 'CSS ID', 'xcodesol-page-builder' ), 'advanced', 'attributes' ),
+		control( 'css_class', 'text', __( 'CSS classes', 'xcodesol-page-builder' ), 'advanced', 'attributes' ),
+		control( 'custom_css', 'code', __( 'Scoped custom CSS', 'xcodesol-page-builder' ), 'advanced', 'attributes', { placeholder: '.selector { color: inherit; }' } ),
+	],
+};

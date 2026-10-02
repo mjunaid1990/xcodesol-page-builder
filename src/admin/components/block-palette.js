@@ -8,6 +8,7 @@ import { useState, useMemo, useEffect, useRef } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { createBlock, getBlockTypes, serialize } from '@wordpress/blocks';
 import { useDraggable } from '@dnd-kit/core';
+import { BANNER_DEFAULTS } from '../schemas/banner-schema';
 import {
 	IconElements,
 	IconLayers,
@@ -99,7 +100,7 @@ export const GENERAL_BLOCKS = [
 	{
 		type: 'xcopb/gb-banner',
 		label: __( 'Hero Banner', 'xcodesol-page-builder' ),
-		defaults: { title: __( 'Designed for Creators', 'xcodesol-page-builder' ), subtitle: __( 'Take visual control over your website with effortless drag & drop.', 'xcodesol-page-builder' ), link: '', button_text: __( 'Get Started', 'xcodesol-page-builder' ), align: 'center', background: '#4f46e5', text_color: '#ffffff', padding: 80 },
+		defaults: { ...BANNER_DEFAULTS, slides: BANNER_DEFAULTS.slides.map( ( slide ) => ( { ...slide, title: __( 'Designed for creators', 'xcodesol-page-builder' ), subtitle: __( 'Take visual control over your website with effortless drag and drop.', 'xcodesol-page-builder' ) } ) ) },
 		icon: 'dashicons-megaphone',
 		category: 'general',
 		description: __( 'Hero section with CTA and rich backgrounds.', 'xcodesol-page-builder' ),
@@ -455,6 +456,8 @@ export default function BlockPalette( {
 	onDeleteBlockIndex,
 	onAdd,
 	onAddPreset,
+	sidebarPinned = false,
+	onTogglePin,
 } ) {
 	const [ activeTab, setActiveTab ] = useState( 'elements' );
 	const [ search, setSearch ] = useState( '' );
@@ -629,6 +632,16 @@ export default function BlockPalette( {
 					<span className="xsb-palette-tab__label">{ __( 'Library', 'xcodesol-page-builder' ) }</span>
 				</button>
 			</div>
+			<button
+				type="button"
+				className={ `xsb-palette-pin${ sidebarPinned ? ' is-active' : '' }` }
+				aria-label={ sidebarPinned ? __( 'Allow panel to hide when pointer leaves', 'xcodesol-page-builder' ) : __( 'Keep panel open', 'xcodesol-page-builder' ) }
+				aria-pressed={ sidebarPinned }
+				title={ sidebarPinned ? __( 'Unpin panel', 'xcodesol-page-builder' ) : __( 'Keep panel open', 'xcodesol-page-builder' ) }
+				onClick={ onTogglePin }
+			>
+				<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M7 3h6l-1 4 3 3v1H5v-1l3-3-1-4ZM10 11v6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+			</button>
 
 			{/* ELEMENTS TAB */}
 			{ activeTab === 'elements' && (
@@ -661,7 +674,7 @@ export default function BlockPalette( {
 						) }
 					</div>
 
-					<div className="xsb-palette-scroll">
+					<div className="xsb-widget-scroll-area" role="region" tabIndex={ 0 } aria-label={ __( 'Available widgets', 'xcodesol-page-builder' ) }>
 						{/* Favorites Section: single horizontal row of small icon chips (36px) */}
 						{ favoriteBlocksList.length > 0 && ! search && (
 							<div className="xsb-palette-favs-row">

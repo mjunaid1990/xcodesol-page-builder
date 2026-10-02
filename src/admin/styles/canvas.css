@@ -1530,3 +1530,14 @@
 
 .xsb-preview-interactive-color:hover { color: var(--xsb-preview-hover-color) !important; }
 .xsb-preview-interactive-filter:hover { filter: var(--xsb-preview-hover-filter) !important; }
+
+/* Hero Banner editor preview uses the same media and stacking layers as the frontend. */
+.xsb-bp.xsb-banner { display: flex; flex-direction: column; box-sizing: border-box; isolation: isolate; }
+.xsb-bp .xsb-banner-bg,
+.xsb-bp .xsb-banner-video { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.xsb-bp .xsb-banner-content { position: relative; z-index: 2; }
+.xsb-bp .xsb-banner-overlay { z-index: 1; }
+.xsb-bp .xsb-banner-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.xsb-bp .xsb-banner-source-tag { position: absolute; z-index: 4; top: 12px; right: 12px; padding: 5px 9px; border-radius: 999px; background: rgba(15,23,42,.76); color: #fff; font-size: 10px; }
+.xsb-bp .xsb-banner-title { margin: 0 0 12px; }
+.xsb-bp .xsb-banner-subtitle { margin: 0 0 18px; }

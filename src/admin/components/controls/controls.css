@@ -2287,6 +2287,12 @@ html[data-theme='dark'] .xsb-sheet-in {
 	cursor: pointer;
 }
 
+.xsb-rich-text-toolbar button svg {
+	display: block;
+	width: 15px;
+	height: 15px;
+}
+
 .xsb-rich-text-toolbar button:hover,
 .xsb-rich-text-toolbar button:focus-visible {
 	border-color: var(--xsb-line, #dfe5ef);
@@ -2337,3 +2343,13 @@ html[data-theme='dark'] .xsb-sheet-in {
 	content: attr(data-placeholder);
 	pointer-events: none;
 }
+
+.xsb-repeater-item { margin: 8px 0; border: 1px solid var(--xsb-border, #e2e8f0); border-radius: 9px; background: #fff; }
+.xsb-repeater-item__summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 5px 8px; cursor: pointer; font-size: 12px; font-weight: 600; list-style: none; }
+.xsb-repeater-item__summary::-webkit-details-marker { display: none; }
+.xsb-repeater-item__actions { display: inline-flex; gap: 3px; }
+.xsb-repeater-item__actions button { display: inline-grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; }
+.xsb-repeater-item__actions button:hover:not(:disabled) { border-color: #c7c4ff; background: #f4f3ff; color: #5048c8; }
+.xsb-repeater-item__actions button:disabled { opacity: .38; cursor: not-allowed; }
+.xsb-repeater-item__actions button:last-child:hover:not(:disabled) { border-color: #fecaca; background: #fff1f2; color: #be123c; }
+.xsb-repeater-item__body { padding: 8px 10px 10px; border-top: 1px solid #eef0f5; }

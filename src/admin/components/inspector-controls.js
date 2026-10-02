@@ -30,6 +30,7 @@
 
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import heroBannerPresets from '../../../includes/data/hero-banner-presets.json';
 import { renderControl, hasControl, UnitSelect } from './controls/index';
 import SharedColorControl from './controls/color';
 import SharedSpacingBoxControl from './controls/spacing-box';
@@ -51,6 +52,7 @@ import {
 	IconElements,
 	IconCheck,
 	IconPlus,
+	IconCopy,
 	IconTrash,
 	IconImage,
 	IconVideo,
@@ -280,16 +282,40 @@ export function TextareaControl( {
  * @param {Object} props Control props.
  * @return {JSX.Element} Rich text control.
  */
+function RichTextToolIcon( { name } ) {
+	const common = { width: 15, height: 15, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
+	const lines = ( align = 'left' ) => <><path d="M3 5h14" /><path d="M3 9h14" />{ align === 'center' ? <path d="M5 13h10" /> : align === 'right' ? <path d="M7 13h10" /> : <path d="M3 13h14" />}<path d="M3 17h14" /></>;
+	const icons = {
+		bold: <text x="5" y="15" fill="currentColor" stroke="none" fontFamily="Georgia,serif" fontSize="15" fontWeight="700">B</text>, italic: <text x="6" y="15" fill="currentColor" stroke="none" fontFamily="Georgia,serif" fontSize="15" fontStyle="italic">I</text>,
+		underline: <><text x="5" y="13" fill="currentColor" stroke="none" fontFamily="Georgia,serif" fontSize="14">U</text><path d="M4 17h12" /></>, strikeThrough: <><text x="5" y="14" fill="currentColor" stroke="none" fontFamily="Georgia,serif" fontSize="14">S</text><path d="M3 10h14" /></>,
+		superscript: <><text x="3" y="16" fill="currentColor" stroke="none" fontSize="13">x</text><text x="11" y="9" fill="currentColor" stroke="none" fontSize="9">2</text></>, subscript: <><text x="3" y="13" fill="currentColor" stroke="none" fontSize="13">x</text><text x="11" y="18" fill="currentColor" stroke="none" fontSize="9">2</text></>,
+		insertUnorderedList: <><circle cx="4" cy="5" r=".8" fill="currentColor" /><circle cx="4" cy="10" r=".8" fill="currentColor" /><circle cx="4" cy="15" r=".8" fill="currentColor" /><path d="M8 5h9M8 10h9M8 15h9" /></>,
+		insertOrderedList: <><text x="1" y="7" fill="currentColor" stroke="none" fontSize="6">1.</text><text x="1" y="12" fill="currentColor" stroke="none" fontSize="6">2.</text><text x="1" y="17" fill="currentColor" stroke="none" fontSize="6">3.</text><path d="M8 5h9M8 10h9M8 15h9" /></>,
+		createLink: <><path d="M8 12l4-4" /><path d="M7 14H5a3 3 0 010-6h3M13 6h2a3 3 0 010 6h-3" /></>, unlink: <><path d="M8 12l4-4M7 14H5a3 3 0 01-2-5M13 6h2a3 3 0 012 5" /><path d="M3 3l14 14" /></>,
+		outdent: <><path d="M9 5h8M9 10h8M9 15h8" /><path d="M6 7l-3 3 3 3" /></>, indent: <><path d="M9 5h8M9 10h8M9 15h8" /><path d="M3 7l3 3-3 3" /></>,
+		justifyLeft: lines( 'left' ), justifyCenter: lines( 'center' ), justifyRight: lines( 'right' ),
+		undo: <><path d="M7 7L3 10l4 3" /><path d="M4 10h7a5 5 0 015 5" /></>, redo: <><path d="M13 7l4 3-4 3" /><path d="M16 10H9a5 5 0 00-5 5" /></>,
+		insertHorizontalRule: <><path d="M3 5h14M3 15h14M3 10h14" /></>, removeFormat: <><path d="M3 5h14M10 5v10M7 15h6" /><path d="M15 12l3 3m0-3l-3 3" /></>, source: <><path d="M7 5L2 10l5 5M13 5l5 5-5 5" /></>,
+	};
+	return <svg { ...common }>{ icons[ name ] || icons.source }</svg>;
+}
+
 function RichTextEditorControl( { id, label, value = '', onChange, placeholder = '' } ) {
 	const editorRef = useRef( null );
 	const selectionRef = useRef( null );
 	const [ codeMode, setCodeMode ] = useState( false );
-	const source = String( value || '' );
+	const incomingSource = String( value || '' );
+	const [ source, setSource ] = useState( incomingSource );
+	useEffect( () => setSource( incomingSource ), [ incomingSource ] );
+	const updateSource = ( nextSource ) => {
+		setSource( nextSource );
+		onChange( nextSource );
+	};
 	useEffect( () => {
-		if ( editorRef.current && document.activeElement !== editorRef.current && editorRef.current.innerHTML !== source ) {
+		if ( ! codeMode && editorRef.current && document.activeElement !== editorRef.current && editorRef.current.innerHTML !== source ) {
 			editorRef.current.innerHTML = source;
 		}
-	}, [ source ] );
+	}, [ source, codeMode ] );
 
 	const rememberSelection = () => {
 		const selection = window.getSelection?.();
@@ -316,7 +342,7 @@ function RichTextEditorControl( { id, label, value = '', onChange, placeholder =
 		}
 		document.execCommand( command, false, argument );
 		rememberSelection();
-		onChange( editorRef.current.innerHTML );
+		updateSource( editorRef.current.innerHTML );
 	};
 
 	const tools = [
@@ -351,21 +377,21 @@ function RichTextEditorControl( { id, label, value = '', onChange, placeholder =
 					<option value="blockquote">{ __( 'Quote', 'xcodesol-page-builder' ) }</option>
 					<option value="pre">{ __( 'Preformatted', 'xcodesol-page-builder' ) }</option>
 				</select>
-				{ tools.map( ( [ command, title, text ] ) => (
+				{ tools.map( ( [ command, title ] ) => (
 					<button key={ command } type="button" title={ title } aria-label={ title } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( command ) }>
-						{text}
+						<RichTextToolIcon name={ command } />
 					</button>
 				) ) }
 				<label className="xsb-rich-text-color" title={ __( 'Text color', 'xcodesol-page-builder' ) }>
 					<span className="screen-reader-text">{ __( 'Text color', 'xcodesol-page-builder' ) }</span>
 					<input type="color" aria-label={ __( 'Text color', 'xcodesol-page-builder' ) } defaultValue="#172033" onMouseDown={ rememberSelection } onChange={ ( event ) => runCommand( 'foreColor', event.target.value ) } />
 				</label>
-				<button type="button" title={ __( 'Horizontal rule', 'xcodesol-page-builder' ) } aria-label={ __( 'Horizontal rule', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( 'insertHorizontalRule' ) }>HR</button>
-				<button type="button" title={ __( 'Remove formatting', 'xcodesol-page-builder' ) } aria-label={ __( 'Remove formatting', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( 'removeFormat' ) }>Tx</button>
-				<button type="button" className={ codeMode ? 'is-active' : '' } aria-pressed={ codeMode } title={ __( 'Edit HTML source', 'xcodesol-page-builder' ) } aria-label={ __( 'Edit HTML source', 'xcodesol-page-builder' ) } onClick={ () => setCodeMode( ( mode ) => ! mode ) }>&lt;/&gt;</button>
+				<button type="button" title={ __( 'Horizontal rule', 'xcodesol-page-builder' ) } aria-label={ __( 'Horizontal rule', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( 'insertHorizontalRule' ) }><RichTextToolIcon name="insertHorizontalRule" /></button>
+				<button type="button" title={ __( 'Remove formatting', 'xcodesol-page-builder' ) } aria-label={ __( 'Remove formatting', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => { event.preventDefault(); rememberSelection(); } } onClick={ () => runCommand( 'removeFormat' ) }><RichTextToolIcon name="removeFormat" /></button>
+				<button type="button" className={ codeMode ? 'is-active' : '' } aria-pressed={ codeMode } title={ __( 'Edit HTML source', 'xcodesol-page-builder' ) } aria-label={ __( 'Edit HTML source', 'xcodesol-page-builder' ) } onClick={ () => setCodeMode( ( mode ) => ! mode ) }><RichTextToolIcon name="source" /></button>
 			</div>
 			{ codeMode ? (
-				<textarea id={ id } className="xsb-textarea-input xsb-rich-text-source" aria-label={ __( 'HTML source', 'xcodesol-page-builder' ) } spellCheck={ false } value={ source } onChange={ ( event ) => onChange( event.target.value ) } />
+				<textarea id={ id } className="xsb-textarea-input xsb-rich-text-source" aria-label={ __( 'HTML source', 'xcodesol-page-builder' ) } spellCheck={ false } value={ source } onChange={ ( event ) => updateSource( event.target.value ) } />
 			) : (
 				<div
 					id={ id }
@@ -378,7 +404,7 @@ function RichTextEditorControl( { id, label, value = '', onChange, placeholder =
 					suppressContentEditableWarning
 					onMouseUp={ rememberSelection }
 					onKeyUp={ rememberSelection }
-					onInput={ () => { rememberSelection(); onChange( editorRef.current?.innerHTML || '' ); } }
+					onInput={ () => { rememberSelection(); updateSource( editorRef.current?.innerHTML || '' ); } }
 				/>
 			) }
 		</div>
@@ -1387,16 +1413,26 @@ export function TypographyGroup( {
 /**
  * 16. Repeater Control
  */
+
 export function RepeaterControl( {
 	label,
 	value = [],
 	onChange,
 	itemSchema = [],
 	addLabel = __( 'Add Item', 'xcodesol-page-builder' ),
+	maxItems = 0,
 } ) {
 	const items = Array.isArray( value ) ? value : [];
+	const moveItem = ( index, offset ) => {
+		const nextIndex = index + offset;
+		if ( nextIndex < 0 || nextIndex >= items.length ) return;
+		const next = [ ...items ];
+		[ next[ index ], next[ nextIndex ] ] = [ next[ nextIndex ], next[ index ] ];
+		onChange( next );
+	};
 
 	const addItem = () => {
+		if ( maxItems && items.length >= maxItems ) return;
 		const newItem = {};
 		itemSchema.forEach( ( f ) => {
 			newItem[ f.id ] = f.default ?? '';
@@ -1414,6 +1450,13 @@ export function RepeaterControl( {
 		onChange( items.filter( ( _, i ) => i !== idx ) );
 	};
 
+	const duplicateItem = ( idx ) => {
+		if ( maxItems && items.length >= maxItems ) return;
+		const next = [ ...items ];
+		next.splice( idx + 1, 0, { ...items[ idx ] } );
+		onChange( next );
+	};
+
 	return (
 		<div className="xsb-control-field xsb-repeater-field">
 			<div className="xsb-control-label-wrap">
@@ -1421,6 +1464,7 @@ export function RepeaterControl( {
 				<button
 					type="button"
 					className="xsb-btn xsb-btn--sm"
+					disabled={ !! maxItems && items.length >= maxItems }
 					style={ { fontSize: '10.5px', padding: '2px 6px' } }
 					onClick={ addItem }
 				>
@@ -1430,37 +1474,22 @@ export function RepeaterControl( {
 			</div>
 
 			{ items.map( ( item, i ) => (
-				<div
-					key={ i }
-					style={ {
-						padding: '8px',
-						border: '1px solid var(--xsb-line)',
-						borderRadius: '6px',
-						background: 'var(--xsb-canvas)',
-						marginBottom: '6px',
-					} }
-				>
-					<div style={ { display: 'flex', justifyContent: 'space-between', marginBottom: '6px' } }>
-						<span style={ { fontSize: '11px', fontWeight: 600 } }>
-							#{ i + 1 }
+				<details className="xsb-repeater-item" key={ item.id || i } defaultOpen={ i === 0 }>
+					<summary className="xsb-repeater-item__summary">
+						<span>{ `${ i + 1 }. ${ item.title || item.label || label }` }</span>
+						<span className="xsb-repeater-item__actions">
+							<button type="button" title={ __( 'Move up', 'xcodesol-page-builder' ) } aria-label={ __( 'Move up', 'xcodesol-page-builder' ) } disabled={ i === 0 } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); moveItem( i, -1 ); } }><IconArrowUp width={ 12 } height={ 12 } /></button>
+							<button type="button" title={ __( 'Move down', 'xcodesol-page-builder' ) } aria-label={ __( 'Move down', 'xcodesol-page-builder' ) } disabled={ i === items.length - 1 } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); moveItem( i, 1 ); } }><IconArrowDown width={ 12 } height={ 12 } /></button>
+							<button type="button" title={ __( 'Duplicate', 'xcodesol-page-builder' ) } aria-label={ __( 'Duplicate', 'xcodesol-page-builder' ) } disabled={ !! maxItems && items.length >= maxItems } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); duplicateItem( i ); } }><IconCopy width={ 12 } height={ 12 } /></button>
+							<button type="button" title={ __( 'Delete', 'xcodesol-page-builder' ) } aria-label={ __( 'Delete', 'xcodesol-page-builder' ) } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); deleteItem( i ); } }><IconTrash width={ 12 } height={ 12 } /></button>
 						</span>
-						<button
-							type="button"
-							onClick={ () => deleteItem( i ) }
-							style={ { border: 'none', background: 'transparent', color: 'var(--xsb-danger)', cursor: 'pointer', padding: 0 } }
-						>
-							&times;
-						</button>
+					</summary>
+					<div className="xsb-repeater-item__body">
+						{ itemSchema.map( ( field ) => (
+							<DynamicControlRenderer key={ field.id } control={ field } settings={ item } onUpdate={ ( k, v ) => updateItem( i, { [ k ]: v } ) } />
+						) ) }
 					</div>
-					{ itemSchema.map( ( field ) => (
-						<DynamicControlRenderer
-							key={ field.id }
-							control={ field }
-							settings={ item }
-							onUpdate={ ( k, v ) => updateItem( i, { [ k ]: v } ) }
-						/>
-					) ) }
-				</div>
+				</details>
 			) ) }
 		</div>
 	);
@@ -1813,7 +1842,20 @@ export function DynamicControlRenderer( {
 		case 'typography':
 			field = <TypographyGroup { ...commonProps } />; break;
 		case 'repeater':
-			field = <RepeaterControl { ...commonProps } itemSchema={ control.itemSchema } addLabel={ control.addLabel } />; break;
+			field = <RepeaterControl { ...commonProps } itemSchema={ control.itemSchema } addLabel={ control.addLabel } maxItems={ control.maxItems } />; break;
+		case 'banner-preset':
+			field = (
+				<div className="xsb-banner-preset-control">
+					<select className="xsb-select-input" value="" aria-label={ control.label } onChange={ ( event ) => {
+						const preset = heroBannerPresets.find( ( item ) => item.id === event.target.value );
+						if ( preset ) onUpdate( { ...settings, ...preset.settings, banner_preset: preset.id } );
+					} }>
+						<option value="" disabled>{ __( 'Select a starting design', 'xcodesol-page-builder' ) }</option>
+						{ heroBannerPresets.map( ( preset ) => <option key={ preset.id } value={ preset.id }>{ __( preset.label, 'xcodesol-page-builder' ) }</option> ) }
+					</select>
+					<p className="xsb-control-help">{ __( 'Applies a starting style while keeping your slide content.', 'xcodesol-page-builder' ) }</p>
+				</div>
+			); break;
 		case 'code':
 			field = <CodeEditorControl { ...commonProps } placeholder={ control.placeholder } />; break;
 		default:
