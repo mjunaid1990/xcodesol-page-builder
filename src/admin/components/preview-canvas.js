@@ -21,7 +21,7 @@ import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS,
 import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/columns';
 import { effectiveForDevice } from '../styles/responsive';
 import StylePopover, { hasStylePopover, SHADOW_VALUES } from './style-popover';
-import { IconPlus, IconLayoutFlex, IconLayoutGrid } from './icons';
+import { IconPlus, IconLayoutFlex, IconLayoutGrid, IconCopy, IconTrash } from './icons';
 
 const SAMPLE = {
 	name: __('Sample Product', 'xcodesol-page-builder'),
@@ -2302,28 +2302,6 @@ function NestedBlock({
 					<span className="xsb-nested-toolbar-title">{meta.label}</span>
 				</div>
 				<div className="xsb-nested-toolbar-actions">
-					{onMoveNested && (
-						<>
-							<button
-								type="button"
-								className="xsb-tb-btn"
-								title={__('Move Up', 'xcodesol-page-builder')}
-								disabled={blockIndex === 0}
-								onClick={() => onMoveNested(containerIndex, colIndex, blockIndex, -1)}
-							>
-								<span className="dashicons dashicons-arrow-up-alt2" aria-hidden="true" />
-							</button>
-							<button
-								type="button"
-								className="xsb-tb-btn"
-								title={__('Move Down', 'xcodesol-page-builder')}
-								disabled={isLastInColumn}
-								onClick={() => onMoveNested(containerIndex, colIndex, blockIndex, 1)}
-							>
-								<span className="dashicons dashicons-arrow-down-alt2" aria-hidden="true" />
-							</button>
-						</>
-					)}
 					{onDuplicateNested && (
 						<button
 							type="button"
@@ -2331,7 +2309,7 @@ function NestedBlock({
 							title={__('Duplicate widget', 'xcodesol-page-builder')}
 							onClick={() => onDuplicateNested(containerIndex, colIndex, blockIndex)}
 						>
-							<span className="dashicons dashicons-admin-page" aria-hidden="true" />
+							<IconCopy width={ 14 } height={ 14 } aria-hidden="true" />
 						</button>
 					)}
 					{hasStylePopover(block.type) && onOpenStyleNested && (
@@ -2350,7 +2328,7 @@ function NestedBlock({
 						title={__('Remove widget', 'xcodesol-page-builder')}
 						onClick={() => onRemove(containerIndex, colIndex, blockIndex)}
 					>
-						<span className="dashicons dashicons-trash" aria-hidden="true" />
+						<IconTrash width={ 14 } height={ 14 } aria-hidden="true" />
 					</button>
 				</div>
 			</div>
@@ -3537,28 +3515,6 @@ function ContainerBlock({
 					{ layoutMode === 'columns' && <span className="xsb-block-toolbar-sub">{widths.map((w) => `${Math.round((w / 12) * 100)}%`).join(' | ')}</span> }
 				</div>
 				<div className="xsb-block-toolbar-actions">
-					{onMove && (
-						<>
-							<button
-								type="button"
-								className="xsb-tb-btn"
-								title={__('Move Up', 'xcodesol-page-builder')}
-								disabled={isFirst}
-								onClick={() => onMove(index, -1)}
-							>
-								<span className="dashicons dashicons-arrow-up-alt2" aria-hidden="true" />
-							</button>
-							<button
-								type="button"
-								className="xsb-tb-btn"
-								title={__('Move Down', 'xcodesol-page-builder')}
-								disabled={isLast}
-								onClick={() => onMove(index, 1)}
-							>
-								<span className="dashicons dashicons-arrow-down-alt2" aria-hidden="true" />
-							</button>
-						</>
-					)}
 					{onDuplicate && (
 						<button
 							type="button"
@@ -3566,7 +3522,7 @@ function ContainerBlock({
 							title={__('Duplicate container', 'xcodesol-page-builder')}
 							onClick={() => onDuplicate(index)}
 						>
-							<span className="dashicons dashicons-admin-page" aria-hidden="true" />
+							<IconCopy width={ 14 } height={ 14 } aria-hidden="true" />
 						</button>
 					)}
 					{onOpenStyle && (
@@ -3585,7 +3541,7 @@ function ContainerBlock({
 						title={__('Delete container', 'xcodesol-page-builder')}
 						onClick={() => onRemove(index)}
 					>
-						<span className="dashicons dashicons-trash" aria-hidden="true" />
+						<IconTrash width={ 14 } height={ 14 } aria-hidden="true" />
 					</button>
 				</div>
 			</div>
@@ -4064,28 +4020,6 @@ function BlockPreview({
 					<span className="xsb-block-toolbar-title">{meta.label}</span>
 				</div>
 				<div className="xsb-block-toolbar-actions">
-					{onMove && (
-						<>
-							<button
-								type="button"
-								className="xsb-tb-btn"
-								title={__('Move Up', 'xcodesol-page-builder')}
-								disabled={isFirst}
-								onClick={() => onMove(index, -1)}
-							>
-								<span className="dashicons dashicons-arrow-up-alt2" aria-hidden="true" />
-							</button>
-							<button
-								type="button"
-								className="xsb-tb-btn"
-								title={__('Move Down', 'xcodesol-page-builder')}
-								disabled={isLast}
-								onClick={() => onMove(index, 1)}
-							>
-								<span className="dashicons dashicons-arrow-down-alt2" aria-hidden="true" />
-							</button>
-						</>
-					)}
 					{onDuplicate && (
 						<button
 							type="button"
@@ -4093,7 +4027,7 @@ function BlockPreview({
 							title={__('Duplicate block', 'xcodesol-page-builder')}
 							onClick={() => onDuplicate(index)}
 						>
-							<span className="dashicons dashicons-admin-page" aria-hidden="true" />
+							<IconCopy width={ 14 } height={ 14 } aria-hidden="true" />
 						</button>
 					)}
 					{hasStylePopover(block.type) && onOpenStyle && (
@@ -4112,7 +4046,7 @@ function BlockPreview({
 						title={__('Delete block', 'xcodesol-page-builder')}
 						onClick={() => onRemove(index)}
 					>
-						<span className="dashicons dashicons-trash" aria-hidden="true" />
+						<IconTrash width={ 14 } height={ 14 } aria-hidden="true" />
 					</button>
 				</div>
 			</div>
