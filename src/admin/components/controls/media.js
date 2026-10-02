@@ -19,12 +19,18 @@ export default function MediaPickerControl( {
 		label = __( 'Image / Media', 'xcodesol-page-builder' ),
 		description,
 		allowedTypes = [ 'image' ],
+		imageSource = 'upload',
+		dynamicPreviewUrl = '',
+		dynamicPreviewLabel = '',
+		dynamicPreviewEmptyLabel = '',
+		frameBackground = '',
 	} = config;
 	const normalizedTypes = Array.isArray( allowedTypes ) ? allowedTypes : [ allowedTypes ];
 	const isVideo = normalizedTypes.includes( 'video' );
 
 	const mediaUrl = typeof value === 'object' && value !== null ? ( value.url || '' ) : ( value || '' );
-	const isModified = Boolean( mediaUrl );
+	const isDynamicImage = normalizedTypes.includes( 'image' ) && imageSource !== 'upload';
+	const isModified = ! isDynamicImage && Boolean( mediaUrl );
 	const previewUrl = typeof value === 'object' && value !== null && value.thumbnail ? value.thumbnail : mediaUrl;
 
 	const openMediaFrame = () => {
@@ -65,8 +71,8 @@ export default function MediaPickerControl( {
 	return (
 		<ControlBase
 			id={ id }
-			label={ label }
-			description={ description }
+			label={ isDynamicImage ? __( 'Image preview', 'xcodesol-page-builder' ) : label }
+			description={ isDynamicImage ? dynamicPreviewLabel : description }
 			device={ device }
 			state={ state }
 			isModified={ isModified }
@@ -74,8 +80,20 @@ export default function MediaPickerControl( {
 			className="xsb-ctrl-media"
 		>
 			<div className="xsb-media-control-box">
-				{ mediaUrl ? (
-					<div className="xsb-media-preview-card">
+				{ isDynamicImage ? (
+					<div className="xsb-media-preview-card xsb-media-preview-card--dynamic" style={ { backgroundColor: frameBackground || undefined } }>
+						{ dynamicPreviewUrl ? (
+							<img src={ dynamicPreviewUrl } alt="" className="xsb-media-preview-img" />
+						) : (
+							<div className="xsb-media-dynamic-empty">
+								<span className="dashicons dashicons-format-image" aria-hidden="true" />
+								<span>{ dynamicPreviewEmptyLabel || __( 'No image is available for this source yet.', 'xcodesol-page-builder' ) }</span>
+							</div>
+						) }
+						{ dynamicPreviewUrl && <span className="xsb-media-preview-card__source">{ dynamicPreviewLabel }</span> }
+					</div>
+				) : mediaUrl ? (
+					<div className="xsb-media-preview-card" style={ { backgroundColor: frameBackground || undefined } }>
 						{ isVideo ? (
 							<video src={ previewUrl } className="xsb-media-preview-img" muted controls playsInline preload="metadata" />
 						) : (

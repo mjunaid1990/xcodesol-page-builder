@@ -1157,6 +1157,9 @@ export default function Inspector( {
 	const [ sectionStates, setSectionStates ] = useState( {} );
 	const [ schemaResetVersion, setSchemaResetVersion ] = useState( 0 );
 	const inspectorClassName = `xsb-inspector xcopb-inspector${ open ? ' is-open' : ' is-closed' }`;
+	const configuredFeaturedImage = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
+	const hasPageFeaturedImageSetting = Object.prototype.hasOwnProperty.call( pageSettings || {}, 'featured_image_url' ) || Object.prototype.hasOwnProperty.call( pageSettings || {}, 'featured_image_id' );
+	const currentFeaturedImageUrl = hasPageFeaturedImageSetting ? ( pageSettings.featured_image_url || '' ) : configuredFeaturedImage;
 
 	if ( showPageSettings ) {
 		return (
@@ -1468,6 +1471,7 @@ export default function Inspector( {
 						setSectionStates={ setSectionStates }
 						resetVersion={ schemaResetVersion }
 						blockType={ block.type }
+						dynamicPreview={ { featuredImageUrl: currentFeaturedImageUrl } }
 						onUpdateSetting={ updateSetting }
 						searchQuery={ searchQuery }
 					/>

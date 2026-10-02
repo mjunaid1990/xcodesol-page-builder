@@ -1410,6 +1410,7 @@ export function PopoverGroupControl( {
 export function DynamicControlRenderer( {
 	control,
 	settings = {},
+	dynamicPreview = {},
 	activeDevice = 'desktop',
 	activeState = 'default',
 	onUpdate,
@@ -1582,6 +1583,27 @@ export function DynamicControlRenderer( {
 			  }
 			: control.type === 'animation'
 				? { ...control, duration: settings.animation_duration ?? 600, delay: settings.animation_delay ?? 0, easing: settings.animation_easing || 'ease' }
+				: control.type === 'media' && control.id === 'url'
+					? ( () => {
+						const source = settings.image_source || 'upload';
+						const acfFields = window.xcopbBuilderConfig?.acfImageFields || window.xcosbBuilderConfig?.acfImageFields || [];
+						const acfField = source === 'acf' ? acfFields.find( ( field ) => field.name === settings.acf_field ) : null;
+						const builderFeaturedImage = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
+						return {
+							...control,
+							imageSource: source,
+							frameBackground: settings.background || settings.bg_color || '',
+							dynamicPreviewUrl: source === 'featured_image'
+								? ( dynamicPreview.featuredImageUrl !== undefined ? dynamicPreview.featuredImageUrl : builderFeaturedImage )
+								: source === 'acf' ? ( acfField?.preview_url || '' ) : '',
+							dynamicPreviewLabel: source === 'featured_image'
+								? __( 'Post Featured Image', 'xcodesol-page-builder' )
+								: source === 'acf' ? ( acfField?.label || __( 'ACF image field', 'xcodesol-page-builder' ) ) : '',
+							dynamicPreviewEmptyLabel: source === 'featured_image'
+								? __( 'This post does not have a featured image yet.', 'xcodesol-page-builder' )
+								: source === 'acf' ? __( 'This ACF field does not have an image yet.', 'xcodesol-page-builder' ) : '',
+						};
+					} )()
 				: control;
 
 	if ( hasControl( control.type ) ) {
@@ -1687,6 +1709,7 @@ export function SchemaInspectorRenderer( {
 	schema,
 	manifest,
 	settings = {},
+	dynamicPreview = {},
 	context = {},
 	onUpdateSetting,
 	activeTab = 'content',
@@ -1771,6 +1794,7 @@ export function SchemaInspectorRenderer( {
 								activeState={ activeState }
 								sectionStateful={ !! section.stateful }
 								sectionActiveState={ sectionStates?.[ section.id ] || 'default' }
+								dynamicPreview={ dynamicPreview }
 								onUpdate={ onUpdateSetting }
 								manifest={ manifest || schema?.manifest }
 							/>

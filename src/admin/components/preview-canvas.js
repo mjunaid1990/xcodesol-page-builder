@@ -10,7 +10,7 @@
  * @package WooCommerce_Template_Builder
  */
 
-import { Fragment, createElement, useEffect, useRef, useState } from '@wordpress/element';
+import { Fragment, createContext, createElement, useContext, useEffect, useRef, useState } from '@wordpress/element';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -30,6 +30,8 @@ const SAMPLE = {
 	excerpt: __('A short product description shown in the excerpt block.', 'xcodesol-page-builder'),
 	archiveTitle: __('Shop', 'xcodesol-page-builder'),
 };
+
+const DynamicImagePreviewContext = createContext( { featuredImageUrl: '' } );
 
 function getBlockMeta(type) {
 	const all = [
@@ -926,14 +928,19 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			const acfFields = window.xcopbBuilderConfig?.acfImageFields || window.xcosbBuilderConfig?.acfImageFields || [];
 			const acfField = settings.image_source === 'acf' ? acfFields.find( ( field ) => field.name === settings.acf_field ) : null;
 			const savedMedia = typeof settings.url === 'object' ? settings.url?.url : settings.url;
-			const featuredImageUrl = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
+			const configuredFeaturedImage = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
+			const featuredImageUrl = canvasActions.featuredImageUrl !== undefined ? canvasActions.featuredImageUrl : configuredFeaturedImage;
 			const imageUrl = settings.image_source === 'acf'
 				? ( acfField?.preview_url || '' )
 				: settings.image_source === 'featured_image'
 					? featuredImageUrl
 					: savedMedia;
 			const wrapStyle = {
+				display: 'block',
 				width: '100%',
+				boxSizing: 'border-box',
+				background: settings.background || settings.bg_color || undefined,
+				padding: Number( settings.padding ) > 0 ? `${ Number( settings.padding ) }px` : undefined,
 				...marginInlineCss(settings),
 			};
 			const imgStyle = {
@@ -944,6 +951,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				objectPosition: settings.object_position || undefined,
 				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
 				display: 'block',
+				background: settings.background || settings.bg_color || undefined,
 				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
 				opacity: Number.isFinite( Number( settings.opacity ) ) && settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
 				filter: Number( settings.grayscale ) > 0 ? `grayscale(${ Math.min( 100, Number( settings.grayscale ) ) }%)` : undefined,
@@ -955,7 +963,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 					{imageUrl ? (
 						<img src={imageUrl} alt={settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || ''} style={imgStyle} />
 					) : (
-						<div className="xsb-preview-img-box" style={{ ...imgStyle, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: '1px dashed #cbd5e1' }}>
+						<div className="xsb-preview-img-box" style={{ ...imgStyle, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: settings.background || settings.bg_color || '#f1f5f9', border: '1px dashed #cbd5e1' }}>
 							<span className="dashicons dashicons-format-image" style={{ fontSize: '36px', color: '#94a3b8' }} aria-hidden="true" />
 							{settings.image_source === 'acf' && acfField && <span className="xsb-preview-img-box__label">{acfField.label}</span>}
 							{settings.image_source === 'featured_image' && <span className="xsb-preview-img-box__label">{__('Post Featured Image', 'xcodesol-page-builder')}</span>}
@@ -2255,6 +2263,7 @@ function NestedBlock({
 	dropGuide,
 	selectedNested,
 }) {
+	const { featuredImageUrl } = useContext( DynamicImagePreviewContext );
 	const meta = getBlockMeta(block.type);
 	const settings = { ...(meta.defaults || {}), ...(block.settings || {}) };
 	const isNestedContainer = [ 'xcopb/gb-container', 'xcopb/container', 'xcosb/gb-container' ].includes( block.type );
@@ -2360,6 +2369,7 @@ function NestedBlock({
 				selectedNested,
 				dropTarget: isNestedContainer ? { ci: containerIndex, path: [ { cj: colIndex, bi: blockIndex } ] } : null,
 				dropGuide,
+				featuredImageUrl,
 				depth: 1,
 			})}
 			{selected && stylePanel.open && hasStylePopover(block.type) && (
@@ -3945,6 +3955,7 @@ function BlockPreview({
 	isFirst,
 	isLast,
 }) {
+	const { featuredImageUrl } = useContext( DynamicImagePreviewContext );
 	const meta = getBlockMeta(block.type);
 	const settings = { ...(meta.defaults || {}), ...(block.settings || {}) };
 	const bodySettings = device !== 'desktop'
@@ -4067,7 +4078,7 @@ function BlockPreview({
 					{sprintf(__('Hidden on %s', 'xcodesol-page-builder'), device)}
 				</div>
 			)}
-			{renderBlockBody(block, bodySettings, meta, device)}
+			{renderBlockBody(block, bodySettings, meta, device, { featuredImageUrl })}
 			<span className="xsb-live-block-order">{index + 1}</span>
 			{selected && stylePanel.open && hasStylePopover(block.type) && (
 				<StylePopover
@@ -4302,9 +4313,13 @@ function PreviewCanvas({
 		} ).join( ', ' ) + `{${ declarations }}`;
 	} );
 	const pageRootProps = { id: pageSettings?.css_id || undefined, className: `${ cssClass }${ extraClasses ? ` ${ extraClasses }` : '' }`, style: { ...pageStyle, ...rootVariables } };
+	const builderFeaturedImageUrl = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
+	const pageHasFeaturedImageSetting = Object.prototype.hasOwnProperty.call( pageSettings || {}, 'featured_image_url' ) || Object.prototype.hasOwnProperty.call( pageSettings || {}, 'featured_image_id' );
+	const dynamicFeaturedImageUrl = pageHasFeaturedImageSetting ? ( pageSettings.featured_image_url || '' ) : builderFeaturedImageUrl;
 
 	if (!hasStructure) {
 		return (
+			<DynamicImagePreviewContext.Provider value={ { featuredImageUrl: dynamicFeaturedImageUrl } }>
 			<div { ...pageRootProps }>
 				{ ( pageCustomCss || scopedGlobalCss || globalFonts.heading || sharedStyleRules ) && <style>{ `${ scopedGlobalCss || '' }${ pageCustomCss || '' }${ globalFonts.heading ? `.xsb-preview-canvas-live h1,.xsb-preview-canvas-live h2,.xsb-preview-canvas-live h3,.xsb-preview-canvas-live h4,.xsb-preview-canvas-live h5,.xsb-preview-canvas-live h6{font-family:${ globalFonts.heading }}` : '' }${ sharedStyleRules }` }</style> }
 				{layout.length === 0 ? (
@@ -4445,6 +4460,7 @@ function PreviewCanvas({
 					</SortableContext>
 				)}
 			</div>
+			</DynamicImagePreviewContext.Provider>
 		);
 	}
 
@@ -4463,6 +4479,7 @@ function PreviewCanvas({
 	});
 
 	return (
+		<DynamicImagePreviewContext.Provider value={ { featuredImageUrl: dynamicFeaturedImageUrl } }>
 		<div { ...pageRootProps }>
 			{ ( pageCustomCss || scopedGlobalCss || globalFonts.heading || sharedStyleRules ) && <style>{ `${ scopedGlobalCss || '' }${ pageCustomCss || '' }${ globalFonts.heading ? `.xsb-preview-canvas-live h1,.xsb-preview-canvas-live h2,.xsb-preview-canvas-live h3,.xsb-preview-canvas-live h4,.xsb-preview-canvas-live h5,.xsb-preview-canvas-live h6{font-family:${ globalFonts.heading }}` : '' }${ sharedStyleRules }` }</style> }
 			{structure.zones.map((zone, zoneIndex) => (
@@ -4497,6 +4514,7 @@ function PreviewCanvas({
 				/>
 			))}
 		</div>
+		</DynamicImagePreviewContext.Provider>
 	);
 }
 

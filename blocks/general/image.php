@@ -104,8 +104,14 @@ if ( isset( $settings['grayscale'] ) && (float) $settings['grayscale'] > 0 ) {
 }
 
 $wrap_styles = array(
+	'width:100%',
+	'box-sizing:border-box',
 	'text-align:' . esc_attr( $align ),
 );
+$frame_background = isset( $settings['background'] ) ? sanitize_text_field( $settings['background'] ) : ( isset( $settings['bg_color'] ) ? sanitize_text_field( $settings['bg_color'] ) : '' );
+if ( '' !== $frame_background && ( sanitize_hex_color( $frame_background ) || 'transparent' === $frame_background || preg_match( '/^rgba?\([0-9.,\s%]+\)$/', $frame_background ) ) ) {
+	$wrap_styles[] = 'background:' . esc_attr( $frame_background );
+}
 foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 	$k = 'margin_' . $side;
 	if ( isset( $settings[ $k ] ) && '' !== $settings[ $k ] ) {
