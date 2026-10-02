@@ -1156,14 +1156,11 @@ export default function Inspector( {
 	const [ searchQuery, setSearchQuery ] = useState( '' );
 	const [ sectionStates, setSectionStates ] = useState( {} );
 	const [ schemaResetVersion, setSchemaResetVersion ] = useState( 0 );
-
-	if ( ! open ) {
-		return null;
-	}
+	const inspectorClassName = `xsb-inspector xcopb-inspector${ open ? ' is-open' : ' is-closed' }`;
 
 	if ( showPageSettings ) {
 		return (
-			<aside className="xsb-inspector xcopb-inspector">
+			<aside className={ inspectorClassName } aria-hidden={ ! open } inert={ ! open }>
 				<div className="xsb-inspector-head">
 					<div className="xsb-inspector-head-title-wrap">
 						<span className="xsb-inspector-head-icon" aria-hidden="true"><span className="dashicons dashicons-admin-page" /></span>
@@ -1180,7 +1177,7 @@ export default function Inspector( {
 		);
 	}
 	if ( showGlobalSettings ) {
-		return <aside className="xsb-inspector xcopb-inspector xsb-inspector--site-settings"><div className="xsb-inspector-head"><div className="xsb-inspector-head-title-wrap"><span className="xsb-inspector-head-icon"><IconPalette width={ 15 } height={ 15 } /></span><h3 className="xsb-inspector-subject">{ __( 'Site Settings', 'xcodesol-page-builder' ) }</h3></div><button type="button" className="xsb-inspector-close-btn" onClick={ onClose } aria-label={ __( 'Close inspector', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></div><div className="xsb-inspector-body"><SiteSettingsView settings={ globalSettings } setSettings={ setGlobalSettings } fontOptions={ globalFontOptions } /></div><div className="xsb-inspector-footer"><button type="button" className="xsb-inspector-footer-btn xsb-inspector-footer-btn--primary" onClick={ onSaveGlobalSettings }>{ __( 'Save Changes', 'xcodesol-page-builder' ) }</button></div></aside>;
+		return <aside className={ `${ inspectorClassName } xsb-inspector--site-settings` } aria-hidden={ ! open } inert={ ! open }><div className="xsb-inspector-head"><div className="xsb-inspector-head-title-wrap"><span className="xsb-inspector-head-icon"><IconPalette width={ 15 } height={ 15 } /></span><h3 className="xsb-inspector-subject">{ __( 'Site Settings', 'xcodesol-page-builder' ) }</h3></div><button type="button" className="xsb-inspector-close-btn" onClick={ onClose } aria-label={ __( 'Close inspector', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></div><div className="xsb-inspector-body"><SiteSettingsView settings={ globalSettings } setSettings={ setGlobalSettings } fontOptions={ globalFontOptions } /></div><div className="xsb-inspector-footer"><button type="button" className="xsb-inspector-footer-btn xsb-inspector-footer-btn--primary" onClick={ onSaveGlobalSettings }>{ __( 'Save Changes', 'xcodesol-page-builder' ) }</button></div></aside>;
 	}
 
 	const nestedBlock = ( () => {
@@ -1237,7 +1234,7 @@ export default function Inspector( {
 	// 8. Empty state when nothing is selected and not pinned to template settings
 	if ( ! block && ! showTemplateSettings ) {
 		return (
-			<aside className="xsb-inspector xcopb-inspector">
+			<aside className={ inspectorClassName } aria-hidden={ ! open } inert={ ! open }>
 				<div className="xsb-inspector-head">
 					<div className="xsb-inspector-head-title-wrap">
 						<span className="xsb-inspector-head-icon" aria-hidden="true">
@@ -1266,7 +1263,7 @@ export default function Inspector( {
 	// When template settings are explicitly pinned via the gear button:
 	if ( showTemplateSettings || ! block ) {
 		return (
-			<aside className="xsb-inspector xcopb-inspector">
+			<aside className={ inspectorClassName } aria-hidden={ ! open } inert={ ! open }>
 				<div className="xsb-inspector-head">
 					<div className="xsb-inspector-head-title-wrap">
 						<span className="xsb-inspector-head-icon" aria-hidden="true">
@@ -1349,7 +1346,7 @@ export default function Inspector( {
 	};
 
 	return (
-		<aside className="xsb-inspector xcopb-inspector">
+		<aside className={ inspectorClassName } aria-hidden={ ! open } inert={ ! open }>
 				{/* Selected widget title and inspector actions. */}
 			<div className="xsb-inspector-head">
 				<div className="xsb-inspector-head-title-wrap">
