@@ -36,6 +36,15 @@ export const manifest = {
 	],
 };
 
+const acfImageFields = typeof window !== 'undefined'
+	? ( window.xcopbBuilderConfig?.acfImageFields || window.xcosbBuilderConfig?.acfImageFields || [] )
+	: [];
+const imageSourceOptions = [
+	{ value: 'upload', label: 'Media Library' },
+	{ value: 'featured_image', label: 'Post Featured Image' },
+	...( acfImageFields.length ? [ { value: 'acf', label: 'ACF image field' } ] : [] ),
+];
+
 export const IMAGE_SCHEMA = {
 	type: manifest.type,
 	version: 1,
@@ -52,14 +61,18 @@ export const IMAGE_SCHEMA = {
 		{ id: 'attributes', tab: 'advanced', title: 'Attributes & custom CSS' },
 	],
 	controls: [
-		{ id: 'url', type: 'media', label: 'Choose image', tab: 'content', section: 'image', allowedTypes: [ 'image' ], help: 'Choose an image from your WordPress Media Library.' },
+		{ id: 'image_source', type: 'select', label: 'Image source', tab: 'content', section: 'image', default: 'upload', options: imageSourceOptions },
+		...( acfImageFields.length ? [
+			{ id: 'acf_field', type: 'select', label: 'ACF image field', tab: 'content', section: 'image', condition: { image_source: 'acf' }, options: [ { value: '', label: 'Choose a field' }, ...acfImageFields.map( ( field ) => ( { value: field.name, label: field.label } ) ) ] },
+		] : [] ),
+		{ id: 'url', type: 'media', label: 'Choose image', tab: 'content', section: 'image', allowedTypes: [ 'image' ], condition: { image_source: [ 'upload', '', undefined ] }, help: 'Choose an image from your WordPress Media Library.' },
 		{ id: 'alt', type: 'text', label: 'Alternative text', tab: 'content', section: 'image', help: 'Describe the image for people using screen readers. Leave blank only when decorative.' },
 		{ id: 'caption', type: 'text', label: 'Caption', tab: 'content', section: 'image', placeholder: 'Optional caption' },
 		{ id: 'link', type: 'text', label: 'Link URL', tab: 'content', section: 'link', placeholder: 'https://example.com' },
 		{ id: 'link_target', type: 'toggle', label: 'Open link in a new tab', tab: 'content', section: 'link', default: false },
-		{ id: 'width', type: 'number', label: 'Width (px)', tab: 'style', section: 'size', min: 0, max: 2400, default: 0, help: 'Set to 0 to use the image’s natural width up to the available space.' },
+		{ id: 'width', type: 'number', label: 'Width (px)', tab: 'style', section: 'size', min: 0, max: 2400, default: 0, help: 'Set to 0 to use the full available width.' },
 		{ id: 'max_width', type: 'number', label: 'Maximum width (px)', tab: 'style', section: 'size', min: 0, max: 2400, default: 0 },
-		{ id: 'height', type: 'number', label: 'Height (px)', tab: 'style', section: 'size', min: 0, max: 2400, default: 0, help: 'Set a height to crop the image; 0 keeps its natural proportions.' },
+		{ id: 'height', type: 'number', label: 'Height (px)', tab: 'style', section: 'size', min: 0, max: 2400, default: 130, help: 'Set a height to crop the image; 130px is used by default.' },
 		{ id: 'object_fit', type: 'select', label: 'Crop behavior', tab: 'style', section: 'size', default: 'cover', options: [ { value: 'cover', label: 'Fill frame' }, { value: 'contain', label: 'Show whole image' }, { value: 'fill', label: 'Stretch to fit' }, { value: 'none', label: 'Original size' }, { value: 'scale-down', label: 'Scale down only' } ] },
 		{ id: 'object_position', type: 'select', label: 'Focus point', tab: 'style', section: 'size', default: 'center center', options: [ 'center center', 'top center', 'bottom center', 'left center', 'right center', 'top left', 'top right', 'bottom left', 'bottom right' ].map( ( value ) => ( { value, label: value.replace( 'center', 'middle' ).replace( /\b\w/g, ( ch ) => ch.toUpperCase() ) } ) ) },
 		{ id: 'border_radius', type: 'number', label: 'Corner roundness (px)', tab: 'style', section: 'shape', min: 0, max: 500, default: 0, supportsHover: true, presets: [ 0, 6, 16, 32, 999 ] },

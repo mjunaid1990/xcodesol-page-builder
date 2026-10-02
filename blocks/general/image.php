@@ -11,13 +11,53 @@ $settings = isset( $block['settings'] ) ? $block['settings'] : array();
 
 $media = isset( $settings['url'] ) ? $settings['url'] : '';
 $url = is_array( $media ) ? (string) ( $media['url'] ?? '' ) : (string) $media;
-if ( '' === trim( $url ) && ! empty( $settings['image'] ) ) {
+$image_source = isset( $settings['image_source'] ) ? sanitize_key( $settings['image_source'] ) : 'upload';
+if ( in_array( $image_source, array( 'featured_image', 'acf' ), true ) ) {
+	$url = '';
+}
+
+// Dynamic ACF image fields are resolved for the post currently being rendered.
+if ( 'featured_image' === $image_source ) {
+	$featured_post_id = function_exists( 'get_queried_object_id' ) ? absint( get_queried_object_id() ) : 0;
+	if ( ! $featured_post_id ) {
+		$featured_post_id = get_the_ID();
+	}
+	$featured_image_id = $featured_post_id ? get_post_thumbnail_id( $featured_post_id ) : 0;
+	if ( $featured_image_id ) {
+		$url = (string) wp_get_attachment_image_url( $featured_image_id, 'full' );
+		if ( empty( $settings['alt'] ) ) {
+			$settings['alt'] = get_post_meta( $featured_image_id, '_wp_attachment_image_alt', true );
+		}
+	}
+} elseif ( 'acf' === $image_source && ! empty( $settings['acf_field'] ) && function_exists( 'get_field' ) ) {
+	$acf_post_id = function_exists( 'get_queried_object_id' ) ? absint( get_queried_object_id() ) : 0;
+	if ( ! $acf_post_id ) {
+		$acf_post_id = get_the_ID();
+	}
+	$acf_image = get_field( sanitize_text_field( $settings['acf_field'] ), $acf_post_id );
+	if ( is_array( $acf_image ) ) {
+		$url = isset( $acf_image['url'] ) ? (string) $acf_image['url'] : '';
+		$acf_image_id = absint( $acf_image['ID'] ?? $acf_image['id'] ?? 0 );
+		if ( '' === $url && $acf_image_id ) {
+			$url = (string) wp_get_attachment_image_url( $acf_image_id, 'full' );
+		}
+		if ( empty( $settings['alt'] ) && ! empty( $acf_image['alt'] ) ) {
+			$settings['alt'] = $acf_image['alt'];
+		}
+	} elseif ( is_numeric( $acf_image ) ) {
+		$url = (string) wp_get_attachment_image_url( absint( $acf_image ), 'full' );
+	} elseif ( is_string( $acf_image ) ) {
+		$url = $acf_image;
+	}
+}
+
+if ( '' === trim( $url ) && ! empty( $settings['image'] ) && in_array( $image_source, array( '', 'upload' ), true ) ) {
 	$url = (string) $settings['image'];
 }
 
 if ( '' === trim( $url ) ) {
 	// Fallback placeholder for empty image in builder
-	$url = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="350" viewBox="0 0 600 350" fill="%23f1f5f9"><rect width="600" height="350" fill="%23f1f5f9"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="18" fill="%2394a3b8">Choose an image</text></svg>';
+	$url = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="130" viewBox="0 0 600 130" fill="%23f1f5f9"><rect width="600" height="130" fill="%23f1f5f9"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="%2394a3b8">Choose an image</text></svg>';
 }
 
 $alt         = isset( $settings['alt'] ) ? (string) $settings['alt'] : ( is_array( $media ) ? (string) ( $media['alt'] ?? '' ) : '' );
@@ -32,21 +72,23 @@ $object_fit = ! empty( $settings['object_fit'] ) ? $settings['object_fit'] : '';
 $object_position = ! empty( $settings['object_position'] ) ? $settings['object_position'] : '';
 
 $img_styles = array(
-	'display:inline-block',
+	'display:block',
+	'width:100%',
 	'max-width:' . ( is_numeric( $max_width ) ? $max_width . 'px' : esc_attr( $max_width ) ),
-	'height:auto',
+	'height:130px',
+	'object-fit:cover',
 );
 if ( '' !== $width ) {
-	$img_styles[] = 'width:' . ( is_numeric( $width ) ? $width . 'px' : esc_attr( $width ) );
+	$img_styles[1] = 'width:' . ( is_numeric( $width ) ? $width . 'px' : esc_attr( $width ) );
 }
 if ( is_numeric( $max_width ) && (float) $max_width > 0 ) {
-	$img_styles[1] = 'max-width:' . (float) $max_width . 'px';
+	$img_styles[2] = 'max-width:' . (float) $max_width . 'px';
 }
 if ( isset( $settings['height'] ) && is_numeric( $settings['height'] ) && (float) $settings['height'] > 0 ) {
-	$img_styles[] = 'height:' . (float) $settings['height'] . 'px';
+	$img_styles[3] = 'height:' . (float) $settings['height'] . 'px';
 }
 if ( in_array( $object_fit, array( 'cover', 'contain', 'fill', 'none', 'scale-down' ), true ) ) {
-	$img_styles[] = 'object-fit:' . $object_fit;
+	$img_styles[4] = 'object-fit:' . $object_fit;
 }
 if ( preg_match( '/^(center|top|bottom|left|right)( (center|top|bottom|left|right))?$/', $object_position ) ) {
 	$img_styles[] = 'object-position:' . esc_attr( $object_position );

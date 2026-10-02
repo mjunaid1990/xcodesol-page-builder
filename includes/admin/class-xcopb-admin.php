@@ -405,6 +405,8 @@ class XCOPB_Admin {
 			'viewUrl'           => esc_url_raw( $view_url ),
 			'viewOptions'       => XCOPB_Registrar::get_view_type_options(),
 			'productAttributes' => $this->get_product_attribute_options(),
+			'acfImageFields'   => $this->get_acf_image_fields( $post_id ),
+			'featuredImageUrl' => $post_id && has_post_thumbnail( $post_id ) ? (string) get_the_post_thumbnail_url( $post_id, 'medium' ) : '',
 			'fontOptions'       => $this->get_theme_font_options(),
 			'siteSettings'      => $this->get_site_settings(),
 			'isWordPressPage'   => $post_obj && 'page' === $post_obj->post_type,
@@ -452,6 +454,59 @@ class XCOPB_Admin {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Return registered ACF image fields and a preview for the edited post.
+	 *
+	 * @param int $post_id Current post ID.
+	 * @return array[]
+	 */
+	private function get_acf_image_fields( $post_id ) {
+		if ( ! function_exists( 'acf_get_field_groups' ) || ! function_exists( 'acf_get_fields' ) ) {
+			return array();
+		}
+
+		$fields = array();
+		foreach ( acf_get_field_groups() as $group ) {
+			if ( empty( $group['key'] ) ) {
+				continue;
+			}
+			$group_fields = acf_get_fields( $group['key'] );
+			if ( ! is_array( $group_fields ) ) {
+				continue;
+			}
+
+			foreach ( $group_fields as $field ) {
+				if ( empty( $field['name'] ) || 'image' !== ( $field['type'] ?? '' ) ) {
+					continue;
+				}
+
+				$name = sanitize_text_field( $field['name'] );
+				$value = $post_id && function_exists( 'get_field' ) ? get_field( $name, $post_id ) : null;
+				$preview_url = '';
+				if ( is_array( $value ) ) {
+					$preview_url = isset( $value['url'] ) ? esc_url_raw( $value['url'] ) : '';
+					$image_id = absint( $value['ID'] ?? $value['id'] ?? 0 );
+					if ( ! $preview_url && $image_id ) {
+						$preview_url = (string) wp_get_attachment_image_url( $image_id, 'medium' );
+					}
+				} elseif ( is_numeric( $value ) ) {
+					$preview_url = (string) wp_get_attachment_image_url( absint( $value ), 'medium' );
+				} elseif ( is_string( $value ) ) {
+					$preview_url = esc_url_raw( $value );
+				}
+
+				$label = isset( $field['label'] ) ? sanitize_text_field( $field['label'] ) : $name;
+				$fields[ $name ] = array(
+					'name'        => $name,
+					'label'       => $label,
+					'preview_url' => $preview_url,
+				);
+			}
+		}
+
+		return array_values( $fields );
 	}
 
 	/** Return persisted site-wide builder design settings. */

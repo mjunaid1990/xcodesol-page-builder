@@ -923,19 +923,27 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			);
 		}
 		case 'xcopb/gb-image': {
+			const acfFields = window.xcopbBuilderConfig?.acfImageFields || window.xcosbBuilderConfig?.acfImageFields || [];
+			const acfField = settings.image_source === 'acf' ? acfFields.find( ( field ) => field.name === settings.acf_field ) : null;
+			const savedMedia = typeof settings.url === 'object' ? settings.url?.url : settings.url;
+			const featuredImageUrl = window.xcopbBuilderConfig?.featuredImageUrl || window.xcosbBuilderConfig?.featuredImageUrl || '';
+			const imageUrl = settings.image_source === 'acf'
+				? ( acfField?.preview_url || '' )
+				: settings.image_source === 'featured_image'
+					? featuredImageUrl
+					: savedMedia;
 			const wrapStyle = {
-				textAlign: settings.align || 'left',
 				width: '100%',
 				...marginInlineCss(settings),
 			};
 			const imgStyle = {
 				maxWidth: Number( settings.max_width ) > 0 ? `${ Number( settings.max_width ) }px` : '100%',
-				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : undefined,
-				height: Number( settings.height ) > 0 ? `${ Number( settings.height ) }px` : 'auto',
-				objectFit: settings.object_fit || undefined,
+				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : '100%',
+				height: Number( settings.height ) > 0 ? `${ Number( settings.height ) }px` : '130px',
+				objectFit: settings.object_fit || 'cover',
 				objectPosition: settings.object_position || undefined,
 				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
-				display: 'inline-block',
+				display: 'block',
 				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
 				opacity: Number.isFinite( Number( settings.opacity ) ) && settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
 				filter: Number( settings.grayscale ) > 0 ? `grayscale(${ Math.min( 100, Number( settings.grayscale ) ) }%)` : undefined,
@@ -944,12 +952,14 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			return (
 				<div className="xsb-bp xcopb-bp-image" style={wrapStyle}>
 					<div className="xsb-bp-label-chip">{__('Image', 'xcodesol-page-builder')}</div>
-					{( typeof settings.url === 'object' ? settings.url?.url : settings.url ) ? (
-						<img src={typeof settings.url === 'object' ? settings.url.url : settings.url} alt={settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || ''} style={imgStyle} />
+					{imageUrl ? (
+						<img src={imageUrl} alt={settings.alt || ( typeof settings.url === 'object' ? settings.url.alt : '' ) || ''} style={imgStyle} />
 					) : (
-						<div className="xsb-preview-img-box" style={{ ...imgStyle, minHeight: '140px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: '1px dashed #cbd5e1' }}>
+						<div className="xsb-preview-img-box" style={{ ...imgStyle, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: '1px dashed #cbd5e1' }}>
 							<span className="dashicons dashicons-format-image" style={{ fontSize: '36px', color: '#94a3b8' }} aria-hidden="true" />
-						</div>
+							{settings.image_source === 'acf' && acfField && <span className="xsb-preview-img-box__label">{acfField.label}</span>}
+							{settings.image_source === 'featured_image' && <span className="xsb-preview-img-box__label">{__('Post Featured Image', 'xcodesol-page-builder')}</span>}
+							</div>
 					)}
 					{settings.caption && <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>{settings.caption}</p>}
 				</div>
