@@ -74,7 +74,7 @@ const blockTitle = ( block ) => {
 	return cleanLabel || labels[ slug ] || ( block?.type || __( 'Element', 'xcodesol-page-builder' ) ).replace( /^xcopb\/|^xcosb\//, '' ).replace( /^gb-/, '' ).replace( /[-_/]+/g, ' ' );
 };
 
-function SortableTreeItem( { id, moveData, className, children } ) {
+function SortableTreeItem( { id, moveData, className, dragPointerY, children } ) {
 	const { active, over } = useDndContext();
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable( {
 		id,
@@ -87,8 +87,9 @@ function SortableTreeItem( { id, moveData, className, children } ) {
 	const activeRect = String( active?.id ) === String( id ) ? rowRef.current?.getBoundingClientRect() : active?.rect?.current?.translated;
 	const targetRect = overThisItem ? rowRef.current?.getBoundingClientRect() || over?.rect : over?.rect;
 	const activeCenter = activeRect ? activeRect.top + activeRect.height / 2 : null;
-	const targetRatio = activeCenter !== null && targetRect?.height
-		? ( activeCenter - targetRect.top ) / targetRect.height
+	const dropY = Number.isFinite( dragPointerY ) ? dragPointerY : activeCenter;
+	const targetRatio = dropY !== null && dropY !== undefined && targetRect?.height
+		? ( dropY - targetRect.top ) / targetRect.height
 		: 0.5;
 	const isInside = overThisItem && !! moveData.container && targetRatio >= 0.24 && targetRatio <= 0.76;
 	const dropPosition = isInside ? 'inside' : targetRatio < 0.5 ? 'before' : 'after';
@@ -102,13 +103,13 @@ function SortableTreeItem( { id, moveData, className, children } ) {
 	);
 	const canDrop = overThisItem && !! source && ! invalidSelfDrop && ( ! isInside || moveData.container );
 	const dropClass = canDrop ? ` is-drop-${ dropPosition }` : '';
-	return <div ref={ setNodeRef } className={ `${ className }${ isDragging ? ' is-dragging' : '' }` } style={ style }>{ children( attributes, listeners, rowRef, dropClass ) }</div>;
+	return <div className={ `${ className }${ isDragging ? ' is-dragging' : '' }` } style={ style }>{ children( attributes, listeners, rowRef, dropClass, setNodeRef ) }</div>;
 }
 
 function NavigatorItem( props ) {
 	const {
 		block, rootIndex, path, root, columnIndex, itemIndex, selectedIndex, selectedNested,
-		onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn,
+		onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn, dragPointerY,
 	} = props;
 	const container = isContainer( block );
 	const ItemIcon = container ? IconWidgetContainer : widgetIcons[ ( block?.type || '' ).split( '/' ).pop().replace( /^gb-/, '' ) ];
@@ -126,14 +127,14 @@ function NavigatorItem( props ) {
 		root || ( path.length < selectedPath.length && path.every( ( step, index ) => step.cj === selectedPath[ index ]?.cj && step.bi === selectedPath[ index ]?.bi ) )
 	);
 	const moveData = root
-		? { kind: 'root', blockId: block.id, index: rootIndex, container, zone: props.zoneMap?.[ rootIndex ] || '' }
-		: { kind: 'nested', blockId: block.id, ci: rootIndex, path, container };
+		? { kind: 'root', blockId: block.id, index: rootIndex, container, label: blockTitle( block ), zone: props.zoneMap?.[ rootIndex ] || '' }
+		: { kind: 'nested', blockId: block.id, ci: rootIndex, path, container, label: blockTitle( block ) };
 	const itemSortableId = sortableId( block, rootIndex, path );
 
 	return (
-		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch">
-			{ ( dragAttributes, dragListeners, rowRef, dropClass ) => <>
-				<div ref={ rowRef } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container && hasChildren ? expanded : undefined }>
+		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch" dragPointerY={ dragPointerY }>
+			{ ( dragAttributes, dragListeners, rowRef, dropClass, setSortableRef ) => <>
+				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container && hasChildren ? expanded : undefined }>
 					{ container && hasChildren ? <button type="button" className="xsb-navigator__disclosure" onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
 					<button type="button" className="xsb-navigator__select" onClick={ () => root ? onSelect?.( rootIndex ) : onSelectNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }>
 						{ ItemIcon && <span className="xsb-navigator__item-icon"><ItemIcon width={ 14 } height={ 14 } /></span> }
@@ -173,10 +174,33 @@ function NavigatorItem( props ) {
 }
 
 export default function Navigator( { layout = [], zoneMap = [], selectedIndex, selectedNested, onSelect, onSelectNested, onClose } ) {
+	const { active } = useDndContext();
 	const [ expandedContainers, setExpandedContainers ] = useState( {} );
 	const [ collapsedColumns, setCollapsedColumns ] = useState( {} );
+	const [ dragPointerY, setDragPointerY ] = useState( null );
+	const navigatorDragActive = !! active?.data?.current?.navigatorMove;
 	const toggleContainer = ( key ) => setExpandedContainers( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
 	const toggleColumn = ( key ) => setCollapsedColumns( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
+	useEffect( () => {
+		if ( ! navigatorDragActive ) {
+			setDragPointerY( null );
+			return undefined;
+		}
+		let frame = 0;
+		const trackPointer = ( event ) => {
+			if ( frame ) window.cancelAnimationFrame( frame );
+			const nextY = event.clientY;
+			frame = window.requestAnimationFrame( () => {
+				setDragPointerY( ( current ) => current === nextY ? current : nextY );
+				frame = 0;
+			} );
+		};
+		window.addEventListener( 'pointermove', trackPointer, { passive: true } );
+		return () => {
+			window.removeEventListener( 'pointermove', trackPointer );
+			if ( frame ) window.cancelAnimationFrame( frame );
+		};
+	}, [ navigatorDragActive, active?.id ] );
 	const selectedPath = useMemo( () => Array.isArray( selectedNested?.path ) && selectedNested.path.length
 		? selectedNested.path
 		: selectedNested ? [ { cj: selectedNested.cj, bi: selectedNested.bi } ] : [], [ selectedNested ] );
@@ -222,7 +246,7 @@ export default function Navigator( { layout = [], zoneMap = [], selectedIndex, s
 		return () => window.cancelAnimationFrame( frame );
 	}, [ selectedNodeId, expandedContainers ] );
 
-	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn };
+	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn, dragPointerY };
 	return (
 		<section className="xsb-navigator" aria-label={ __( 'Navigator', 'xcodesol-page-builder' ) }>
 			<header className="xsb-navigator__header"><span className="xsb-navigator__heading-icon"><IconLayers width={ 15 } height={ 15 } /></span><strong>{ __( 'Navigator', 'xcodesol-page-builder' ) }</strong><button type="button" className="xsb-navigator__close" onClick={ onClose } aria-label={ __( 'Close Navigator', 'xcodesol-page-builder' ) } title={ __( 'Close', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></header>

@@ -229,14 +229,17 @@ function findBlockAddressById( layout, blockId ) {
 
 function editorCollisionDetection( args ) {
 	if ( args.active?.data?.current?.navigatorMove ) {
-		const navigatorRows = args.droppableContainers.filter( ( container ) => container.data.current?.navigatorMove );
-		if ( navigatorRows.length ) {
-			const candidates = { ...args, droppableContainers: navigatorRows };
-			const pointerCollisions = pointerWithin( candidates );
-			if ( pointerCollisions.length ) return pointerCollisions;
-			const nearestNavigatorRow = closestCenter( candidates );
-			if ( nearestNavigatorRow.length ) return nearestNavigatorRow;
-		}
+		// Navigator moves only land on the row directly under the pointer.
+		// Falling back to the nearest row made a drag released outside the tree
+		// unexpectedly reorder the closest item.
+		const navigatorRows = args.droppableContainers.filter( ( container ) =>
+			container.id !== args.active.id && container.data.current?.navigatorMove
+		);
+		if ( ! navigatorRows.length ) return [];
+		const candidates = { ...args, droppableContainers: navigatorRows };
+		// KeyboardSensor has no pointer coordinates, so retain its standard
+		// nearest-row navigation while pointer drags require a real row hit.
+		return args.pointerCoordinates ? pointerWithin( candidates ) : closestCenter( candidates );
 	}
 	return closestCenter( args );
 }
@@ -391,6 +394,7 @@ function Editor( { config, structure: savedStructure } ) {
 	// to use the default anchor). Open when a widget is selected.
 	const [ stylePanel, setStylePanel ] = useState( { open: false, point: null } );
 	const [ activeDrag, setActiveDrag ] = useState( null );
+	const navigatorDragPointerYRef = useRef( null );
 	// Elementor-style insertion point: where a pointer drag would land. It is
 	// recomputed on pointermove while dragging and mirrored in a ref so the
 	// drop handler always sees the latest position.
@@ -1016,13 +1020,25 @@ function Editor( { config, structure: savedStructure } ) {
 		useSensor( KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates } )
 	);
 
-	function handleDragStart( { active } ) {
+	function handleDragStart( { active, activatorEvent } ) {
 		setActiveDrag( active );
+		navigatorDragPointerYRef.current = active.data.current?.navigatorMove && Number.isFinite( activatorEvent?.clientY )
+			? activatorEvent.clientY
+			: null;
 		updateDropGuide( null );
+	}
+
+	function handleDragMove( { active, delta, activatorEvent } ) {
+		if ( ! active.data.current?.navigatorMove || ! Number.isFinite( activatorEvent?.clientY ) ) {
+			navigatorDragPointerYRef.current = null;
+			return;
+		}
+		navigatorDragPointerYRef.current = activatorEvent.clientY + ( delta?.y || 0 );
 	}
 
 	function handleDragCancel() {
 		setActiveDrag( null );
+		navigatorDragPointerYRef.current = null;
 		updateDropGuide( null );
 	}
 
@@ -1082,8 +1098,9 @@ function Editor( { config, structure: savedStructure } ) {
 				const activeRect = document.getElementById( String( active.id ) )?.getBoundingClientRect() || active.rect?.current?.translated;
 				const targetRect = document.getElementById( String( over.id ) )?.getBoundingClientRect() || over.rect;
 				const activeCenter = activeRect ? activeRect.top + activeRect.height / 2 : null;
-				const targetRatio = activeCenter !== null && targetRect?.height
-					? ( activeCenter - targetRect.top ) / targetRect.height
+				const dropY = Number.isFinite( navigatorDragPointerYRef.current ) ? navigatorDragPointerYRef.current : activeCenter;
+				const targetRatio = dropY !== null && dropY !== undefined && targetRect?.height
+					? ( dropY - targetRect.top ) / targetRect.height
 					: 0.5;
 				const insideContainer = navigatorTarget.container && targetRatio >= 0.24 && targetRatio <= 0.76;
 				reorderNavigatorItem( navigatorSource, {
@@ -1091,6 +1108,7 @@ function Editor( { config, structure: savedStructure } ) {
 					position: insideContainer ? 'inside' : targetRatio < 0.5 ? 'before' : 'after',
 				} );
 			}
+			navigatorDragPointerYRef.current = null;
 			updateDropGuide( null );
 			return;
 		}
@@ -1759,6 +1777,7 @@ function Editor( { config, structure: savedStructure } ) {
 			sensors={ sensors }
 			collisionDetection={ editorCollisionDetection }
 			onDragStart={ handleDragStart }
+			onDragMove={ handleDragMove }
 			onDragEnd={ handleDragEnd }
 			onDragCancel={ handleDragCancel }
 		>
@@ -2380,8 +2399,10 @@ function Editor( { config, structure: savedStructure } ) {
 
 			<DragOverlay dropAnimation={ null }>
 				{ activeDrag ? (
-					<div className="xsb-drag-overlay">
-						{ activeDrag.data.current?.fromPalette
+					<div className={ `xsb-drag-overlay${ activeDrag.data.current?.navigatorMove ? ' xsb-drag-overlay--navigator' : '' }` }>
+						{ activeDrag.data.current?.navigatorMove
+							? activeDrag.data.current.navigatorMove.label
+							: activeDrag.data.current?.fromPalette
 							? activeDrag.data.current.block.label
 							: (() => {
 									const id = String( activeDrag.id );
