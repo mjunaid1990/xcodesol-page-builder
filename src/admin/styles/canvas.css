@@ -325,16 +325,17 @@
 }
 
 /* Keep nested boundaries visible over both light and dark container fills.
- * Difference blending adapts the dotted guide to the canvas underneath it. */
+ * A light dotted line with a fine dark edge stays legible through isolated
+ * canvas layers, where blend modes cannot reliably see the container fill. */
 .xsb-live-block--nested-container::after {
 	content: "";
 	position: absolute;
 	inset: 0;
 	z-index: 2;
-	border: 1px dotted #fff;
+	border: 1px dotted rgba(255, 255, 255, .96);
 	border-radius: inherit;
-	mix-blend-mode: difference;
-	opacity: .72;
+	filter: drop-shadow(0 0 1px rgba(15, 23, 42, .9));
+	opacity: .9;
 	pointer-events: none;
 	transition: opacity 140ms ease, border-color 140ms ease, border-style 140ms ease;
 }
@@ -501,8 +502,8 @@
 	position: absolute;
 	inset: 0;
 	z-index: 1;
-	border: 1px dashed #fff;
-	mix-blend-mode: difference;
+	border: 1px dashed rgba(255, 255, 255, .96);
+	filter: drop-shadow(0 0 1px rgba(15, 23, 42, .9));
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 140ms ease;
@@ -541,14 +542,12 @@
 .xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover))::after,
 .xsb-live-block--nested-container:focus-within:not(:has(.xsb-nested-container-item:focus-within))::after {
 	border: 1px solid #f0abfc;
-	mix-blend-mode: normal;
 	opacity: 1;
 	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
 
 .xsb-live-block--nested-container.is-over::after {
 	border: 1px solid var(--xsb-accent, #635bff);
-	mix-blend-mode: normal;
 	opacity: 1;
 	box-shadow: 0 0 0 1px rgba(255, 255, 255, .9);
 }
@@ -583,7 +582,6 @@
 
 .xsb-nested-block--container.is-selected > .xsb-live-block--nested-container::after {
 	border: 1px solid #f0abfc;
-	mix-blend-mode: normal;
 	opacity: 1;
 	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
@@ -629,7 +627,6 @@
 
 .xsb-nested-container-item.is-selected:has(> .xsb-live-block--nested-container) > .xsb-live-block--nested-container::after {
 	border: 1px solid #f0abfc;
-	mix-blend-mode: normal;
 	opacity: 1;
 	box-shadow: 0 0 0 1px rgba(30, 41, 59, .48);
 }
