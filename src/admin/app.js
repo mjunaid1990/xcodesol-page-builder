@@ -173,6 +173,33 @@ function cloneBlockTree( block ) {
 	};
 }
 
+function nestedBlockSettings( block ) {
+	const settings = { ...( block?.defaults || {} ) };
+	if ( isContainerType( block?.type ) ) {
+		// Nested containers start compact and fluid. Their own layout and gap
+	// controls remain available, while defaults no longer compound into a
+	// large stack of padded boxes as containers are nested.
+	settings.padding = { top: 10, right: 10, bottom: 10, left: 10, unit: 'px', isLinked: true };
+	settings.content_width = 'full';
+	settings.border_radius = 0;
+	}
+	return settings;
+}
+
+function findNestedBlockPath( container, target ) {
+	if ( ! container || ! Array.isArray( container.inner ) ) return null;
+	for ( let cj = 0; cj < container.inner.length; cj++ ) {
+		const column = Array.isArray( container.inner[ cj ] ) ? container.inner[ cj ] : [];
+		for ( let bi = 0; bi < column.length; bi++ ) {
+			const child = column[ bi ];
+			if ( child === target ) return [ { cj, bi } ];
+			const nestedPath = findNestedBlockPath( child, target );
+			if ( nestedPath ) return [ { cj, bi }, ...nestedPath ];
+		}
+	}
+	return null;
+}
+
 /**
  * Effective container layout mode for a settings map. Mirrors the canvas
  * fallbacks so legacy containers (layout_type only) resolve identically in
@@ -546,7 +573,14 @@ function Editor( { config, structure: savedStructure } ) {
 				if ( ! destination.inner[ 0 ] ) destination.inner[ 0 ] = [];
 				destination.inner[ 0 ].push( moving );
 				setLayoutAndZoneMap( next, nextZones );
-				setSelectedNested( null );
+				const destinationIndex = next.findIndex( ( root ) => root === destination || findNestedBlockPath( root, destination ) );
+				const movedPath = destinationIndex >= 0 ? findNestedBlockPath( next[ destinationIndex ], moving ) : null;
+				if ( destinationIndex >= 0 && movedPath ) {
+					setSelectedIndex( destinationIndex );
+					setSelectedNested( { ci: destinationIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } );
+				} else {
+					setSelectedNested( null );
+				}
 				return;
 			}
 			if ( target.kind !== 'root' ) return;
@@ -555,6 +589,7 @@ function Editor( { config, structure: savedStructure } ) {
 			if ( ( zoneMap[ from ] || '' ) !== ( zoneMap[ to ] || '' ) ) return;
 			setLayoutAndZoneMap( arrayMove( layout, from, to ), arrayMove( zoneMap, from, to ) );
 			setSelectedIndex( to );
+			setSelectedNested( null );
 			return;
 		}
 		if ( source.kind === 'nested' && target.kind === 'nested' && Array.isArray( source.path ) && Array.isArray( target.path ) && source.path.length && target.path.length ) {
@@ -572,7 +607,8 @@ function Editor( { config, structure: savedStructure } ) {
 				if ( ! Array.isArray( column ) ) return;
 				parent.inner[ sourceAddress.cj ] = arrayMove( column, sourceAddress.bi, targetAddress.bi );
 				setLayout( next );
-				setSelectedNested( { ci: source.ci, cj: source.path[ 0 ].cj, bi: source.path[ 0 ].bi } );
+				const selectedPath = [ ...sourceParentPath, { cj: sourceAddress.cj, bi: targetAddress.bi } ];
+				setSelectedNested( { ci: source.ci, cj: selectedPath[ 0 ].cj, bi: selectedPath[ 0 ].bi, path: selectedPath } );
 				return;
 			}
 			if ( ! target.container ) return;
@@ -591,6 +627,11 @@ function Editor( { config, structure: savedStructure } ) {
 			if ( ! targetContainer.inner[ 0 ] ) targetContainer.inner[ 0 ] = [];
 			targetContainer.inner[ 0 ].push( moving );
 			setLayout( next );
+			const movedPath = findNestedBlockPath( next[ target.ci ], moving );
+			if ( movedPath ) {
+				setSelectedIndex( target.ci );
+				setSelectedNested( { ci: target.ci, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } );
+			}
 		}
 		if ( source.kind === 'nested' && target.kind === 'root' && target.container && Array.isArray( source.path ) && source.path.length ) {
 			const next = layout.map( cloneBlockTree );
@@ -606,6 +647,11 @@ function Editor( { config, structure: savedStructure } ) {
 			if ( ! destination.inner[ 0 ] ) destination.inner[ 0 ] = [];
 			destination.inner[ 0 ].push( moving );
 			setLayout( next );
+			const movedPath = findNestedBlockPath( next[ target.index ], moving );
+			if ( movedPath ) {
+				setSelectedIndex( target.index );
+				setSelectedNested( { ci: target.index, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } );
+			}
 		}
 	}, [ layout, zoneMap, setLayout, setLayoutAndZoneMap ] );
 
@@ -853,7 +899,7 @@ function Editor( { config, structure: savedStructure } ) {
 			if ( ( e.key === 'Delete' || e.key === 'Backspace' ) && ! isInput ) {
 				if ( selectedNested ) {
 					e.preventDefault();
-					removeBlockFromColumn( selectedNested.ci, selectedNested.cj, selectedNested.bi );
+					removeBlockAtNestedPath( selectedNested.ci, selectedNested.path || [ selectedNested ] );
 				} else if ( selectedIndex !== null ) {
 					e.preventDefault();
 					removeBlockAtIndex( selectedIndex );
@@ -878,7 +924,7 @@ function Editor( { config, structure: savedStructure } ) {
 
 		window.addEventListener( 'keydown', handleKeyDown );
 		return () => window.removeEventListener( 'keydown', handleKeyDown );
-	}, [ handleSave, canUndo, canRedo, undo, redo, selectedIndex, selectedNested, duplicateBlock, stylePanel.open, closeStylePanel, shortcutsOpen, commandPaletteOpen ] );
+	}, [ handleSave, canUndo, canRedo, undo, redo, selectedIndex, selectedNested, duplicateBlock, layout, setLayout, stylePanel.open, closeStylePanel, shortcutsOpen, commandPaletteOpen ] );
 
 	// Download the current template as a self-contained JSON document
 	// (hierarchical layout + every block's settings/styles).
@@ -1402,7 +1448,7 @@ function Editor( { config, structure: savedStructure } ) {
 		const inner = Array.isArray( container.inner ) ? container.inner.map( ( c ) => [ ...c ] ) : [];
 		const newBlock = {
 			type: block.type,
-			settings: { ...block.defaults },
+			settings: nestedBlockSettings( block ),
 			...( isContainerType( block.type ) ? { inner: [ [] ] } : {} ),
 		};
 		if ( ! inner[ colIndex ] ) {
@@ -1463,7 +1509,7 @@ function Editor( { config, structure: savedStructure } ) {
 		const inner = child.inner;
 		const newBlock = {
 			type: block.type,
-			settings: { ...block.defaults },
+			settings: nestedBlockSettings( block ),
 			...( isContainerType( block.type ) ? { inner: [ [] ] } : {} ),
 		};
 		const columnIndex = Math.max( 0, Number( target?.columnIndex ) || 0 );
@@ -1506,6 +1552,34 @@ function Editor( { config, structure: savedStructure } ) {
 			}
 			return prev;
 		} );
+	}
+
+	// Remove exactly the selected node, including widgets several containers deep.
+	function removeBlockAtNestedPath( containerIndex, path ) {
+		if ( ! Array.isArray( path ) || ! path.length ) return;
+		const next = layout.map( cloneBlockTree );
+		let parent = next[ containerIndex ];
+		if ( ! parent || ! isContainerType( parent.type ) ) return;
+
+		for ( let index = 0; index < path.length - 1; index++ ) {
+			const step = path[ index ];
+			parent = parent.inner?.[ Number( step.cj ) ]?.[ Number( step.bi ) ];
+			if ( ! parent || ! isContainerType( parent.type ) ) return;
+		}
+
+		const last = path[ path.length - 1 ];
+		const column = parent.inner?.[ Number( last.cj ) ];
+		if ( ! Array.isArray( column ) || ! column[ Number( last.bi ) ] ) return;
+		column.splice( Number( last.bi ), 1 );
+		setLayout( next );
+		const parentPath = path.slice( 0, -1 );
+		setSelectedIndex( containerIndex );
+		setSelectedNested( parentPath.length ? {
+			ci: containerIndex,
+			cj: parentPath[ 0 ].cj,
+			bi: parentPath[ 0 ].bi,
+			path: parentPath,
+		} : null );
 	}
 
 	// Move a nested widget to a new column/position (drag & drop).
@@ -2101,10 +2175,7 @@ function Editor( { config, structure: savedStructure } ) {
 								selectedNested={ selectedNested }
 								onSelect={ selectBlock }
 								onSelectNested={ selectNestedBlock }
-								onAddContainerInside={ ( ci, path ) => path?.length ? addBlockToNestedContainerPath( { ci, path }, CONTAINER_BLOCKS[ 0 ] ) : addBlockToColumn( ci, 0, CONTAINER_BLOCKS[ 0 ] ) }
-								 onMoveBlock={ moveBlock }
-								 onMoveNested={ moveNestedBlock }
-								 onReorder={ reorderNavigatorItem }
+								onReorder={ reorderNavigatorItem }
 								onClose={ () => setNavigatorOpen( false ) }
 							/>
 						) }
@@ -2121,7 +2192,7 @@ function Editor( { config, structure: savedStructure } ) {
 						onDuplicate={ ( selectedIndex !== null || selectedNested !== null ) ? duplicateBlock : null }
 						onDelete={ ( selectedIndex !== null || selectedNested !== null ) ? () => {
 							if ( selectedNested ) {
-								removeBlockFromColumn( selectedNested.ci, selectedNested.cj, selectedNested.bi );
+					removeBlockAtNestedPath( selectedNested.ci, selectedNested.path || [ selectedNested ] );
 							} else if ( selectedIndex !== null ) {
 								removeBlockAtIndex( selectedIndex );
 							}

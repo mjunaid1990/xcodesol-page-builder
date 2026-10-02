@@ -317,8 +317,9 @@
 .xsb-live-block--nested-container {
 	position: relative;
 	min-height: 44px;
-	border: 1px dotted color-mix(in srgb, var(--xsb-depth-color, var(--xsb-accent, #635bff)) 65%, transparent);
-	border-radius: 4px;
+	box-sizing: border-box;
+	border: 1px dotted transparent;
+	border-radius: 0;
 	background-clip: padding-box;
 	transition: border-color 160ms ease;
 }
@@ -329,15 +330,15 @@
 	position: relative;
 	min-width: 0;
 	border: 1px solid transparent;
-	border-radius: 4px;
-	transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+	border-radius: 0;
+	transition: border-color 140ms ease;
 }
 
 .xsb-nested-block:hover,
 .xsb-nested-block:focus-within,
 .xsb-nested-container-item:hover,
 .xsb-nested-container-item:focus-within {
-	border-color: var(--xsb-depth-color);
+	border-color: transparent;
 	background: transparent;
 	box-shadow: none;
 }
@@ -360,6 +361,12 @@
 	box-shadow: none;
 }
 
+.xsb-nested-block--container:hover,
+.xsb-nested-block--container:focus-within,
+.xsb-nested-block--container.is-selected {
+	border-color: transparent;
+}
+
 .xsb-nested-block--container {
 	margin: 0;
 	padding: 0;
@@ -368,11 +375,11 @@
 }
 
 .xsb-nested-block--container:hover {
-	border-color: var(--xsb-depth-color);
+	border-color: transparent;
 }
 
 .xsb-nested-block--container.is-selected {
-	border-color: var(--xsb-depth-color);
+	border-color: transparent;
 }
 
 .xsb-nested-block--container > .xsb-nested-toolbar,
@@ -455,17 +462,26 @@
 	opacity: 1;
 }
 
+.xsb-nested-container-item:hover:has(.xsb-nested-container-item:hover) > .xsb-nested-preview-popover {
+	opacity: 0;
+}
+
+.xsb-nested-container-item:hover:not(:has(.xsb-nested-container-item:hover)):not(:has(> .xsb-live-block--nested-container)),
+.xsb-nested-container-item:focus-within:not(:has(.xsb-nested-container-item:focus-within)):not(:has(> .xsb-live-block--nested-container)) {
+	border-color: #d946ef;
+}
+
 .xsb-nested-container-column {
 	min-width: 0;
 	min-height: 72px;
 	padding: 4px;
-	border: 1px dashed rgba(100, 116, 139, .24);
-	border-radius: 4px;
-	background: rgba(248, 250, 252, .2);
+	border: 1px dashed transparent;
+	border-radius: 0;
+	background: transparent;
 }
 
 .xsb-nested-container-column--empty {
-	background: rgba(248, 250, 252, .42);
+	background: transparent;
 }
 
 .xsb-live-block--nested-container {
@@ -480,24 +496,37 @@
 .xsb-live-block--nested-container:hover,
 .xsb-live-block--nested-container:focus-within,
 .xsb-live-block--nested-container.is-over {
-	border-color: #aab2bf;
+	border-color: rgba(100, 116, 139, .48);
 	border-style: dotted;
 	border-width: 1px;
 	border-radius: 0;
-	background-color: transparent;
+	background: transparent;
 	box-shadow: none;
 }
 
 .xsb-live-block--nested-container.is-over {
-	border-color: var(--xsb-depth-color);
+	border-color: var(--xsb-accent, #635bff);
 	border-style: dotted;
 	border-width: 1px;
+}
+
+/* When hovering a deeper child, keep ancestor containers quiet. This leaves
+ * one clear edit frame around the item under the pointer instead of a stack
+ * of simultaneous outlines. */
+.xsb-live-block--nested-container:hover:has(.xsb-nested-container-item:hover),
+.xsb-live-block--nested-container:focus-within:has(.xsb-nested-container-item:focus-within) {
+	border-color: transparent;
+}
+
+.xsb-live-block--nested-container:hover:not(:has(.xsb-nested-container-item:hover)) > .xsb-nested-container-column,
+.xsb-nested-block--container.is-selected > .xsb-live-block--nested-container > .xsb-nested-container-column {
+	border-color: rgba(100, 116, 139, .28);
 }
 
 /* The real nested container gets its own selection state, separate from its
  * outer item wrapper, so nested levels remain easy to identify at a glance. */
 .xsb-nested-block--container.is-selected > .xsb-live-block--nested-container {
-	border-color: var(--xsb-depth-color);
+	border-color: #a855f7;
 	border-style: dotted;
 	border-width: 1px;
 	outline: none;
@@ -530,17 +559,17 @@
 }
 
 .xsb-nested-container-item.is-selected {
-	border: 1px dotted var(--xsb-depth-color, #8b5cf6);
+	border: 1px solid #d946ef;
 	background: transparent;
 	box-shadow: none;
 }
 
-.xsb-live-block--nested-container[data-nesting-level="2"] > .xsb-nested-container-column {
-	border-color: rgba(99, 91, 255, .24);
+.xsb-nested-container-item.is-selected:has(> .xsb-live-block--nested-container) {
+	border-color: transparent;
 }
 
-.xsb-live-block--nested-container[data-nesting-level="3"] > .xsb-nested-container-column {
-	border-color: rgba(14, 165, 233, .28);
+.xsb-nested-container-item.is-selected:has(> .xsb-live-block--nested-container) > .xsb-live-block--nested-container {
+	border-color: #a855f7;
 }
 
 /* ------------------------------------------------------------------ *
@@ -741,6 +770,13 @@
 	border: 1px dotted var(--xsb-accent, #635bff);
 	border-radius: 0;
 	box-shadow: none;
+}
+
+.xsb-preview-canvas-live .xsb-live-block--gb-container:hover:has(.xsb-nested-block:hover),
+.xsb-preview-canvas-live .xsb-live-block--gb-container:hover:has(.xsb-live-block--nested-container:hover),
+.xsb-preview-canvas-live .xsb-live-block--gb-container:focus-within:has(.xsb-nested-block:focus-within),
+.xsb-preview-canvas-live .xsb-live-block--gb-container:focus-within:has(.xsb-live-block--nested-container:focus-within) {
+	border-color: transparent;
 }
 
 .xsb-live-block--gb-container {
@@ -1299,36 +1335,67 @@
  * makes nested selection easier to read. */
 .xsb-block-toolbar--container,
 .xsb-block-toolbar--container.is-first {
-	top: -12px;
+	top: -17px;
 	left: 50%;
 	transform: translateX(-50%);
-	height: 24px;
-	gap: 2px;
-	padding: 0 5px;
-	border: 1px solid rgba(109, 40, 217, 0.18);
-	border-radius: 7px 7px 0 0;
-	background: #f0abfc;
-	color: #3b0764;
-	box-shadow: 0 2px 8px rgba(76, 29, 149, 0.15);
+	align-items: center;
+	height: 34px;
+	gap: 5px;
+	padding: 0 7px;
+	border: 1px solid rgba(124, 58, 237, .2);
+	border-radius: 10px;
+	background: rgba(255, 255, 255, .97);
+	backdrop-filter: blur(12px);
+	color: #3f315d;
+	box-shadow: 0 8px 24px rgba(55, 35, 95, .16), 0 2px 5px rgba(55, 35, 95, .08);
 }
 
 .xsb-block-toolbar--container .xsb-block-toolbar-badge {
+	align-items: center;
+	gap: 6px;
+	min-height: 26px;
+	padding: 0 5px;
+	border-radius: 7px;
 	background: transparent;
-	color: inherit;
+	color: #6d28d9;
 }
+
+.xsb-block-toolbar--container .xsb-block-toolbar-title { display: inline-flex; color: #3f315d; font-size: 11px; font-weight: 650; }
+.xsb-block-toolbar--container .xsb-block-toolbar-sub { display: none; }
 
 .xsb-block-toolbar--container .xsb-toolbar-grip {
 	color: rgba(59, 7, 100, 0.58);
 }
 
 .xsb-block-toolbar--container .xsb-tb-btn:hover {
-	background: rgba(255, 255, 255, 0.55);
+	background: #f4f0ff;
+	color: #6d28d9;
 }
 
 .xsb-block-toolbar--container .xsb-tb-btn--remove:hover {
-	background: #fee2e2;
-	color: #b91c1c;
+	background: #fff1f2;
+	color: #be123c;
 }
+
+.xsb-block-toolbar--container .xsb-tb-btn { width: 26px; height: 26px; border-radius: 7px; color: #726785; }
+
+.xsb-nested-block--container > .xsb-nested-toolbar,
+.xsb-nested-block--container > .xsb-nested-toolbar.is-first {
+	align-items: center;
+	background: rgba(255, 255, 255, .97);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(124, 58, 237, .2);
+	border-radius: 9px;
+	box-shadow: 0 7px 20px rgba(55, 35, 95, .14);
+	color: #4c3b6b;
+	height: 30px;
+	gap: 5px;
+	padding: 0 6px;
+}
+
+.xsb-nested-block--container .xsb-nested-toolbar-title { display: inline-flex; color: #4c3b6b; font-size: 10px; font-weight: 650; }
+.xsb-nested-block--container .xsb-tb-btn { width: 24px; height: 24px; border-radius: 6px; color: #726785; }
+.xsb-nested-block--container .xsb-tb-btn:hover { background: #f4f0ff; color: #6d28d9; }
 
 /* ------------------------------------------------------------------ *
  * Canvas chrome that stays out of the way
