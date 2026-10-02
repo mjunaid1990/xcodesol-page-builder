@@ -519,6 +519,26 @@ function Editor( { config, structure: savedStructure } ) {
 		closeStylePanel();
 	}, [ closeStylePanel ] );
 
+	// A single Navigator click selects and highlights the block without opening
+	// its settings panel. Double-click uses selectBlock/selectNestedBlock above.
+	const selectNavigatorBlock = useCallback( ( index ) => {
+		setSelectedIndex( index );
+		setSelectedNested( null );
+		setTemplateSettingsOpen( false );
+		setPageSettingsOpen( false );
+		setGlobalSettingsOpen( false );
+		closeStylePanel();
+	}, [ closeStylePanel ] );
+
+	const selectNavigatorNestedBlock = useCallback( ( ci, cj, bi, point, path ) => {
+		const selectedPath = Array.isArray( path ) && path.length ? path : [ { cj, bi } ];
+		setSelectedNested( { ci, cj: selectedPath[ 0 ].cj, bi: selectedPath[ 0 ].bi, path: selectedPath } );
+		setTemplateSettingsOpen( false );
+		setPageSettingsOpen( false );
+		setGlobalSettingsOpen( false );
+		closeStylePanel();
+	}, [ closeStylePanel ] );
+
 	const handleCanvasSelectNested = useCallback( ( ci, cj, bi, point, path ) => {
 		if ( ci === null || ci === undefined ) {
 			setSelectedNested( null );
@@ -2240,8 +2260,10 @@ function Editor( { config, structure: savedStructure } ) {
 								zoneMap={ zoneMap }
 								selectedIndex={ selectedIndex }
 								selectedNested={ selectedNested }
-								onSelect={ selectBlock }
-								onSelectNested={ selectNestedBlock }
+								onSelect={ selectNavigatorBlock }
+								onSelectNested={ selectNavigatorNestedBlock }
+								onOpenSettings={ selectBlock }
+								onOpenSettingsNested={ selectNestedBlock }
 								onClose={ () => setNavigatorOpen( false ) }
 							/>
 						) }

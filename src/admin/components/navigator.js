@@ -134,16 +134,21 @@ function NavigatorItem( props ) {
 	return (
 		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch" dragPointerY={ dragPointerY }>
 			{ ( dragAttributes, dragListeners, rowRef, dropClass, setSortableRef ) => <>
-				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container && hasChildren ? expanded : undefined }>
-					{ container && hasChildren ? <button type="button" className="xsb-navigator__disclosure" onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
-					<button type="button" className="xsb-navigator__select" onClick={ () => root ? onSelect?.( rootIndex ) : onSelectNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }>
+				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container ? expanded : undefined }>
+					{ container ? <button type="button" className="xsb-navigator__disclosure" onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> : <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
+					<button
+						type="button"
+						className="xsb-navigator__select"
+						onClick={ () => root ? onSelect?.( rootIndex ) : onSelectNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }
+						onDoubleClick={ () => root ? onOpenSettings?.( rootIndex ) : onOpenSettingsNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }
+					>
 						{ ItemIcon && <span className="xsb-navigator__item-icon"><ItemIcon width={ 14 } height={ 14 } /></span> }
 						<span className="xsb-navigator__label">{ blockTitle( block ) }</span>
 					</button>
 				</div>
-				{ container && expanded && hasChildren && (
+				{ container && expanded && (
 					<div className="xsb-navigator__children" role="group">
-						{ children.map( ( column, cj ) => {
+						{ hasChildren ? children.map( ( column, cj ) => {
 							const items = Array.isArray( column ) ? column : [];
 							const showColumn = children.length > 1;
 							const colKey = `${ nodeKey }-column-${ cj }`;
@@ -165,7 +170,7 @@ function NavigatorItem( props ) {
 									/> ) }
 								</SortableContext> }
 							</div>;
-						} ) }
+						} ) : <span className="xsb-navigator__empty-child">{ __( 'Empty', 'xcodesol-page-builder' ) }</span> }
 					</div>
 				) }
 			</> }
@@ -173,7 +178,7 @@ function NavigatorItem( props ) {
 	);
 }
 
-export default function Navigator( { layout = [], zoneMap = [], selectedIndex, selectedNested, onSelect, onSelectNested, onClose } ) {
+export default function Navigator( { layout = [], zoneMap = [], selectedIndex, selectedNested, onSelect, onSelectNested, onOpenSettings, onOpenSettingsNested, onClose } ) {
 	const { active } = useDndContext();
 	const [ expandedContainers, setExpandedContainers ] = useState( {} );
 	const [ collapsedColumns, setCollapsedColumns ] = useState( {} );
@@ -246,10 +251,10 @@ export default function Navigator( { layout = [], zoneMap = [], selectedIndex, s
 		return () => window.cancelAnimationFrame( frame );
 	}, [ selectedNodeId, expandedContainers ] );
 
-	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn, dragPointerY };
+	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, onOpenSettings, onOpenSettingsNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn, dragPointerY };
 	return (
-		<section className="xsb-navigator" aria-label={ __( 'Navigator', 'xcodesol-page-builder' ) }>
-			<header className="xsb-navigator__header"><span className="xsb-navigator__heading-icon"><IconLayers width={ 15 } height={ 15 } /></span><strong>{ __( 'Navigator', 'xcodesol-page-builder' ) }</strong><button type="button" className="xsb-navigator__close" onClick={ onClose } aria-label={ __( 'Close Navigator', 'xcodesol-page-builder' ) } title={ __( 'Close', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></header>
+		<section className="xsb-navigator" aria-label={ __( 'Structure', 'xcodesol-page-builder' ) }>
+			<header className="xsb-navigator__header"><span className="xsb-navigator__heading-icon"><IconLayers width={ 15 } height={ 15 } /></span><strong>{ __( 'Structure', 'xcodesol-page-builder' ) }</strong><button type="button" className="xsb-navigator__close" onClick={ onClose } aria-label={ __( 'Close Structure', 'xcodesol-page-builder' ) } title={ __( 'Close', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></header>
 			<div className="xsb-navigator__tree" role="tree" aria-label={ __( 'Page structure', 'xcodesol-page-builder' ) }>
 				{ ! layout.length ? <div className="xsb-navigator__empty">{ __( 'Add a container or widget to start building.', 'xcodesol-page-builder' ) }</div> : <SortableContext items={ layout.map( ( block, index ) => sortableId( block, index ) ) } strategy={ verticalListSortingStrategy }>
 					{ layout.map( ( block, index ) => <NavigatorItem key={ block.id || `navigator-root-${ index }` } { ...shared } block={ block } rootIndex={ index } root path={ [] } /> ) }
