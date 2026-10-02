@@ -275,6 +275,68 @@ export function TextareaControl( {
 }
 
 /**
+ * Rich text input for content widgets, with formatting kept as safe HTML.
+ *
+ * @param {Object} props Control props.
+ * @return {JSX.Element} Rich text control.
+ */
+function RichTextEditorControl( { id, label, value = '', onChange, placeholder = '' } ) {
+	const editorRef = useRef( null );
+	const source = String( value || '' );
+	useEffect( () => {
+		if ( editorRef.current && document.activeElement !== editorRef.current && editorRef.current.innerHTML !== source ) {
+			editorRef.current.innerHTML = source;
+		}
+	}, [ source ] );
+
+	const runCommand = ( command, argument ) => {
+		if ( ! editorRef.current ) return;
+		editorRef.current.focus();
+		if ( 'createLink' === command ) {
+			const url = window.prompt( __( 'Enter link URL', 'xcodesol-page-builder' ), 'https://' );
+			if ( ! url ) return;
+			argument = url;
+		}
+		document.execCommand( command, false, argument );
+		onChange( editorRef.current.innerHTML );
+	};
+
+	const tools = [
+		[ 'bold', __( 'Bold', 'xcodesol-page-builder' ), 'B' ],
+		[ 'italic', __( 'Italic', 'xcodesol-page-builder' ), 'I' ],
+		[ 'underline', __( 'Underline', 'xcodesol-page-builder' ), 'U' ],
+		[ 'insertUnorderedList', __( 'Bulleted list', 'xcodesol-page-builder' ), '• List' ],
+		[ 'insertOrderedList', __( 'Numbered list', 'xcodesol-page-builder' ), '1. List' ],
+		[ 'createLink', __( 'Insert link', 'xcodesol-page-builder' ), 'Link' ],
+	];
+
+	return (
+		<div className="xsb-control-field xsb-rich-text-control">
+			{ label && <label className="xsb-control-label" htmlFor={ id }>{ label }</label> }
+			<div className="xsb-rich-text-toolbar" role="toolbar" aria-label={ __( 'Text formatting', 'xcodesol-page-builder' ) }>
+				{ tools.map( ( [ command, title, text ] ) => (
+					<button key={ command } type="button" title={ title } aria-label={ title } onMouseDown={ ( event ) => event.preventDefault() } onClick={ () => runCommand( command ) }>
+						{text}
+					</button>
+				) ) }
+				<button type="button" title={ __( 'Remove formatting', 'xcodesol-page-builder' ) } aria-label={ __( 'Remove formatting', 'xcodesol-page-builder' ) } onMouseDown={ ( event ) => event.preventDefault() } onClick={ () => runCommand( 'removeFormat' ) }>Tx</button>
+			</div>
+			<div
+				id={ id }
+				ref={ editorRef }
+				className="xsb-text-input xsb-rich-text-editor"
+				contentEditable
+				role="textbox"
+				aria-multiline="true"
+				data-placeholder={ placeholder }
+				suppressContentEditableWarning
+				onInput={ () => onChange( editorRef.current?.innerHTML || '' ) }
+			/>
+		</div>
+	);
+}
+
+/**
  * 4. Select Control
  */
 export function SelectControl( {
@@ -1638,7 +1700,9 @@ export function DynamicControlRenderer( {
 		case 'text':
 			field = <TextControl { ...commonProps } placeholder={ control.placeholder } />; break;
 		case 'textarea':
-			field = <TextareaControl { ...commonProps } rows={ control.rows } placeholder={ control.placeholder } />; break;
+			field = control.richText
+				? <RichTextEditorControl { ...commonProps } placeholder={ control.placeholder } />
+				: <TextareaControl { ...commonProps } rows={ control.rows } placeholder={ control.placeholder } />; break;
 		case 'number':
 			field = (
 				<NumberScrubberControl

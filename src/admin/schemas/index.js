@@ -24,6 +24,7 @@ import { SHORTCODE_SCHEMA } from './shortcode-schema';
 import { BREADCRUMB_SCHEMA } from './breadcrumb-schema';
 import { HTML_SCHEMA } from './html-schema';
 import { DYNAMIC_SCHEMA } from './dynamic-schema';
+import { CORE_BLOCK_SCHEMA } from './core-block-schema';
 
 const containerManifest = CONTAINER_SCHEMA.manifest;
 const headingManifest = HEADING_SCHEMA.manifest;
@@ -36,6 +37,7 @@ const shortcodeManifest = SHORTCODE_SCHEMA.manifest;
 const breadcrumbManifest = BREADCRUMB_SCHEMA.manifest;
 const htmlManifest = HTML_SCHEMA.manifest;
 const dynamicManifest = DYNAMIC_SCHEMA.manifest;
+const coreBlockManifest = CORE_BLOCK_SCHEMA.manifest;
 
 /**
  * Every declared widget manifest, in registration order.
@@ -52,9 +54,10 @@ export const WIDGET_MANIFESTS = [
 	breadcrumbManifest,
 	htmlManifest,
 	dynamicManifest,
+	coreBlockManifest,
 ];
 
-export const WIDGET_SCHEMAS = [ CONTAINER_SCHEMA, HEADING_SCHEMA, BUTTON_SCHEMA, IMAGE_SCHEMA, TEXT_SCHEMA, DIVIDER_SCHEMA, BANNER_SCHEMA, SHORTCODE_SCHEMA, BREADCRUMB_SCHEMA, HTML_SCHEMA, DYNAMIC_SCHEMA ];
+export const WIDGET_SCHEMAS = [ CONTAINER_SCHEMA, HEADING_SCHEMA, BUTTON_SCHEMA, IMAGE_SCHEMA, TEXT_SCHEMA, DIVIDER_SCHEMA, BANNER_SCHEMA, SHORTCODE_SCHEMA, BREADCRUMB_SCHEMA, HTML_SCHEMA, DYNAMIC_SCHEMA, CORE_BLOCK_SCHEMA ];
 
 /**
  * Legacy block-type prefix. Stored documents written before the prefix

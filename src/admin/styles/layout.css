@@ -498,7 +498,16 @@
 	width: 100%;
 	min-width: 0;
 	min-height: 0;
+	height: 100%;
 	background: #f6f8fc;
+}
+
+.xsb-palette-pane {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
 }
 
 .xsb-palette-tabs {
@@ -625,9 +634,11 @@
 	flex-direction: column;
 	gap: var(--xsb-space-4);
 	flex: 1 1 auto;
+	height: 0;
 	min-height: 0;
 	padding: 0 var(--xsb-space-4) var(--xsb-space-10);
 	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .xsb-palette-favs-row {

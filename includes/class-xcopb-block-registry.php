@@ -2233,7 +2233,7 @@ class XCOPB_Block_Registry {
 			'link'          => '',
 			'align'         => 'left',
 			'width'         => '',
-			'max_width'     => '100%',
+			'max_width'     => 0,
 			'height'        => 130,
 			'bg_size'       => 'cover',
 			'bg_position'   => 'center center',
@@ -2241,6 +2241,12 @@ class XCOPB_Block_Registry {
 			'bg_attachment' => 'scroll',
 			'border_radius' => 0,
 		) );
+
+		// WordPress core blocks are wrapped as serialized native blocks so the
+		// core render callbacks and frontend markup continue to work after save.
+		$this->register_block( 'xcopb/gb-core-block', function ( $block, $context ) {
+			return $this->render_block_file( XCOPB_PLUGIN_DIR . 'blocks/general/core-block.php', $block, $context );
+		}, array( 'core_block_name' => 'core/paragraph', 'core_markup' => '' ) );
 
 		// Hero Banner
 		$this->register_block( 'xcopb/gb-banner', function ( $block, $context ) {

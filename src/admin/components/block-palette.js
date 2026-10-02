@@ -6,6 +6,7 @@
 
 import { useState, useMemo, useEffect, useRef } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import { createBlock, getBlockTypes, serialize } from '@wordpress/blocks';
 import { useDraggable } from '@dnd-kit/core';
 import {
 	IconElements,
@@ -62,7 +63,7 @@ export const BASIC_BLOCKS = [
 	{
 		type: 'xcopb/gb-image',
 		label: __( 'Image', 'xcodesol-page-builder' ),
-		defaults: { url: '', alt: '', align: 'left', max_width: '100%', border_radius: 0 },
+		defaults: { url: '', alt: '', align: 'left', width: 0, max_width: 0, border_radius: 0, opacity: 100 },
 		icon: 'dashicons-format-image',
 		category: 'basic',
 		description: __( 'Insert responsive photos and media.', 'xcodesol-page-builder' ),
@@ -132,6 +133,33 @@ export const WIDGET_BLOCKS = [
 		description: __( 'Custom HTML, embeds, or formatted widgets.', 'xcodesol-page-builder' ),
 	},
 ];
+
+/** Build insertable items from WordPress' registered core block catalog. */
+function getWordPressCoreBlocks() {
+	return ( getBlockTypes() || [] )
+		.filter( ( block ) => block.name.startsWith( 'core/' ) && ! [ 'core/block', 'core/freeform', 'core/missing' ].includes( block.name ) && block.supports?.inserter !== false )
+		.map( ( block ) => {
+			const attributes = {};
+			Object.entries( block.attributes || {} ).forEach( ( [ key, definition ] ) => {
+				if ( Object.prototype.hasOwnProperty.call( definition, 'default' ) ) attributes[ key ] = definition.default;
+			} );
+			if ( 'core/paragraph' === block.name && ! attributes.content ) attributes.content = __( 'Start writing…', 'xcodesol-page-builder' );
+			if ( 'core/heading' === block.name && ! attributes.content ) attributes.content = __( 'Add a heading', 'xcodesol-page-builder' );
+			return {
+				type: 'xcopb/gb-core-block',
+				coreType: block.name,
+				label: block.title || block.name.replace( 'core/', '' ),
+				description: block.description || __( 'Native WordPress block', 'xcodesol-page-builder' ),
+				icon: 'dashicons-block-default',
+				category: 'wordpress',
+				defaults: {
+					core_block_name: block.name,
+					core_label: block.title || block.name.replace( 'core/', '' ),
+					core_markup: serialize( [ createBlock( block.name, attributes ) ] ),
+				},
+			};
+		} );
+}
 
 // Single Post Template Elements
 export const SINGLE_POST_BLOCKS = [
@@ -357,7 +385,7 @@ function FavoriteChip( { block, uid, onToggleFavorite, onClick } ) {
 				className="xsb-fav-chip__unfav"
 				onClick={ ( e ) => {
 					e.stopPropagation();
-					onToggleFavorite( block.type );
+					onToggleFavorite( block.coreType || block.type );
 				} }
 				title={ __( 'Remove from favorites', 'xcodesol-page-builder' ) }
 				aria-label={ __( 'Remove from favorites', 'xcodesol-page-builder' ) }
@@ -397,7 +425,7 @@ function PaletteItem( { block, uid, isFavorite, onToggleFavorite, onClick } ) {
 				className={ `xsb-palette-card__fav-btn${ isFavorite ? ' is-fav' : '' }` }
 				onClick={ ( e ) => {
 					e.stopPropagation();
-					onToggleFavorite( block.type );
+					onToggleFavorite( block.coreType || block.type );
 				} }
 				title={ isFavorite ? __( 'Remove from favorites', 'xcodesol-page-builder' ) : __( 'Add to favorites', 'xcodesol-page-builder' ) }
 				aria-label={ isFavorite ? __( 'Remove from favorites', 'xcodesol-page-builder' ) : __( 'Add to favorites', 'xcodesol-page-builder' ) }
@@ -487,6 +515,7 @@ export default function BlockPalette( {
 			...BASIC_BLOCKS,
 			...GENERAL_BLOCKS,
 			...WIDGET_BLOCKS,
+			...getWordPressCoreBlocks(),
 			...( isSingle ? SINGLE_POST_BLOCKS : [] ),
 			...( isArchive ? ARCHIVE_BLOCKS : [] ),
 		];
@@ -503,13 +532,13 @@ export default function BlockPalette( {
 	};
 
 	const favoriteBlocksList = useMemo( () => {
-		return allBlocks.filter( ( b ) => favorites.includes( b.type ) && matchesSearch( b ) );
+		return allBlocks.filter( ( b ) => favorites.includes( b.coreType || b.type ) && matchesSearch( b ) );
 	}, [ allBlocks, favorites, query ] );
 
 	const renderGroup = ( title, list, groupId, defaultExpanded = true ) => {
 		// Prevent duplicates: if an element is in pinned favorites, exclude it from lower category
 		const availableList = ( ! query && favoriteBlocksList.length > 0 )
-			? list.filter( ( b ) => ! favorites.includes( b.type ) )
+			? list.filter( ( b ) => ! favorites.includes( b.coreType || b.type ) )
 			: list;
 
 		const filtered = availableList.filter( matchesSearch );
@@ -541,10 +570,10 @@ export default function BlockPalette( {
 					<div className="xsb-palette-grid">
 						{ filtered.map( ( block ) => (
 							<PaletteItem
-								key={ `${ groupId }-${ block.type }` }
-								uid={ `${ groupId }-${ block.type }` }
+								key={ `${ groupId }-${ block.coreType || block.type }` }
+								uid={ `${ groupId }-${ block.coreType || block.type }` }
 								block={ block }
-								isFavorite={ favorites.includes( block.type ) }
+								isFavorite={ favorites.includes( block.coreType || block.type ) }
 								onToggleFavorite={ toggleFavorite }
 								onClick={ () => onAdd( block ) }
 							/>
@@ -656,6 +685,7 @@ export default function BlockPalette( {
 						{ renderGroup( __( 'Basic Elements', 'xcodesol-page-builder' ), BASIC_BLOCKS, 'basic', true ) }
 						{ renderGroup( __( 'General & Media', 'xcodesol-page-builder' ), GENERAL_BLOCKS, 'general', true ) }
 						{ renderGroup( __( 'Custom & Widgets', 'xcodesol-page-builder' ), WIDGET_BLOCKS, 'widgets', true ) }
+						{ renderGroup( __( 'WordPress Blocks', 'xcodesol-page-builder' ), allBlocks.filter( ( block ) => Boolean( block.coreType ) ), 'wordpress', false ) }
 					</div>
 				</div>
 			) }

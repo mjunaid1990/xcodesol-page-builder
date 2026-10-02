@@ -71,7 +71,10 @@ if ( 'dynamic' === ( $settings['caption_source'] ?? 'static' ) ) {
 $link        = isset( $settings['link'] ) ? (string) $settings['link'] : '';
 $align       = ! empty( $settings['align'] ) ? $settings['align'] : 'left';
 $width       = isset( $settings['width'] ) && '' !== $settings['width'] && ( ! is_numeric( $settings['width'] ) || (float) $settings['width'] > 0 ) ? $settings['width'] : '';
-$max_width   = isset( $settings['max_width'] ) && '' !== $settings['max_width'] && (float) $settings['max_width'] > 0 ? $settings['max_width'] : '100%';
+$raw_max_width = isset( $settings['max_width'] ) ? $settings['max_width'] : 0;
+// Older image defaults stored 100 as the "fill available width" sentinel.
+$legacy_full_width = is_numeric( $raw_max_width ) && 100.0 === (float) $raw_max_width && ( ! isset( $settings['width'] ) || '' === $settings['width'] || ( is_numeric( $settings['width'] ) && 0 >= (float) $settings['width'] ) );
+$max_width   = ! $legacy_full_width && is_numeric( $raw_max_width ) && (float) $raw_max_width > 0 ? (float) $raw_max_width : '100%';
 $border_rad  = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 0;
 $border_width = isset( $settings['border_width'] ) ? min( 30, absint( $settings['border_width'] ) ) : 0;
 $border_style = isset( $settings['border_style'] ) && in_array( $settings['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ? $settings['border_style'] : 'solid';

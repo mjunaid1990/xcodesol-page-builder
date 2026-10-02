@@ -55,7 +55,7 @@ export const TEXT_SCHEMA = {
 	controls: [
 		{ id: 'content_source', type: 'select', label: 'Content source', tab: 'content', section: 'content', default: 'static', options: [ { value: 'static', label: 'Custom text' }, { value: 'dynamic', label: 'WordPress dynamic value' } ] },
 		{ id: 'dynamic_source', type: 'select', label: 'Dynamic value', tab: 'content', section: 'content', default: 'post_title', options: DYNAMIC_CONTENT_OPTIONS, condition: { content_source: 'dynamic' } },
-		{ id: 'content', type: 'textarea', label: 'Text', tab: 'content', section: 'content', default: 'Add your text here.', condition: { content_source: [ 'static', '', undefined ] }, help: 'Basic HTML is supported, including links, lists and emphasis.' },
+		{ id: 'content', type: 'textarea', richText: true, label: 'Text', tab: 'content', section: 'content', default: '<p>Add your text here.</p>', condition: { content_source: [ 'static', '', undefined ] }, help: 'Format text, add links, and create lists.' },
 		{ id: 'tag', type: 'select', label: 'Text style', tab: 'content', section: 'content', default: 'p', options: [ { value: 'p', label: 'Paragraph' }, { value: 'div', label: 'Block' }, { value: 'blockquote', label: 'Quote' }, { value: 'span', label: 'Inline text' }, ...[ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ].map( ( value ) => ( { value, label: `Heading ${ value.slice( 1 ) }` } ) ) ] },
 		{ id: 'drop_cap', type: 'toggle', label: 'Large first letter', tab: 'style', section: 'paragraphs', default: false },
 		{ id: 'text_columns', type: 'select', label: 'Columns', tab: 'style', section: 'paragraphs', default: 1, options: [ 1, 2, 3 ].map( ( value ) => ( { value, label: String( value ) } ) ) },

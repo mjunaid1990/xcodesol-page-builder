@@ -1366,6 +1366,19 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			return $this->sanitize_text_settings( $settings );
 		}
 
+		if ( 'xcosb/gb-core-block' === $type ) {
+			$name = isset( $settings['core_block_name'] ) ? sanitize_text_field( $settings['core_block_name'] ) : '';
+			$markup = isset( $settings['core_markup'] ) ? (string) $settings['core_markup'] : '';
+			$parsed = '' !== $markup && function_exists( 'parse_blocks' ) ? parse_blocks( $markup ) : array();
+			$registered = class_exists( 'WP_Block_Type_Registry' ) && 0 === strpos( $name, 'core/' ) && WP_Block_Type_Registry::get_instance()->is_registered( $name );
+			if ( ! $registered || empty( $parsed ) || ( $parsed[0]['blockName'] ?? '' ) !== $name ) {
+				$markup = '';
+			} else {
+				$markup = serialize_blocks( array( $parsed[0] ) );
+			}
+			return array( 'core_block_name' => $registered ? $name : 'core/paragraph', 'core_markup' => $markup );
+		}
+
 		if ( 'xcosb/woo-categories' === $type ) {
 			return $this->sanitize_woo_categories_settings( $settings );
 		}
@@ -1610,7 +1623,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	 */
 	private function sanitize_text_settings( $settings ) {
 		$clean = array(
-			'content' => isset( $settings['content'] ) ? sanitize_text_field( $settings['content'] ) : '',
+			'content' => isset( $settings['content'] ) ? wp_kses_post( (string) $settings['content'] ) : '',
 			'tag'     => isset( $settings['tag'] ) ? sanitize_key( $settings['tag'] ) : 'p',
 		);
 

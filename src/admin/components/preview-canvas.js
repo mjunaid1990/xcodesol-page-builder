@@ -15,6 +15,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { __, sprintf } from '@wordpress/i18n';
+import { getBlockType, getSaveElement, parse as parseBlocks } from '@wordpress/blocks';
 import '../../../assets/shared/motion-presets.css';
 
 import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS, WIDGET_BLOCKS } from './block-palette';
@@ -35,6 +36,31 @@ const SAMPLE = {
 };
 
 const DynamicImagePreviewContext = createContext( { featuredImageUrl: '' } );
+
+function sanitizeRichPreviewMarkup( markup ) {
+	if ( typeof document === 'undefined' ) return String( markup || '' ).replace( /<[^>]*>/g, '' );
+	const allowed = new Set( [ 'A', 'B', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'DIV', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'LI', 'OL', 'P', 'PRE', 'S', 'SPAN', 'STRONG', 'U', 'UL' ] );
+	const template = document.createElement( 'template' );
+	template.innerHTML = String( markup || '' );
+	const clean = ( node ) => {
+		[ ...node.children ].forEach( ( child ) => {
+			if ( ! allowed.has( child.tagName ) ) {
+				child.replaceWith( ...child.childNodes );
+				return;
+			}
+			[ ...child.attributes ].forEach( ( attribute ) => {
+				if ( 'A' === child.tagName && [ 'href', 'title', 'target', 'rel' ].includes( attribute.name ) ) {
+					if ( 'href' === attribute.name && ! /^(?:https?:|mailto:|tel:|\/|#)/i.test( attribute.value ) ) child.removeAttribute( attribute.name );
+					return;
+				}
+				child.removeAttribute( attribute.name );
+			} );
+			clean( child );
+		} );
+	};
+	clean( template.content );
+	return template.innerHTML;
+}
 
 function getBlockMeta(type) {
 	const all = [
@@ -860,6 +886,23 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		case 'xcopb/container': {
 			return <NestedContainerPreview block={block} settings={settings} device={device} onAddWidget={canvasActions.onAddWidget} dropTarget={canvasActions.dropTarget} dropGuide={canvasActions.dropGuide} depth={canvasActions.depth || 1} containerIndex={canvasActions.containerIndex} containerPath={canvasActions.containerPath} onSelectNested={canvasActions.onSelectNested} selectedNested={canvasActions.selectedNested} />;
 		}
+		case 'xcopb/gb-core-block':
+		case 'xcosb/gb-core-block': {
+			let corePreview = null;
+			try {
+				const nativeBlock = parseBlocks( settings.core_markup || '' )[ 0 ];
+				const blockType = nativeBlock && getBlockType( nativeBlock.name );
+				if ( blockType ) corePreview = getSaveElement( blockType, nativeBlock.attributes || {}, nativeBlock.innerBlocks || [] );
+			} catch ( error ) {
+				corePreview = null;
+			}
+			return (
+				<div className="xsb-bp xsb-bp-wordpress-block">
+					<div className="xsb-bp-label-chip">{ settings.core_label || settings.core_block_name || __( 'WordPress block', 'xcodesol-page-builder' ) }</div>
+					{ corePreview || <div className="xsb-bp-text">{ settings.core_label || __( 'WordPress block preview', 'xcodesol-page-builder' ) }</div> }
+				</div>
+			);
+		}
 		case 'xcopb/gb-heading': {
 			const Tag = settings.tag || 'h2';
 			const baseFontSize = settings.font_size && typeof settings.font_size === 'object' ? `${ settings.font_size.value || 28 }${ settings.font_size.unit || 'px' }` : ( settings.font_size ? `${ Number( settings.font_size ) }px` : undefined );
@@ -940,6 +983,9 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			const imageBorder = Number( settings.border_width ) > 0 && settings.border_style !== 'none'
 				? `${ Math.min( 30, Number( settings.border_width ) ) }px ${ settings.border_style || 'solid' } ${ settings.border_color || '#e2e8f0' }`
 				: undefined;
+			const configuredMaxWidth = Number( settings.max_width );
+			const legacyFullWidth = configuredMaxWidth === 100 && !( Number( settings.width ) > 0 );
+			const imageMaxWidth = legacyFullWidth || !( configuredMaxWidth > 0 ) ? '100%' : `${ configuredMaxWidth }px`;
 			const overlayOpacity = Math.min( 100, Math.max( 0, Number( settings.overlay_opacity || 0 ) ) ) / 100;
 			const hasOverlay = Boolean( settings.overlay_color ) && overlayOpacity > 0;
 			const wrapStyle = {
@@ -962,7 +1008,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				zIndex: 0,
 				backgroundColor: settings.background || settings.bg_color || undefined,
 				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
-				opacity: Number.isFinite( Number( settings.opacity ) ) && settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
+				opacity: settings.opacity !== undefined && settings.opacity !== '' && Number.isFinite( Number( settings.opacity ) ) ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
 				filter: imageFilter,
 				...chromeInlineCss(settings),
 			};
@@ -970,7 +1016,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				position: 'relative',
 				display: 'inline-block',
 				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : '100%',
-				maxWidth: Number( settings.max_width ) > 0 ? `${ Number( settings.max_width ) }px` : '100%',
+				maxWidth: imageMaxWidth,
 				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
 				overflow: 'hidden',
 			};
@@ -1428,7 +1474,8 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/gb-text':
 		case 'xcosb/gb-text': {
-			const textContent = settings.content_source === 'dynamic' ? resolveDynamicPreview( settings.dynamic_source || 'post_title' ) : ( settings.content || __('Add your text here.', 'xcodesol-page-builder') );
+			const isDynamicText = settings.content_source === 'dynamic';
+			const textContent = isDynamicText ? resolveDynamicPreview( settings.dynamic_source || 'post_title' ) : ( settings.content || __('Add your text here.', 'xcodesol-page-builder') );
 			const textStyle = { ...resolveTextWidgetStyle( settings ), ...chromeInlineCss( settings ), ...marginInlineCss( settings ) };
 			['top', 'right', 'bottom', 'left'].forEach((side) => {
 				const marginValue = settings[`margin_${side}`];
@@ -1440,7 +1487,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				<div className="xsb-bp gb-text">
 					<div className="xsb-bp-label-chip">{__('Text', 'xcodesol-page-builder')}</div>
 					<div className="xsb-bp-text" style={textStyle}>
-						{settings.drop_cap ? <span className="xsb-text-drop-cap">{textContent.charAt( 0 )}</span> : null}{textContent}
+						{ isDynamicText ? textContent : <div dangerouslySetInnerHTML={ { __html: sanitizeRichPreviewMarkup( textContent ) } } /> }
 					</div>
 				</div>
 			);

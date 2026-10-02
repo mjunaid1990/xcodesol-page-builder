@@ -2246,3 +2246,44 @@ html[data-theme='dark'] .xsb-sheet-in {
 	background: var(--xsb-accent-soft, rgba(37, 99, 235, 0.08));
 	color: var(--xsb-accent, #2563eb);
 }
+
+.xsb-rich-text-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 6px;
+	border: 1px solid var(--xsb-line, #dfe5ef);
+	border-bottom: 0;
+	border-radius: 7px 7px 0 0;
+	background: var(--xsb-bg-subtle, #f6f8fc);
+}
+
+.xsb-rich-text-toolbar button {
+	min-width: 30px;
+	min-height: 28px;
+	padding: 3px 7px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--xsb-text, #1e293b);
+	cursor: pointer;
+}
+
+.xsb-rich-text-toolbar button:hover,
+.xsb-rich-text-toolbar button:focus-visible {
+	border-color: var(--xsb-line, #dfe5ef);
+	background: #fff;
+}
+
+.xsb-rich-text-editor {
+	min-height: 150px;
+	padding: 10px 12px;
+	border-radius: 0 0 7px 7px;
+	line-height: 1.5;
+}
+
+.xsb-rich-text-editor:empty::before {
+	color: var(--xsb-muted, #94a3b8);
+	content: attr(data-placeholder);
+	pointer-events: none;
+}
