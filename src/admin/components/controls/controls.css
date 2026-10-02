@@ -2258,6 +2258,14 @@ html[data-theme='dark'] .xsb-sheet-in {
 	background: var(--xsb-bg-subtle, #f6f8fc);
 }
 
+.xsb-control-field.xsb-rich-text-control {
+	align-items: stretch;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 0;
+}
+
 .xsb-rich-text-toolbar button {
 	min-width: 30px;
 	min-height: 28px;

@@ -1669,7 +1669,10 @@ export function DynamicControlRenderer( {
 					} )()
 				: control;
 
-	if ( hasControl( control.type ) ) {
+	const useRichTextEditor = control.type === 'textarea' && (
+		control.richText || ( control.id === 'content' && [ 'xcopb/gb-text', 'xcosb/gb-text' ].includes( blockType ) )
+	);
+	if ( hasControl( control.type ) && ! useRichTextEditor ) {
 		return <div className="xsb-schema-control"><div className="xsb-schema-control__field">{ renderControl(
 			control.type,
 			{
@@ -1704,7 +1707,7 @@ export function DynamicControlRenderer( {
 			// The text widget is always rich text, even if a schema manifest has
 			// been serialized by an older editor build that dropped custom flags.
 			// Keep the control metadata check for other widgets that opt in.
-			field = ( control.richText || ( control.id === 'content' && [ 'xcopb/gb-text', 'xcosb/gb-text' ].includes( blockType ) ) )
+			field = useRichTextEditor
 				? <RichTextEditorControl { ...commonProps } placeholder={ control.placeholder } />
 				: <TextareaControl { ...commonProps } rows={ control.rows } placeholder={ control.placeholder } />; break;
 		case 'number':
