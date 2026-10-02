@@ -503,7 +503,6 @@ function Editor( { config, structure: savedStructure } ) {
 		setGlobalSettingsOpen( false );
 		if ( index !== null && index !== undefined ) {
 			setInspectorOpen( true );
-			setNavigatorOpen( true );
 		}
 		closeStylePanel();
 	}, [ closeStylePanel ] );
@@ -515,7 +514,6 @@ function Editor( { config, structure: savedStructure } ) {
 		setPageSettingsOpen( false );
 		setGlobalSettingsOpen( false );
 		setInspectorOpen( true );
-		setNavigatorOpen( true );
 		closeStylePanel();
 	}, [ closeStylePanel ] );
 
@@ -708,7 +706,6 @@ function Editor( { config, structure: savedStructure } ) {
 		if ( movedRootIndex >= 0 ) {
 			setSelectedIndex( movedRootIndex );
 			setSelectedNested( movedPath ? { ci: movedRootIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } : null );
-			setNavigatorOpen( true );
 		}
 	}, [ layout, zoneMap, setLayoutAndZoneMap ] );
 
@@ -1509,7 +1506,6 @@ function Editor( { config, structure: savedStructure } ) {
 		const movedPath = findNestedBlockPath( next[ targetRootIndex ], moving );
 		setSelectedNested( movedPath ? { ci: targetRootIndex, cj: movedPath[ 0 ].cj, bi: movedPath[ 0 ].bi, path: movedPath } : null );
 		setInspectorOpen( true );
-		setNavigatorOpen( true );
 	}
 
 	// ---- Derived data ----
@@ -1630,7 +1626,6 @@ function Editor( { config, structure: savedStructure } ) {
 		const selectedPath = [ ...path, { cj: columnIndex, bi: at } ];
 		setSelectedNested( { ci, cj: selectedPath[ 0 ].cj, bi: selectedPath[ 0 ].bi, path: selectedPath } );
 		setInspectorOpen( true );
-		setNavigatorOpen( true );
 	}
 
 	// Remove a widget from a container column.
