@@ -19,6 +19,7 @@ import '../../../assets/shared/motion-presets.css';
 
 import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS, WIDGET_BLOCKS } from './block-palette';
 import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/columns';
+import { resolveBackgroundMedia } from '../lib/background-media';
 import { effectiveForDevice } from '../styles/responsive';
 import StylePopover, { hasStylePopover, SHADOW_VALUES } from './style-popover';
 import { IconPlus, IconLayoutFlex, IconLayoutGrid, IconCopy, IconTrash } from './icons';
@@ -1256,8 +1257,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			const align = settings.align || 'center';
 			const bgType = settings.bg_type || 'color';
 			const bgColor = settings.bg_color || settings.background || '#2563eb';
-			const bgImage = typeof settings.bg_image === 'object' ? settings.bg_image?.url || '' : settings.bg_image || '';
-			const bgVideo = typeof settings.bg_video === 'object' ? settings.bg_video?.url || '' : settings.bg_video || '';
+			const { imageUrl: bgImage, videoUrl: bgVideo, imageStyle: bgImageStyle, videoStyle: bgVideoStyle } = resolveBackgroundMedia( settings );
 			const overlay = settings.overlay_color || '';
 			const isArchiveTitle = settings.title_source === 'archive_title';
 			const title = isArchiveTitle
@@ -1316,15 +1316,6 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			if ( bgType === 'color' && settings.bg_color ) { bgStyle.backgroundColor = settings.bg_color; }
 
 			if (bgType === 'image' && bgImage) {
-				const size = settings.bg_size || 'cover';
-				const position = settings.bg_position || 'center center';
-				const repeat = settings.bg_repeat === undefined ? 'no-repeat' : settings.bg_repeat;
-				const attachment = settings.bg_attachment || 'scroll';
-				bgStyle.backgroundImage = `url("${bgImage}")`;
-				bgStyle.backgroundSize = size;
-				bgStyle.backgroundPosition = position;
-				bgStyle.backgroundRepeat = repeat;
-				bgStyle.backgroundAttachment = attachment;
 			}
 
 			return (
@@ -1332,17 +1323,11 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 					{bgType === 'image' && bgImage && (
 						<div
 							className="xsb-banner-bg"
-							style={{
-								backgroundImage: `url("${bgImage}")`,
-								backgroundSize: settings.bg_size || 'cover',
-								backgroundPosition: settings.bg_position || 'center center',
-								backgroundRepeat: settings.bg_repeat === undefined ? 'no-repeat' : settings.bg_repeat,
-								backgroundAttachment: settings.bg_attachment || 'scroll',
-							}}
+							style={{ ...bgImageStyle, backgroundImage: `url("${bgImage}")` }}
 						/>
 					)}
 					{bgType === 'video' && bgVideo && (
-						<video className="xsb-banner-video" src={bgVideo} muted loop autoPlay playsInline />
+						<video className="xsb-banner-video xsb-background-media-video" style={bgVideoStyle} src={bgVideo} muted loop autoPlay playsInline />
 					)}
 					{overlay && (bgType === 'image' || bgType === 'video') && (
 						// z-index 1: above the media (0) but below the content (2).
@@ -3253,8 +3238,8 @@ function ContainerBlock({
 	}
 	const overlayOpacity = Math.min( 100, Math.max( 0, Number( viewSettings.overlay_opacity ?? 100 ) ) ) / 100;
 	const hasBackgroundOverlay = Boolean( viewSettings.overlay_color ) && viewSettings.bg_type !== 'none' && overlayOpacity > 0;
-	const rawBgVideo = viewSettings.bg_video_url || viewSettings.bg_video || '';
-	const bgVideoUrl = typeof rawBgVideo === 'object' && rawBgVideo !== null ? rawBgVideo.url : rawBgVideo;
+	const { imageUrl: resolvedImageUrl, videoUrl: bgVideoUrl, imageStyle: resolvedImageStyle, videoStyle: bgVideoStyle } = resolveBackgroundMedia( viewSettings );
+	if ( viewSettings.bg_type === 'image' && resolvedImageUrl ) resolvedBg = `url("${ resolvedImageUrl }")`;
 	const hasBgVideo = viewSettings.bg_type === 'video' && Boolean( bgVideoUrl );
 
 	// Resolve multi-layer box shadows
@@ -3381,12 +3366,7 @@ function ContainerBlock({
 		padding: resolvedPadding,
 		borderRadius: resolvedRadius,
 		background: resolvedBg,
-		backgroundSize: viewSettings.bg_type === 'image' ? ( viewSettings.bg_size === 'custom' ? ( viewSettings.bg_size_custom || 'cover' ) : ( viewSettings.bg_size || 'cover' ) ) : undefined,
-		backgroundPosition: viewSettings.bg_type === 'image' ? ( viewSettings.bg_position === 'custom' ? ( viewSettings.bg_position_custom || 'center center' ) : ( viewSettings.bg_position || 'center center' ) ) : undefined,
-		backgroundRepeat: viewSettings.bg_type === 'image' ? ( viewSettings.bg_repeat || 'no-repeat' ) : undefined,
-		backgroundAttachment: viewSettings.bg_type === 'image' ? ( viewSettings.bg_attachment || 'scroll' ) : undefined,
-		backgroundOrigin: viewSettings.bg_type === 'image' ? ( viewSettings.bg_origin || 'padding-box' ) : undefined,
-		backgroundClip: viewSettings.bg_type === 'image' ? ( viewSettings.bg_clip || 'border-box' ) : undefined,
+		...( viewSettings.bg_type === 'image' && resolvedImageUrl ? resolvedImageStyle : {} ),
 		color: viewSettings.text_color || undefined,
 		textAlign: viewSettings.text_align || undefined,
 		boxShadow: resolvedShadow,
@@ -3573,7 +3553,7 @@ function ContainerBlock({
 				</div>
 			)}
 			<div className={`xsb-container${hasBgVideo ? ' xsb-container--has-video' : ''}${hasBackgroundOverlay ? ' xsb-container--has-overlay' : ''}`} style={containerStyle}>
-				{hasBgVideo && <video className="xsb-container-background-video" src={bgVideoUrl} muted loop autoPlay playsInline aria-hidden="true" />}
+				{hasBgVideo && <video className="xsb-container-background-video xsb-background-media-video" style={bgVideoStyle} src={bgVideoUrl} muted loop autoPlay playsInline aria-hidden="true" />}
 				{hasBackgroundOverlay && <div className="xsb-container-background-overlay" style={ { backgroundColor: viewSettings.overlay_color, opacity: overlayOpacity, mixBlendMode: viewSettings.overlay_blend_mode || 'normal' } } aria-hidden="true" />}
 				{selected && !nestedActive && (
 					<ContainerPaddingHandles

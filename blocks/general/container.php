@@ -946,7 +946,8 @@ $xsb_overlay_class = $xsb_has_overlay ? ' xsb-container--has-overlay' : '';
 $xsb_output = '<' . $xsb_tag . $xsb_id_attr . $xsb_link_attr . ' class="xsb-container xsb-layout--' . esc_attr( $xsb_layout_mode ) . $xsb_video_class . $xsb_overlay_class . $xsb_anim_class . $xsb_classes_str . '" style="' . $xsb_style . '" data-xsb-layout="' . esc_attr( $xsb_token ) . '">';
 
 if ( '' !== $xsb_bg_video_url ) {
-	$xsb_output .= '<video class="xsb-container-background-video" src="' . esc_url( $xsb_bg_video_url ) . '" muted loop autoplay playsinline aria-hidden="true"></video>';
+	$video_style = XCOPB_Block_Registry::background_video_style( $settings );
+	$xsb_output .= '<video class="xsb-container-background-video xsb-background-media-video" src="' . esc_url( $xsb_bg_video_url ) . '" style="' . esc_attr( $video_style ) . '" muted loop autoplay playsinline aria-hidden="true"></video>';
 }
 
 if ( $xsb_has_overlay ) {

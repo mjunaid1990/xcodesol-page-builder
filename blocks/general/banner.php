@@ -70,6 +70,7 @@ $bg_repeat   = ! empty( $settings['bg_repeat'] ) ? $settings['bg_repeat'] : 'no-
 $bg_attachment = ! empty( $settings['bg_attachment'] ) ? $settings['bg_attachment'] : 'scroll';
 $bg_video_value = ! empty( $settings['bg_video'] ) ? $settings['bg_video'] : '';
 $bg_video    = is_array( $bg_video_value ) ? ( $bg_video_value['url'] ?? '' ) : $bg_video_value;
+$bg_video_style = XCOPB_Block_Registry::background_video_style( $settings );
 $overlay_color = $xsb_banner_color( isset( $settings['overlay_color'] ) ? $settings['overlay_color'] : '', '#000000' );
 
 // Title styling
@@ -212,7 +213,7 @@ $content .= '<div class="xsb-banner' . $xsb_anim_class . '" style="' . $containe
 
 // Video background
 if ( 'video' === $bg_type && $bg_video ) {
-	$content .= '<video class="xsb-banner-video" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">';
+	$content .= '<video class="xsb-banner-video xsb-background-media-video" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;' . esc_attr( $bg_video_style ) . 'z-index:0;">';
 	$content .= '<source src="' . esc_url( $bg_video ) . '" type="video/mp4">';
 	$content .= '</video>';
 }

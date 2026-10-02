@@ -454,6 +454,18 @@ function BannerBackgroundFields( { settings, onChange } ) {
 						value={ settings.bg_video || '' }
 						onChange={ ( v ) => onChange( 'bg_video', v ) }
 					/>
+					<KeyedSelect settings={ settings } onChange={ onChange } setKey="bg_video_fit" label={ __( 'Fit', 'xcodesol-page-builder' ) } options={ [
+						{ label: __( 'Cover', 'xcodesol-page-builder' ), value: 'cover' },
+						{ label: __( 'Contain', 'xcodesol-page-builder' ), value: 'contain' },
+						{ label: __( 'Fill', 'xcodesol-page-builder' ), value: 'fill' },
+					] } />
+					<KeyedSelect settings={ settings } onChange={ onChange } setKey="bg_video_position" label={ __( 'Position', 'xcodesol-page-builder' ) } options={ [
+						{ label: __( 'Center', 'xcodesol-page-builder' ), value: 'center center' },
+						{ label: __( 'Top', 'xcodesol-page-builder' ), value: 'center top' },
+						{ label: __( 'Bottom', 'xcodesol-page-builder' ), value: 'center bottom' },
+						{ label: __( 'Left', 'xcodesol-page-builder' ), value: 'left center' },
+						{ label: __( 'Right', 'xcodesol-page-builder' ), value: 'right center' },
+					] } />
 				</StyleGroup>
 			) }
 			{ withOverlay && (

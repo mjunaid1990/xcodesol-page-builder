@@ -1634,6 +1634,24 @@ class XCOPB_Block_Registry {
 	}
 
 	/**
+	 * Shared fit and focal-point styles for image and video background media.
+	 * Values are restricted to the options exposed in the background controls.
+	 *
+	 * @param array $settings Block settings.
+	 * @return string
+	 */
+	public static function background_video_style( $settings ) {
+		$fit = isset( $settings['bg_video_fit'] ) && in_array( $settings['bg_video_fit'], array( 'cover', 'contain', 'fill' ), true )
+			? $settings['bg_video_fit']
+			: 'cover';
+		$position = isset( $settings['bg_video_position'] ) && in_array( $settings['bg_video_position'], array( 'center center', 'center top', 'center bottom', 'left center', 'right center' ), true )
+			? $settings['bg_video_position']
+			: 'center center';
+
+		return 'object-fit:' . $fit . ';object-position:' . $position . ';';
+	}
+
+	/**
 	 * True when a device layer holds any banner background/overlay/placement
 	 * override (used to decide whether per-device banner rules are needed).
 	 *
@@ -1657,7 +1675,7 @@ class XCOPB_Block_Registry {
 	 * @return array
 	 */
 	private static function banner_bg_keys() {
-		return array( 'bg_type', 'bg_color', 'gradient_type', 'gradient_angle', 'gradient_radial_shape', 'gradient_position', 'gradient_color_a', 'gradient_color_b', 'bg_image', 'bg_size', 'bg_position', 'bg_repeat', 'bg_attachment', 'bg_video', 'overlay_color', 'overlay_opacity' );
+		return array( 'bg_type', 'bg_color', 'gradient_type', 'gradient_angle', 'gradient_radial_shape', 'gradient_position', 'gradient_color_a', 'gradient_color_b', 'bg_image', 'bg_size', 'bg_position', 'bg_repeat', 'bg_attachment', 'bg_video', 'bg_video_fit', 'bg_video_position', 'overlay_color', 'overlay_opacity' );
 	}
 
 	/**
