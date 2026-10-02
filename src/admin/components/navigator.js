@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { useDndContext } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -109,7 +109,7 @@ function SortableTreeItem( { id, moveData, className, dragPointerY, children } )
 function NavigatorItem( props ) {
 	const {
 		block, rootIndex, path, root, columnIndex, itemIndex, selectedIndex, selectedNested,
-		onSelect, onSelectNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn, dragPointerY,
+		onSelect, onSelectNested, onOpenSettings, onOpenSettingsNested, expandedContainers, toggleContainer, dragPointerY,
 	} = props;
 	const container = isContainer( block );
 	const ItemIcon = container ? IconWidgetContainer : widgetIcons[ ( block?.type || '' ).split( '/' ).pop().replace( /^gb-/, '' ) ];
@@ -130,19 +130,24 @@ function NavigatorItem( props ) {
 		? { kind: 'root', blockId: block.id, index: rootIndex, container, label: blockTitle( block ), zone: props.zoneMap?.[ rootIndex ] || '' }
 		: { kind: 'nested', blockId: block.id, ci: rootIndex, path, container, label: blockTitle( block ) };
 	const itemSortableId = sortableId( block, rootIndex, path );
+	const treeDepth = root ? 0 : path.length;
+	const treeIndent = 10 + ( treeDepth * 20 );
+	const emptyIndent = treeIndent + 76;
 
 	return (
 		<SortableTreeItem id={ itemSortableId } moveData={ moveData } className="xsb-navigator__branch" dragPointerY={ dragPointerY }>
 			{ ( dragAttributes, dragListeners, rowRef, dropClass, setSortableRef ) => <>
-				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container ? expanded : undefined }>
-					{ container && <button type="button" className="xsb-navigator__disclosure" onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 13 } height={ 13 } /> : <IconChevronRight width={ 13 } height={ 13 } /> }</button> }
+				<div ref={ ( element ) => { rowRef.current = element; setSortableRef( element ); } } id={ itemSortableId } { ...dragAttributes } { ...dragListeners } style={ { '--xsb-tree-indent': `${ treeIndent }px` } } className={ `xsb-navigator__row${ selected ? ' is-selected' : '' }${ ancestorSelected && ! selected ? ' is-ancestor' : '' }${ dropClass }` } role="treeitem" aria-selected={ selected } aria-level={ root ? 1 : path.length + 1 } aria-expanded={ container ? expanded : undefined }>
+					{ container
+						? <button type="button" className="xsb-navigator__disclosure" onPointerDown={ ( event ) => event.stopPropagation() } onClick={ ( event ) => { event.stopPropagation(); toggleContainer( nodeKey ); } } aria-label={ expanded ? __( 'Collapse container', 'xcodesol-page-builder' ) : __( 'Expand container', 'xcodesol-page-builder' ) } aria-expanded={ expanded }>{ expanded ? <IconChevronDown width={ 14 } height={ 14 } /> : <IconChevronRight width={ 14 } height={ 14 } /> }</button>
+						: <span className="xsb-navigator__disclosure-spacer" aria-hidden="true" /> }
 					<button
 						type="button"
 						className="xsb-navigator__select"
 						onClick={ () => root ? onSelect?.( rootIndex ) : onSelectNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }
 						onDoubleClick={ () => root ? onOpenSettings?.( rootIndex ) : onOpenSettingsNested?.( rootIndex, path[ 0 ]?.cj ?? columnIndex, path[ 0 ]?.bi ?? itemIndex, null, path ) }
 					>
-						{ ItemIcon && <span className="xsb-navigator__item-icon"><ItemIcon width={ 14 } height={ 14 } /></span> }
+						{ ItemIcon && <span className="xsb-navigator__item-icon"><ItemIcon width={ 18 } height={ 18 } /></span> }
 						<span className="xsb-navigator__label">{ blockTitle( block ) }</span>
 					</button>
 				</div>
@@ -150,12 +155,8 @@ function NavigatorItem( props ) {
 					<div className="xsb-navigator__children" role="group">
 						{ hasChildren ? children.map( ( column, cj ) => {
 							const items = Array.isArray( column ) ? column : [];
-							const showColumn = children.length > 1;
-							const colKey = `${ nodeKey }-column-${ cj }`;
-							const columnExpanded = ! collapsedColumns[ colKey ];
-							return <div className="xsb-navigator__column" key={ colKey }>
-								{ showColumn && <button type="button" className="xsb-navigator__column-label" onClick={ () => toggleColumn( colKey ) } aria-expanded={ columnExpanded }>{ columnExpanded ? <IconChevronDown width={ 12 } height={ 12 } /> : <IconChevronRight width={ 12 } height={ 12 } />}<span>{ sprintf( __( 'Column %d', 'xcodesol-page-builder' ), cj + 1 ) }</span><span className="xsb-navigator__count">{ items.length }</span></button> }
-								{ ( ! showColumn || columnExpanded ) && <SortableContext
+							return <div className="xsb-navigator__column" key={ `${ nodeKey }-column-${ cj }` }>
+								<SortableContext
 									items={ items.map( ( child, bi ) => sortableId( child, rootIndex, [ ...path, { cj, bi } ] ) ) }
 									strategy={ verticalListSortingStrategy }
 								>
@@ -168,9 +169,9 @@ function NavigatorItem( props ) {
 										columnIndex={ cj }
 										itemIndex={ bi }
 									/> ) }
-								</SortableContext> }
+								</SortableContext>
 							</div>;
-						} ) : <span className="xsb-navigator__empty-child">{ __( 'Empty', 'xcodesol-page-builder' ) }</span> }
+						} ) : <span className="xsb-navigator__empty-child" style={ { '--xsb-empty-indent': `${ emptyIndent }px` } }>{ __( 'Empty', 'xcodesol-page-builder' ) }</span> }
 					</div>
 				) }
 			</> }
@@ -181,11 +182,9 @@ function NavigatorItem( props ) {
 export default function Navigator( { layout = [], zoneMap = [], selectedIndex, selectedNested, onSelect, onSelectNested, onOpenSettings, onOpenSettingsNested, onClose } ) {
 	const { active } = useDndContext();
 	const [ expandedContainers, setExpandedContainers ] = useState( {} );
-	const [ collapsedColumns, setCollapsedColumns ] = useState( {} );
 	const [ dragPointerY, setDragPointerY ] = useState( null );
 	const navigatorDragActive = !! active?.data?.current?.navigatorMove;
 	const toggleContainer = ( key ) => setExpandedContainers( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
-	const toggleColumn = ( key ) => setCollapsedColumns( ( current ) => ( { ...current, [ key ]: ! current[ key ] } ) );
 	useEffect( () => {
 		if ( ! navigatorDragActive ) {
 			setDragPointerY( null );
@@ -251,7 +250,7 @@ export default function Navigator( { layout = [], zoneMap = [], selectedIndex, s
 		return () => window.cancelAnimationFrame( frame );
 	}, [ selectedNodeId, expandedContainers ] );
 
-	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, onOpenSettings, onOpenSettingsNested, expandedContainers, toggleContainer, collapsedColumns, toggleColumn, dragPointerY };
+	const shared = { layout, zoneMap, selectedIndex, selectedNested, onSelect, onSelectNested, onOpenSettings, onOpenSettingsNested, expandedContainers, toggleContainer, dragPointerY };
 	return (
 		<section className="xsb-navigator" aria-label={ __( 'Structure', 'xcodesol-page-builder' ) }>
 			<header className="xsb-navigator__header"><span className="xsb-navigator__heading-icon"><IconLayers width={ 15 } height={ 15 } /></span><strong>{ __( 'Structure', 'xcodesol-page-builder' ) }</strong><button type="button" className="xsb-navigator__close" onClick={ onClose } aria-label={ __( 'Close Structure', 'xcodesol-page-builder' ) } title={ __( 'Close', 'xcodesol-page-builder' ) }><IconClose width={ 14 } height={ 14 } /></button></header>
