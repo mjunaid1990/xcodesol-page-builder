@@ -70,13 +70,23 @@ $border_rad  = isset( $settings['border_radius'] ) ? absint( $settings['border_r
 $box_shadow  = ! empty( $settings['box_shadow'] ) ? $settings['box_shadow'] : '';
 $object_fit = ! empty( $settings['object_fit'] ) ? $settings['object_fit'] : '';
 $object_position = ! empty( $settings['object_position'] ) ? $settings['object_position'] : '';
+$image_style_settings = $settings;
+if ( empty( $image_style_settings['bg_size'] ) ) {
+	$legacy_fit = array( 'cover' => 'cover', 'contain' => 'contain', 'fill' => '100% 100%', 'none' => 'auto', 'scale-down' => 'contain' );
+	$image_style_settings['bg_size'] = isset( $legacy_fit[ $object_fit ] ) ? $legacy_fit[ $object_fit ] : 'cover';
+}
+if ( empty( $image_style_settings['bg_position'] ) && '' !== $object_position ) {
+	$image_style_settings['bg_position'] = $object_position;
+}
+$background_image_decls = XCOPB_Block_Registry::background_image_decls( $image_style_settings );
+$image_object_fit = 'auto' === $image_style_settings['bg_size'] ? 'none' : ( '100% 100%' === $image_style_settings['bg_size'] ? 'fill' : ( in_array( $image_style_settings['bg_size'], array( 'cover', 'contain', 'fill', 'none', 'scale-down' ), true ) ? $image_style_settings['bg_size'] : 'cover' ) );
 
 $img_styles = array(
 	'display:block',
 	'width:100%',
 	'max-width:' . ( is_numeric( $max_width ) ? $max_width . 'px' : esc_attr( $max_width ) ),
 	'height:130px',
-	'object-fit:cover',
+	'object-fit:' . $image_object_fit,
 );
 if ( '' !== $width ) {
 	$img_styles[1] = 'width:' . ( is_numeric( $width ) ? $width . 'px' : esc_attr( $width ) );
@@ -87,12 +97,8 @@ if ( is_numeric( $max_width ) && (float) $max_width > 0 ) {
 if ( isset( $settings['height'] ) && is_numeric( $settings['height'] ) && (float) $settings['height'] > 0 ) {
 	$img_styles[3] = 'height:' . (float) $settings['height'] . 'px';
 }
-if ( in_array( $object_fit, array( 'cover', 'contain', 'fill', 'none', 'scale-down' ), true ) ) {
-	$img_styles[4] = 'object-fit:' . $object_fit;
-}
-if ( preg_match( '/^(center|top|bottom|left|right)( (center|top|bottom|left|right))?$/', $object_position ) ) {
-	$img_styles[] = 'object-position:' . esc_attr( $object_position );
-}
+$img_styles[] = 'background-image:url("' . esc_url( $url ) . '")';
+$img_styles = array_merge( $img_styles, $background_image_decls );
 if ( $border_rad > 0 ) {
 	$img_styles[] = 'border-radius:' . $border_rad . 'px';
 }

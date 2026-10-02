@@ -19,7 +19,7 @@ import '../../../assets/shared/motion-presets.css';
 
 import { getBlocksForView, GENERAL_BLOCKS, CONTAINER_BLOCKS, WOO_CONTENT_BLOCKS, WIDGET_BLOCKS } from './block-palette';
 import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/columns';
-import { resolveBackgroundMedia } from '../lib/background-media';
+import { resolveBackgroundMedia, resolveImageWidgetMedia } from '../lib/background-media';
 import { effectiveForDevice } from '../styles/responsive';
 import StylePopover, { hasStylePopover, SHADOW_VALUES } from './style-popover';
 import { IconPlus, IconLayoutFlex, IconLayoutGrid, IconCopy, IconTrash } from './icons';
@@ -936,6 +936,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				: settings.image_source === 'featured_image'
 					? featuredImageUrl
 					: savedMedia;
+			const imageMediaStyles = resolveImageWidgetMedia( settings, imageUrl || '' );
 			const wrapStyle = {
 				display: 'block',
 				width: '100%',
@@ -948,11 +949,10 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				maxWidth: Number( settings.max_width ) > 0 ? `${ Number( settings.max_width ) }px` : '100%',
 				width: Number( settings.width ) > 0 ? `${ Number( settings.width ) }px` : '100%',
 				height: Number( settings.height ) > 0 ? `${ Number( settings.height ) }px` : '130px',
-				objectFit: settings.object_fit || 'cover',
-				objectPosition: settings.object_position || undefined,
+				...imageMediaStyles.imageStyle,
 				borderRadius: `${ Number( settings.border_radius ) || 0 }px`,
 				display: 'block',
-				background: settings.background || settings.bg_color || undefined,
+				backgroundColor: settings.background || settings.bg_color || undefined,
 				boxShadow: SHADOW_VALUES[ settings.box_shadow || 'none' ] || undefined,
 				opacity: Number.isFinite( Number( settings.opacity ) ) && settings.opacity !== undefined ? Math.min( 100, Math.max( 0, Number( settings.opacity ) ) ) / 100 : undefined,
 				filter: Number( settings.grayscale ) > 0 ? `grayscale(${ Math.min( 100, Number( settings.grayscale ) ) }%)` : undefined,

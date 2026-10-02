@@ -1596,10 +1596,6 @@ class XCOPB_Block_Registry {
 		$gradient_a     = $val( 'gradient_color_a', '#2563eb' );
 		$gradient_b     = $val( 'gradient_color_b', '#4f46e5' );
 		$bg_image       = $val( 'bg_image', '' );
-		$bg_size        = $val( 'bg_size', 'cover' );
-		$bg_position    = $val( 'bg_position', 'center center' );
-		$bg_repeat      = $val( 'bg_repeat', 'no-repeat' );
-		$bg_attachment  = $val( 'bg_attachment', 'scroll' );
 
 		$decls = array();
 
@@ -1621,10 +1617,7 @@ class XCOPB_Block_Registry {
 			}
 		} elseif ( 'image' === $bg_type && $bg_image ) {
 			$decls[] = 'background-image:url(' . $bg_image . ')';
-			$decls[] = 'background-size:' . $bg_size;
-			$decls[] = 'background-position:' . $bg_position;
-			$decls[] = 'background-repeat:' . $bg_repeat;
-			$decls[] = 'background-attachment:' . $bg_attachment;
+			$decls = array_merge( $decls, self::background_image_decls( $settings ) );
 			$decls[] = 'background-color:' . $bg_color;
 		} else {
 			$decls[] = 'background-color:' . $bg_color;
@@ -1649,6 +1642,39 @@ class XCOPB_Block_Registry {
 			: 'center center';
 
 		return 'object-fit:' . $fit . ';object-position:' . $position . ';';
+	}
+
+	/**
+	 * Shared CSS declarations for image backgrounds across widgets and blocks.
+	 *
+	 * @param array $settings Block settings.
+	 * @return array
+	 */
+	public static function background_image_decls( $settings ) {
+		$size = isset( $settings['bg_size'] ) ? $settings['bg_size'] : 'cover';
+		$size_options = array( 'cover', 'contain', 'auto', '100% 100%' );
+		if ( 'custom' === $size ) {
+			$size = class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_css_fragment( $settings['bg_size_custom'] ?? '' ) : '';
+			$size = '' !== $size ? $size : 'cover';
+		} elseif ( ! in_array( $size, $size_options, true ) ) {
+			$size = 'cover';
+		}
+
+		$position = isset( $settings['bg_position'] ) ? $settings['bg_position'] : 'center center';
+		$positions = array( 'left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom' );
+		if ( 'custom' === $position ) {
+			$position = class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_css_fragment( $settings['bg_position_custom'] ?? '' ) : '';
+			$position = '' !== $position ? $position : 'center center';
+		} elseif ( ! in_array( $position, $positions, true ) ) {
+			$position = 'center center';
+		}
+
+		$repeat = isset( $settings['bg_repeat'] ) && in_array( $settings['bg_repeat'], array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ), true ) ? $settings['bg_repeat'] : 'no-repeat';
+		$attachment = isset( $settings['bg_attachment'] ) && in_array( $settings['bg_attachment'], array( 'scroll', 'fixed', 'local' ), true ) ? $settings['bg_attachment'] : 'scroll';
+		$origin = isset( $settings['bg_origin'] ) && in_array( $settings['bg_origin'], array( 'border-box', 'padding-box', 'content-box' ), true ) ? $settings['bg_origin'] : 'padding-box';
+		$clip = isset( $settings['bg_clip'] ) && in_array( $settings['bg_clip'], array( 'border-box', 'padding-box', 'content-box' ), true ) ? $settings['bg_clip'] : 'border-box';
+
+		return array( 'background-size:' . $size, 'background-position:' . $position, 'object-position:' . $position, 'background-repeat:' . $repeat, 'background-attachment:' . $attachment, 'background-origin:' . $origin, 'background-clip:' . $clip );
 	}
 
 	/**
@@ -2110,6 +2136,11 @@ class XCOPB_Block_Registry {
 			'align'         => 'left',
 			'width'         => '',
 			'max_width'     => '100%',
+			'height'        => 130,
+			'bg_size'       => 'cover',
+			'bg_position'   => 'center center',
+			'bg_repeat'     => 'no-repeat',
+			'bg_attachment' => 'scroll',
 			'border_radius' => 0,
 		) );
 

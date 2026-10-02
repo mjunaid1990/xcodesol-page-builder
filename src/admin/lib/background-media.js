@@ -35,3 +35,34 @@ export function resolveBackgroundMedia( settings = {} ) {
 		},
 	};
 }
+
+/**
+ * Resolve image widget sizing through the same background image controls used
+ * by containers and banners.
+ *
+ * @param {Object} settings Block settings.
+ * @param {string} url      Resolved static or dynamic image URL.
+ * @return {Object} Shared inline styles for the image element.
+ */
+export function resolveImageWidgetMedia( settings = {}, url = '' ) {
+	const legacySize = { cover: 'cover', contain: 'contain', fill: '100% 100%', none: 'auto', 'scale-down': 'contain' }[ settings.object_fit ];
+	const effectiveSettings = {
+		...settings,
+		bg_image: url,
+		bg_size: settings.bg_size || legacySize || 'cover',
+		bg_position: settings.bg_position || settings.object_position || 'center center',
+	};
+	const background = resolveBackgroundMedia( effectiveSettings );
+	const size = background.imageStyle.backgroundSize;
+	const objectFit = size === 'auto' ? 'none' : size === '100% 100%' ? 'fill' : [ 'cover', 'contain', 'fill', 'none', 'scale-down' ].includes( size ) ? size : 'cover';
+	const imageBackground = url ? { backgroundImage: `url("${ url }")` } : {};
+
+	return {
+		imageStyle: {
+			objectFit,
+			objectPosition: background.imageStyle.backgroundPosition,
+			...background.imageStyle,
+			...imageBackground,
+		},
+	};
+}

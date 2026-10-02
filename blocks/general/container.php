@@ -61,14 +61,6 @@ if ( isset( $settings['padding'] ) && is_array( $settings['padding'] ) ) {
 $xsb_align    = ! empty( $settings['align'] ) ? $settings['align'] : 'stretch';
 $xsb_bg       = ! empty( $settings['bg_color'] ) ? $settings['bg_color'] : ( ! empty( $settings['background'] ) ? $settings['background'] : '' );
 $xsb_bg_type  = isset( $settings['bg_type'] ) ? (string) $settings['bg_type'] : '';
-$xsb_bg_size  = isset( $settings['bg_size'] ) && in_array( $settings['bg_size'], array( 'cover', 'contain', 'auto', '100% 100%', 'custom' ), true ) ? $settings['bg_size'] : 'cover';
-$xsb_bg_size_css = 'custom' === $xsb_bg_size && ! empty( $settings['bg_size_custom'] ) ? $settings['bg_size_custom'] : ( 'custom' === $xsb_bg_size ? 'cover' : $xsb_bg_size );
-$xsb_bg_position = isset( $settings['bg_position'] ) && in_array( $settings['bg_position'], array( 'left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom' ), true ) ? $settings['bg_position'] : 'center center';
-$xsb_bg_position_css = 'custom' === ( $settings['bg_position'] ?? '' ) && ! empty( $settings['bg_position_custom'] ) ? $settings['bg_position_custom'] : $xsb_bg_position;
-$xsb_bg_repeat = isset( $settings['bg_repeat'] ) && in_array( $settings['bg_repeat'], array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ), true ) ? $settings['bg_repeat'] : 'no-repeat';
-$xsb_bg_attachment = isset( $settings['bg_attachment'] ) && in_array( $settings['bg_attachment'], array( 'scroll', 'fixed', 'local' ), true ) ? $settings['bg_attachment'] : 'scroll';
-$xsb_bg_origin = isset( $settings['bg_origin'] ) && in_array( $settings['bg_origin'], array( 'border-box', 'padding-box', 'content-box' ), true ) ? $settings['bg_origin'] : 'padding-box';
-$xsb_bg_clip = isset( $settings['bg_clip'] ) && in_array( $settings['bg_clip'], array( 'border-box', 'padding-box', 'content-box' ), true ) ? $settings['bg_clip'] : 'border-box';
 $xsb_overlay_color = isset( $settings['overlay_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['overlay_color'] ) : '';
 $xsb_overlay_opacity = isset( $settings['overlay_opacity'] ) ? max( 0, min( 100, (float) $settings['overlay_opacity'] ) ) / 100 : 1;
 $xsb_overlay_blend = isset( $settings['overlay_blend_mode'] ) && in_array( $settings['overlay_blend_mode'], array( 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity' ), true ) ? $settings['overlay_blend_mode'] : 'normal';
@@ -581,7 +573,7 @@ if ( ! empty( $xsb_bg ) ) {
 }
 
 if ( 'image' === $xsb_bg_type && ! empty( $settings['bg_image'] ) ) {
-	$xsb_style .= 'background-size:' . esc_attr( $xsb_bg_size_css ) . ';background-position:' . esc_attr( $xsb_bg_position_css ) . ';background-repeat:' . esc_attr( $xsb_bg_repeat ) . ';background-attachment:' . esc_attr( $xsb_bg_attachment ) . ';background-origin:' . esc_attr( $xsb_bg_origin ) . ';background-clip:' . esc_attr( $xsb_bg_clip ) . ';';
+	$xsb_style .= implode( ';', XCOPB_Block_Registry::background_image_decls( $settings ) ) . ';';
 }
 
 if ( ! empty( $settings['text_color'] ) ) {
