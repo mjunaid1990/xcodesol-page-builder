@@ -1342,6 +1342,22 @@
 	height: 11px;
 }
 
+/* Keep the outline copy / delete actions crisp and easy to spot. The compact
+ * toolbar icon rule above is intended for the block badge; action icons need
+ * a larger hit area and an explicit current-color stroke. */
+.xsb-block-toolbar-actions .xsb-tb-btn svg,
+.xsb-nested-toolbar-actions .xsb-tb-btn svg {
+	display: block;
+	flex: 0 0 16px;
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.8;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
 .xsb-tb-btn .dashicons {
 	width: 12px;
 	height: 12px;
