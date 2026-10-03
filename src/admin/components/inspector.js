@@ -372,7 +372,7 @@ function SiteSettingsView( { settings = {}, setSettings, fontOptions = [] } ) {
 	</div>;
 }
 
-function BlockAdvancedTab( { settings = {}, onChange } ) {
+function BlockAdvancedTab( { blockType, instanceId, settings = {}, onChange } ) {
 	return (
 		<div className="xsb-inspector-advanced">
 			<CollapsibleSection
@@ -395,6 +395,7 @@ function BlockAdvancedTab( { settings = {}, onChange } ) {
 					onChange={ ( value ) => onChange( 'margin', value ) }
 				/>
 			</CollapsibleSection>
+			<MotionSettingsPanel blockType={ blockType } instanceId={ instanceId } settings={ settings } onChange={ onChange } />
 			<CollapsibleSection
 				id="adv-classes"
 				title={ __( 'Attributes & Classes', 'xcodesol-page-builder' ) }
@@ -1500,6 +1501,8 @@ export default function Inspector( {
 						setSectionStates={ setSectionStates }
 						resetVersion={ schemaResetVersion }
 						blockType={ block.type }
+						insertedPanel={ tab === 'advanced' && ! searchQuery ? <MotionSettingsPanel blockType={ block.type } instanceId={ block.id || `block-${ selectedIndex }` } settings={ block.settings || {} } onChange={ updateSetting } /> : null }
+						insertBeforeSectionIds={ [ 'visibility', 'responsive_visibility' ] }
 						dynamicPreview={ { featuredImageUrl: currentFeaturedImageUrl } }
 						onUpdateSetting={ updateSetting }
 						searchQuery={ searchQuery }
@@ -1533,12 +1536,11 @@ export default function Inspector( {
 
 						{ tab === 'advanced' && (
 							<>
-								<BlockAdvancedTab settings={ block.settings || {} } onChange={ updateSetting } />
+								<BlockAdvancedTab blockType={ block.type } instanceId={ block.id || `block-${ selectedIndex }` } settings={ block.settings || {} } onChange={ updateSetting } />
 							</>
 						) }
 					</>
 				) }
-				{ tab === 'advanced' && <MotionSettingsPanel blockType={ block.type } instanceId={ block.id || `block-${ selectedIndex }` } settings={ block.settings || {} } onChange={ updateSetting } /> }
 			</div>
 
 			{/* Always-visible panel footer */}

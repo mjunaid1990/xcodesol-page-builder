@@ -1975,6 +1975,8 @@ export function SchemaInspectorRenderer( {
 	setSectionStates,
 	resetVersion = 0,
 	blockType = '',
+	insertedPanel = null,
+	insertBeforeSectionIds = [],
 } ) {
 	if ( ! schema || ! Array.isArray( schema.sections ) || ! Array.isArray( schema.controls ) ) {
 		return null;
@@ -2015,12 +2017,22 @@ export function SchemaInspectorRenderer( {
 
 		return visibleControls.length ? [ { section, sectionControls, visibleControls } ] : [];
 	} );
+	const insertBeforeIndex = insertedPanel
+		? visibleSections.findIndex( ( item ) => insertBeforeSectionIds.includes( item.section.id ) )
+		: -1;
+	const renderItems = [ ...visibleSections ];
+	if ( insertedPanel ) {
+		renderItems.splice( insertBeforeIndex < 0 ? renderItems.length : insertBeforeIndex, 0, { insertedPanel: true, section: { id: 'inserted-panel' } } );
+	}
 	const firstVisibleSectionId = visibleSections[ 0 ]?.section.id;
 
 	return (
 		<div className="xsb-schema-inspector-wrap">
 			{ ! hasSearchMatch && <p className="xsb-inspector-search-empty">{ __( 'No settings match your search.', 'xcodesol-page-builder' ) }</p> }
-			{ visibleSections.map( ( { section, sectionControls, visibleControls } ) => {
+			{ renderItems.map( ( { section, sectionControls, visibleControls, insertedPanel: isInsertedPanel } ) => {
+				if ( isInsertedPanel ) {
+					return <div className="xsb-schema-inserted-panel" key="xsb-schema-inserted-panel">{ insertedPanel }</div>;
+				}
 
 				return (
 					<CollapsibleSection
