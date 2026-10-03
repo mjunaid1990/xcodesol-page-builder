@@ -80,6 +80,16 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	}
 
 	public function register_routes() {
+		register_rest_route( $this->namespace, '/hero-query-options', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_hero_query_options' ),
+			'permission_callback' => array( $this, 'check_permissions' ),
+		) );
+		register_rest_route( $this->namespace, '/hero-query-preview', array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => array( $this, 'get_hero_query_preview' ),
+			'permission_callback' => array( $this, 'check_permissions' ),
+		) );
 		register_rest_route( $this->namespace, '/site-settings', array(
 			array( 'methods' => WP_REST_Server::READABLE, 'callback' => array( $this, 'get_site_settings' ), 'permission_callback' => array( $this, 'check_site_settings_permissions' ) ),
 			array( 'methods' => WP_REST_Server::EDITABLE, 'callback' => array( $this, 'update_site_settings' ), 'permission_callback' => array( $this, 'check_site_settings_permissions' ) ),
@@ -163,6 +173,95 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 	}
 
 	public function check_site_settings_permissions() { return current_user_can( 'manage_options' ); }
+
+	/** Return public post types and searchable terms, authors, or posts for the hero query controls. */
+	public function get_hero_query_options( WP_REST_Request $request ) {
+		$kind       = sanitize_key( $request->get_param( 'kind' ) );
+		$search     = sanitize_text_field( $request->get_param( 'search' ) );
+		$post_type  = sanitize_key( $request->get_param( 'post_type' ) ?: 'post' );
+		$ids        = array_values( array_filter( array_map( 'absint', explode( ',', (string) $request->get_param( 'ids' ) ) ) ) );
+		$public     = get_post_types( array( 'public' => true ), 'objects' );
+		if ( 'post_types' === $kind ) {
+			$options = array();
+			foreach ( $public as $type ) {
+				$options[] = array( 'id' => $type->name, 'label' => $type->labels->singular_name ?: $type->label );
+			}
+			return rest_ensure_response( $options );
+		}
+		if ( ! isset( $public[ $post_type ] ) ) {
+			$post_type = 'post';
+		}
+		if ( strlen( $search ) < 3 && empty( $ids ) ) {
+			return rest_ensure_response( array() );
+		}
+		$options = array();
+		if ( in_array( $kind, array( 'category', 'tag' ), true ) ) {
+			$taxonomy = 'category' === $kind ? 'category' : 'post_tag';
+			if ( ! taxonomy_exists( $taxonomy ) || ( empty( $ids ) && ! is_object_in_taxonomy( $post_type, $taxonomy ) ) ) {
+				return rest_ensure_response( array() );
+			}
+			$terms = get_terms( array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'number'     => 20,
+				'search'     => $search,
+				'include'    => $ids,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			) );
+			if ( ! is_wp_error( $terms ) ) {
+				foreach ( $terms as $term ) {
+					$options[] = array( 'id' => (string) $term->term_id, 'label' => $term->name );
+				}
+			}
+		} elseif ( 'author' === $kind ) {
+			$user_args = array(
+				'number'              => 20,
+				'search_columns'      => array( 'user_login', 'user_nicename', 'display_name' ),
+				'orderby'             => 'display_name',
+				'order'               => 'ASC',
+				'include'             => $ids,
+			);
+			if ( empty( $ids ) ) {
+				$user_args['has_published_posts'] = array( $post_type );
+			}
+			if ( $search ) {
+				$user_args['search'] = '*' . esc_attr( $search ) . '*';
+			}
+			$user_query = new WP_User_Query( $user_args );
+			foreach ( $user_query->get_results() as $user ) {
+				$options[] = array( 'id' => (string) $user->ID, 'label' => $user->display_name );
+			}
+		} elseif ( 'posts' === $kind ) {
+			$posts = get_posts( array(
+				'post_type'              => $ids ? array_keys( $public ) : $post_type,
+				'post_status'            => 'publish',
+				'posts_per_page'         => 20,
+				's'                      => $search,
+				'post__in'               => $ids,
+				'orderby'                => $ids ? 'post__in' : 'title',
+				'order'                  => 'ASC',
+				'ignore_sticky_posts'    => true,
+				'suppress_filters'       => false,
+			) );
+			foreach ( $posts as $post ) {
+				$options[] = array( 'id' => (string) $post->ID, 'label' => get_the_title( $post ) );
+			}
+		}
+		return rest_ensure_response( $options );
+	}
+
+	/** Return actual query results to the editor so query changes preview immediately. */
+	public function get_hero_query_preview( WP_REST_Request $request ) {
+		$settings = $request->get_json_params();
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		if ( ! class_exists( 'XCOPB_Hero_Banner' ) ) {
+			return rest_ensure_response( array() );
+		}
+		return rest_ensure_response( XCOPB_Hero_Banner::query_slides( $settings ) );
+	}
 
 	public function get_site_settings() {
 		$theme = function_exists( 'wp_get_global_settings' ) ? wp_get_global_settings() : array();
@@ -970,10 +1069,10 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		if ( ! is_array( $settings ) ) {
 			$settings = array();
 		}
-
 		$type_for_sanitizer = $this->canonical_block_type( $type );
 		$sanitized = array_merge(
 			$this->sanitize_block_type_settings( $type_for_sanitizer, $settings ),
+			$this->sanitize_motion_settings( $settings, 'xcosb/gb-banner' === $type_for_sanitizer ),
 			$this->sanitize_advanced_keys( $settings ),
 			$this->sanitize_position_keys( $type, $settings ),
 			$this->sanitize_transform_keys( $settings ),
@@ -1341,6 +1440,26 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		);
 	}
 
+	/** Shared animation settings accepted by every widget type. */
+	private function sanitize_motion_settings( $settings, $is_banner = false ) {
+		$settings = is_array( $settings ) ? $settings : array();
+		$easing = is_string( $settings['animation_easing'] ?? null ) ? $settings['animation_easing'] : 'ease';
+		$repeat = is_scalar( $settings['animation_repeat'] ?? null ) ? (string) $settings['animation_repeat'] : '1';
+		$clean = array(
+			'animation' => XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' ),
+			'animation_duration' => isset( $settings['animation_duration'] ) ? min( 5000, max( 100, absint( $settings['animation_duration'] ) ) ) : 600,
+			'animation_delay' => isset( $settings['animation_delay'] ) ? min( 3000, absint( $settings['animation_delay'] ) ) : 0,
+			'animation_easing' => in_array( $easing, array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), true ) ? $easing : 'ease',
+			'animation_repeat' => in_array( $repeat, array( '1', '2', '3', 'infinite' ), true ) ? $repeat : '1',
+		);
+		if ( $is_banner ) {
+			foreach ( array( 'heading_animation', 'description_animation', 'button_animation' ) as $key ) {
+				$clean[ $key ] = XCOPB_Motion_Presets::normalize_id( $settings[ $key ] ?? 'none' );
+			}
+		}
+		return $clean;
+	}
+
 	/**
 	 * Per-type sanitization, kept separate so the shared Advanced keys can
 	 * be merged on top for every block type.
@@ -1486,8 +1605,8 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		$clean = array();
 		$defaults = array(
 			'align' => 'center', 'bg_type' => 'color', 'bg_size' => 'cover', 'bg_position' => 'center center', 'bg_repeat' => 'no-repeat', 'bg_attachment' => 'scroll', 'title_text_transform' => 'none', 'title_source' => 'custom',
-			'bg_color' => '#2563eb', 'overlay_color' => '', 'title_color' => '#ffffff', 'subtitle_color' => '#ffffff', 'button_bg_color' => 'transparent', 'button_text_color' => '#ffffff', 'button_border_color' => '#ffffff',
-			'padding_top' => 80, 'padding_bottom' => 80, 'padding_left' => 20, 'padding_right' => 20, 'min_height' => 400, 'title_font_size' => 32, 'subtitle_font_size' => 18, 'button_border_width' => 2, 'button_padding_x' => 24, 'button_padding_y' => 12, 'button_border_radius' => 4,
+			'bg_color' => '#2563eb', 'overlay_color' => '', 'title_color' => '#ffffff', 'subtitle_color' => '#ffffff', 'button_bg_color' => '#4f46e5', 'button_text_color' => '#ffffff', 'button_border_color' => '#ffffff',
+			'padding_top' => 80, 'padding_bottom' => 80, 'padding_left' => 20, 'padding_right' => 20, 'min_height' => 400, 'title_font_size' => 32, 'subtitle_font_size' => 18, 'button_border_width' => 0, 'button_padding_x' => 24, 'button_padding_y' => 12, 'button_border_radius' => 8,
 			'title_font_weight' => 700, 'subtitle_font_weight' => 400, 'title_line_height' => 1.2, 'subtitle_line_height' => 1.5, 'title_letter_spacing' => 0, 'subtitle_letter_spacing' => 0,
 			'show_button' => true,
 			'animation_duration' => 600,
@@ -1506,7 +1625,28 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			'title_font_family' => '',
 			'subtitle_font_family' => '',
 			'button_font_family' => '',
+			'heading_font_family' => '', 'description_font_family' => '', 'heading_font_style' => 'normal', 'description_font_style' => 'normal', 'button_font_style' => 'normal',
+			'heading_font_size' => 48, 'heading_font_weight' => 700, 'heading_line_height' => 1.15, 'heading_letter_spacing' => 0, 'heading_text_transform' => 'none', 'heading_text_shadow' => 'none', 'heading_color' => '#ffffff', 'heading_alignment' => 'center',
+			'description_font_size' => 18, 'description_font_weight' => 400, 'description_line_height' => 1.5, 'description_letter_spacing' => 0, 'description_text_transform' => 'none', 'description_text_shadow' => 'none', 'description_color' => '#ffffff', 'description_alignment' => 'center',
+			'button_font_size' => 15, 'button_font_weight' => 600, 'button_line_height' => 1.2, 'button_letter_spacing' => 0, 'button_text_transform' => 'none', 'button_text_shadow' => 'none', 'button_alignment' => 'center', 'button_text_alignment' => 'center', 'button_width' => 'auto', 'button_hover_bg_color' => '#4338ca', 'button_hover_text_color' => '#ffffff',
+			'heading_description_gap' => 12, 'description_button_gap' => 18, 'button_gap' => 12,
+			'arrow_icon_style' => 'chevron', 'arrow_size' => 48, 'arrow_icon_size' => 24, 'arrow_inset' => 18, 'arrow_position' => 'center', 'arrow_bg_color' => '#ffffff', 'arrow_icon_color' => '#20283a', 'arrow_hover_bg_color' => '#ffffff', 'arrow_hover_icon_color' => '#5148c8', 'arrow_border_color' => '#ffffff', 'arrow_border_width' => 1, 'arrow_border_radius' => 100,
+			'pagination_position' => 'bottom', 'pagination_alignment' => 'center', 'pagination_offset' => 18, 'pagination_color' => '#ffffff', 'pagination_active_color' => '#ffffff', 'dot_size' => 8, 'dot_active_size' => 22, 'dot_gap' => 7, 'dot_shape' => 'pill', 'progress_height' => 3, 'progress_inset' => 18, 'progress_track_color' => '#ffffff', 'progress_fill_color' => '#ffffff',
 		);
+		$defaults['heading_color'] = $defaults['title_color'];
+		$defaults['description_color'] = $defaults['subtitle_color'];
+		$settings['heading_color'] = $settings['heading_color'] ?? ( $settings['title_color'] ?? $defaults['heading_color'] );
+		$settings['description_color'] = $settings['description_color'] ?? ( $settings['subtitle_color'] ?? $defaults['description_color'] );
+		$legacy_style_map = array(
+			'heading_font_size' => 'title_font_size', 'heading_font_weight' => 'title_font_weight', 'heading_line_height' => 'title_line_height', 'heading_letter_spacing' => 'title_letter_spacing', 'heading_text_transform' => 'title_text_transform', 'heading_font_family' => 'title_font_family',
+			'description_font_size' => 'subtitle_font_size', 'description_font_weight' => 'subtitle_font_weight', 'description_line_height' => 'subtitle_line_height', 'description_letter_spacing' => 'subtitle_letter_spacing', 'description_font_family' => 'subtitle_font_family',
+			'heading_alignment' => 'align', 'description_alignment' => 'align',
+		);
+		foreach ( $legacy_style_map as $new_key => $legacy_key ) {
+			if ( ! isset( $settings[ $new_key ] ) && isset( $settings[ $legacy_key ] ) ) {
+				$settings[ $new_key ] = $settings[ $legacy_key ];
+			}
+		}
 		$choices = array(
 			'align'                => array( 'left', 'center', 'right' ),
 			'bg_type'              => array( 'color', 'gradient', 'image', 'video' ),
@@ -1523,10 +1663,29 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			'title_source'         => array( 'custom', 'archive_title' ),
 			'content_position_x'   => array( 'left', 'center', 'right' ),
 			'content_position_y'   => array( 'top', 'center', 'bottom' ),
+			'heading_text_transform' => array( 'none', 'uppercase', 'lowercase', 'capitalize' ),
+			'description_text_transform' => array( 'none', 'uppercase', 'lowercase', 'capitalize' ),
+			'button_text_transform' => array( 'none', 'uppercase', 'lowercase', 'capitalize' ),
+			'heading_alignment' => array( 'left', 'center', 'right' ),
+			'description_alignment' => array( 'left', 'center', 'right' ),
+			'button_alignment' => array( 'left', 'center', 'right' ),
+			'button_width' => array( 'auto', 'full' ),
+			'arrow_position' => array( 'top', 'center', 'bottom' ),
+			'arrow_icon_style' => array( 'chevron', 'angle', 'arrow', 'long-arrow', 'caret' ),
+			'pagination_position' => array( 'top', 'bottom' ),
+			'pagination_alignment' => array( 'left', 'center', 'right' ),
+			'dot_shape' => array( 'circle', 'pill', 'square' ),
+			'heading_font_style' => array( 'normal', 'italic' ),
+			'description_font_style' => array( 'normal', 'italic' ),
+			'button_font_style' => array( 'normal', 'italic' ),
+			'heading_text_shadow' => array( 'none', 'soft', 'strong' ),
+			'description_text_shadow' => array( 'none', 'soft', 'strong' ),
+			'button_text_shadow' => array( 'none', 'soft', 'strong' ),
+			'button_text_alignment' => array( 'left', 'center', 'right' ),
 		);
 
 		foreach ( $choices as $key => $allowed ) {
-			$value = isset( $settings[ $key ] ) ? sanitize_text_field( $settings[ $key ] ) : $defaults[ $key ];
+			$value = isset( $settings[ $key ] ) && is_string( $settings[ $key ] ) ? sanitize_text_field( $settings[ $key ] ) : $defaults[ $key ];
 			$clean[ $key ] = in_array( $value, $allowed, true ) ? $value : $defaults[ $key ];
 		}
 
@@ -1540,7 +1699,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			$clean[ $key ] = esc_url_raw( $media_url );
 		}
 
-		foreach ( array( 'bg_color', 'overlay_color', 'title_color', 'subtitle_color', 'button_bg_color', 'button_text_color', 'button_border_color', 'gradient_color_a', 'gradient_color_b' ) as $key ) {
+		foreach ( array( 'bg_color', 'overlay_color', 'title_color', 'subtitle_color', 'heading_color', 'description_color', 'button_bg_color', 'button_text_color', 'button_hover_bg_color', 'button_hover_text_color', 'button_border_color', 'arrow_bg_color', 'arrow_icon_color', 'arrow_hover_bg_color', 'arrow_hover_icon_color', 'arrow_border_color', 'pagination_color', 'pagination_active_color', 'progress_track_color', 'progress_fill_color', 'gradient_color_a', 'gradient_color_b' ) as $key ) {
 			$value = isset( $settings[ $key ] ) ? sanitize_hex_color( $settings[ $key ] ) : '';
 			$clean[ $key ] = $value ? $value : $defaults[ $key ];
 		}
@@ -1549,8 +1708,25 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		$block_border_color = isset( $settings['border_color'] ) ? sanitize_hex_color( $settings['border_color'] ) : '';
 		$clean['border_color'] = $block_border_color ? $block_border_color : '';
 
-		foreach ( array( 'padding_top', 'padding_bottom', 'padding_left', 'padding_right', 'min_height', 'title_font_size', 'subtitle_font_size', 'button_border_width', 'button_padding_x', 'button_padding_y', 'button_border_radius', 'animation_duration', 'animation_delay', 'border_radius', 'content_box_padding', 'content_box_radius', 'border_width' ) as $key ) {
+		foreach ( array( 'padding_top', 'padding_bottom', 'padding_left', 'padding_right', 'min_height', 'title_font_size', 'subtitle_font_size', 'heading_font_size', 'description_font_size', 'button_font_size', 'heading_description_gap', 'description_button_gap', 'button_gap', 'button_border_width', 'button_padding_x', 'button_padding_y', 'button_border_radius', 'arrow_size', 'arrow_icon_size', 'arrow_inset', 'arrow_border_width', 'arrow_border_radius', 'pagination_offset', 'dot_size', 'dot_active_size', 'dot_gap', 'progress_height', 'progress_inset', 'animation_duration', 'animation_delay', 'border_radius', 'content_box_padding', 'content_box_radius', 'border_width' ) as $key ) {
 			$clean[ $key ] = isset( $settings[ $key ] ) ? min( 2000, absint( $settings[ $key ] ) ) : $defaults[ $key ];
+		}
+		foreach ( array( 'heading_line_height', 'description_line_height', 'button_line_height' ) as $key ) {
+			$clean[ $key ] = isset( $settings[ $key ] ) ? min( 3, max( 0.8, (float) $settings[ $key ] ) ) : $defaults[ $key ];
+		}
+		foreach ( array( 'heading_letter_spacing', 'description_letter_spacing', 'button_letter_spacing' ) as $key ) {
+			$clean[ $key ] = isset( $settings[ $key ] ) ? min( 30, max( -10, (float) $settings[ $key ] ) ) : $defaults[ $key ];
+		}
+		foreach ( array( 'heading_font_weight', 'description_font_weight', 'button_font_weight' ) as $key ) {
+			$value = isset( $settings[ $key ] ) ? absint( $settings[ $key ] ) : $defaults[ $key ];
+			$clean[ $key ] = in_array( $value, array( 300, 400, 500, 600, 700, 800 ), true ) ? $value : $defaults[ $key ];
+		}
+		$padding = isset( $settings['slide_padding'] ) && is_array( $settings['slide_padding'] ) ? $settings['slide_padding'] : array();
+		$padding_unit = isset( $padding['unit'] ) && in_array( $padding['unit'], array( 'px', 'rem', '%' ), true ) ? $padding['unit'] : 'px';
+		$clean['slide_padding'] = array( 'unit' => $padding_unit, 'isLinked' => ! empty( $padding['isLinked'] ) );
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			$legacy_side = 'padding_' . $side;
+			$clean['slide_padding'][ $side ] = min( 500, max( 0, isset( $padding[ $side ] ) ? (float) $padding[ $side ] : ( $settings[ $legacy_side ] ?? ( 'top' === $side || 'bottom' === $side ? 80 : 24 ) ) ) );
 		}
 
 		$gradient_angle = isset( $settings['gradient_angle'] ) ? absint( $settings['gradient_angle'] ) : 180;
@@ -1585,9 +1761,14 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		$clean['show_button'] = ! isset( $settings['show_button'] ) ? true : (bool) $settings['show_button'];
 		$clean['content_box'] = ! empty( $settings['content_box'] );
 
-		foreach ( array( 'title_font_family', 'subtitle_font_family', 'button_font_family' ) as $font_key ) {
+		foreach ( array( 'title_font_family', 'subtitle_font_family', 'button_font_family', 'heading_font_family', 'description_font_family' ) as $font_key ) {
 			$clean[ $font_key ] = $this->sanitize_font_family( isset( $settings[ $font_key ] ) ? $settings[ $font_key ] : '' );
 		}
+
+		$custom_arrow = isset( $settings['arrow_custom_icon'] ) && is_array( $settings['arrow_custom_icon'] ) ? $settings['arrow_custom_icon'] : array();
+		$custom_arrow_id = isset( $custom_arrow['id'] ) ? absint( $custom_arrow['id'] ) : 0;
+		$custom_arrow_url = $custom_arrow_id && 'image/svg+xml' === get_post_mime_type( $custom_arrow_id ) ? wp_get_attachment_url( $custom_arrow_id ) : '';
+		$clean['arrow_custom_icon'] = $custom_arrow_url ? array( 'id' => $custom_arrow_id, 'url' => esc_url_raw( $custom_arrow_url ), 'mime' => 'image/svg+xml' ) : '';
 
 		// Keep the complete Hero Banner configuration as one safe JSON object.
 		$clean['source_mode'] = isset( $settings['source_mode'] ) && in_array( $settings['source_mode'], array( 'custom', 'posts', 'mixed' ), true ) ? $settings['source_mode'] : 'custom';
@@ -1649,7 +1830,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		$post_type = isset( $settings['posts_post_type'] ) ? sanitize_key( $settings['posts_post_type'] ) : 'post';
 		$public_post_types = get_post_types( array( 'public' => true ), 'names' );
 		$clean['posts_post_type'] = in_array( $post_type, $public_post_types, true ) ? $post_type : 'post';
-		$clean['posts_count'] = isset( $settings['posts_count'] ) ? min( 20, max( 1, absint( $settings['posts_count'] ) ) ) : 3;
+		$clean['posts_count'] = isset( $settings['posts_count'] ) ? min( 5, max( 1, absint( $settings['posts_count'] ) ) ) : 3;
 		$clean['posts_offset'] = isset( $settings['posts_offset'] ) ? min( 500, absint( $settings['posts_offset'] ) ) : 0;
 		$clean['posts_orderby'] = isset( $settings['posts_orderby'] ) && in_array( $settings['posts_orderby'], array( 'date', 'title', 'rand', 'menu_order', 'comment_count' ), true ) ? $settings['posts_orderby'] : 'date';
 		$clean['posts_order'] = isset( $settings['posts_order'] ) && 'ASC' === strtoupper( $settings['posts_order'] ) ? 'ASC' : 'DESC';
@@ -1748,8 +1929,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 		$clean['border_color']  = $border_color ? $border_color : '';
 		$clean['border_radius'] = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 0;
 
-		$clean['animation'] = isset( $settings['animation'] ) ? sanitize_text_field( $settings['animation'] ) : 'none';
-		$clean['animation'] = in_array( $clean['animation'], XCOPB_Motion_Presets::ids(), true ) ? $clean['animation'] : 'none';
+		$clean['animation'] = XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' );
 		$clean['animation_duration'] = isset( $settings['animation_duration'] ) ? min( 3000, max( 100, absint( $settings['animation_duration'] ) ) ) : 600;
 		$clean['animation_delay'] = isset( $settings['animation_delay'] ) ? min( 3000, absint( $settings['animation_delay'] ) ) : 0;
 		$clean['animation_easing'] = isset( $settings['animation_easing'] ) && in_array( $settings['animation_easing'], array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'cubic-bezier(0.16,1,0.3,1)' ), true ) ? $settings['animation_easing'] : 'ease';
@@ -2481,7 +2661,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 			'border_width'   => isset( $settings['border_width'] ) ? absint( $settings['border_width'] ) : 0,
 			'border_style'   => isset( $settings['border_style'] ) ? sanitize_text_field( $settings['border_style'] ) : 'solid',
 			'border_color'   => '',
-			'animation'      => isset( $settings['animation'] ) ? sanitize_text_field( $settings['animation'] ) : 'none',
+			'animation'      => XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' ),
 			'position'       => isset( $settings['position'] ) ? sanitize_text_field( $settings['position'] ) : 'full',
 			'max_width'      => isset( $settings['max_width'] ) ? min( 2000, max( 0, absint( $settings['max_width'] ) ) ) : 0,
 		);
@@ -2505,7 +2685,7 @@ class XCOPB_REST_Templates extends WP_REST_Controller {
 
 		$clean['box_shadow'] = in_array( $clean['box_shadow'], array( 'none', 'soft', 'medium', 'strong' ), true ) ? $clean['box_shadow'] : 'none';
 		$clean['border_style'] = in_array( $clean['border_style'], array( 'solid', 'dashed', 'dotted', 'double' ), true ) ? $clean['border_style'] : 'solid';
-		$clean['animation'] = in_array( $clean['animation'], XCOPB_Motion_Presets::ids(), true ) ? $clean['animation'] : 'none';
+		$clean['animation'] = XCOPB_Motion_Presets::normalize_id( $clean['animation'] );
 
 		$border_color = isset( $settings['border_color'] ) ? sanitize_hex_color( $settings['border_color'] ) : '';
 		$clean['border_color'] = $border_color ? $border_color : '';

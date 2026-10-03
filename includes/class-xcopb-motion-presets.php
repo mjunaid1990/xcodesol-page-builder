@@ -8,6 +8,15 @@
 defined( 'ABSPATH' ) || exit;
 
 final class XCOPB_Motion_Presets {
+	/** Normalize and validate an animation preset ID. */
+	public static function normalize_id( $id ) {
+		if ( ! is_string( $id ) ) {
+			return 'none';
+		}
+		$id = sanitize_key( $id );
+		return in_array( $id, self::ids(), true ) ? $id : 'none';
+	}
+
 	/**
 	 * Return the stable motion catalog from the shared JSON manifest.
 	 *

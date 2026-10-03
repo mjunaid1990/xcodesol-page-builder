@@ -97,17 +97,17 @@ $button_font_family = ! empty( $settings['button_font_family'] ) ? $settings['bu
 $button_bg_color = $xsb_banner_color( isset( $settings['button_bg_color'] ) ? $settings['button_bg_color'] : '', 'transparent' );
 $button_text_color = $xsb_banner_color( isset( $settings['button_text_color'] ) ? $settings['button_text_color'] : '', '#ffffff' );
 $button_border_color = $xsb_banner_color( isset( $settings['button_border_color'] ) ? $settings['button_border_color'] : '', '#ffffff' );
-$button_border_width = isset( $settings['button_border_width'] ) ? $settings['button_border_width'] : 2;
+$button_border_width = isset( $settings['button_border_width'] ) ? $settings['button_border_width'] : 0;
 $button_padding_x = isset( $settings['button_padding_x'] ) ? $settings['button_padding_x'] : 24;
 $button_padding_y = isset( $settings['button_padding_y'] ) ? $settings['button_padding_y'] : 12;
-$button_border_radius = isset( $settings['button_border_radius'] ) ? $settings['button_border_radius'] : 4;
+$button_border_radius = isset( $settings['button_border_radius'] ) ? $settings['button_border_radius'] : 0;
 
 // Effects (box shadow, entrance animation, corner radius)
 $box_shadow         = isset( $settings['box_shadow'] ) ? $settings['box_shadow'] : 'none';
-$animation          = isset( $settings['animation'] ) ? $settings['animation'] : 'none';
+$animation          = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' ) : ( is_string( $settings['animation'] ?? null ) ? sanitize_key( $settings['animation'] ) : 'none' );
 $animation_duration = isset( $settings['animation_duration'] ) ? $settings['animation_duration'] : 600;
 $animation_delay    = isset( $settings['animation_delay'] ) ? $settings['animation_delay'] : 0;
-$border_radius      = isset( $settings['border_radius'] ) ? $settings['border_radius'] : 12;
+$border_radius      = isset( $settings['border_radius'] ) ? $settings['border_radius'] : 0;
 $border_width       = isset( $settings['border_width'] ) ? $settings['border_width'] : 0;
 $border_style       = ! empty( $settings['border_style'] ) ? $settings['border_style'] : 'solid';
 $border_color       = ! empty( $settings['border_color'] ) ? $settings['border_color'] : '';
@@ -119,7 +119,7 @@ $content_position_y = ! empty( $settings['content_position_y'] ) ? $settings['co
 $content_box        = ! empty( $settings['content_box'] );
 $content_box_bg     = isset( $settings['content_box_bg'] ) ? $settings['content_box_bg'] : 'rgba(0,0,0,0.35)';
 $content_box_padding = isset( $settings['content_box_padding'] ) ? $settings['content_box_padding'] : 28;
-$content_box_radius = isset( $settings['content_box_radius'] ) ? $settings['content_box_radius'] : 16;
+$content_box_radius = isset( $settings['content_box_radius'] ) ? $settings['content_box_radius'] : 0;
 
 $xsb_flex_x = array( 'left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end' );
 $xsb_flex_y = array( 'top' => 'flex-start', 'center' => 'center', 'bottom' => 'flex-end' );

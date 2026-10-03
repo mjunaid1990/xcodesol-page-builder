@@ -240,10 +240,6 @@ export function StyleEditor( {
 	const clipboardData = parseClipboard();
 	const canPaste = !! ( clipboardData && clipboardData.values && activeKeys.some( ( k ) => clipboardData.values[ k ] !== undefined ) );
 
-	const firstOpenId = ids.find( ( id ) => categoryChangedCount( activeElement, id, viewSettings ) > 0 )
-		|| ids.find( ( id ) => [ 'typography', 'colors', 'spacing', 'layout' ].includes( id ) )
-		|| ids[ 0 ];
-
 	const query = ( searchFilter || '' ).trim().toLowerCase();
 	const visibleIds = ids.filter( ( id ) => {
 		if ( activeCategoryFilter !== 'all' && id !== activeCategoryFilter ) {
@@ -441,9 +437,7 @@ export function StyleEditor( {
 						}
 						const count = categoryChangedCount( activeElement, id, id === 'visibility' ? sourceSettings : viewSettings );
 						const meta = CATEGORY_META[ id ];
-						const shouldBeOpen = searchFilter.trim().length > 0
-							|| activeCategoryFilter === id
-							|| ( activeCategoryFilter === 'all' && id === firstOpenId );
+						const shouldBeOpen = id === visibleIds[ 0 ];
 
 						return (
 							<StyleGroup

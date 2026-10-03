@@ -49,7 +49,7 @@ return array(
 					'gap'            => 28,
 					'padding'        => 48,
 					'align'          => 'stretch',
-					'border_radius'  => 12,
+					'border_radius'  => 0,
 					'background'     => '#f8fafc',
 				),
 				'inner'    => array(
@@ -194,7 +194,7 @@ return array(
 							'type'     => 'xcopb/gb-image',
 							'settings' => array(
 								'alt'           => 'Showcase',
-								'border_radius' => 12,
+								'border_radius' => 0,
 								'max_width'     => '100%',
 							),
 						),
@@ -251,7 +251,7 @@ return array(
 						array(
 							'type'     => 'xcopb/gb-image',
 							'settings' => array(
-								'border_radius' => 12,
+								'border_radius' => 0,
 							),
 						),
 					),

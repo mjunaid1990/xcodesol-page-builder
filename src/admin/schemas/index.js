@@ -57,7 +57,73 @@ export const WIDGET_MANIFESTS = [
 	coreBlockManifest,
 ];
 
-export const WIDGET_SCHEMAS = [ CONTAINER_SCHEMA, HEADING_SCHEMA, BUTTON_SCHEMA, IMAGE_SCHEMA, TEXT_SCHEMA, DIVIDER_SCHEMA, BANNER_SCHEMA, SHORTCODE_SCHEMA, BREADCRUMB_SCHEMA, HTML_SCHEMA, DYNAMIC_SCHEMA, CORE_BLOCK_SCHEMA ];
+// Shared Advanced spacing uses the registered dimensions control for every
+// widget schema, including widgets whose original schema did not need it.
+WIDGET_MANIFESTS.forEach( ( manifest ) => {
+	if ( ! manifest.controls.includes( 'dimensions' ) ) manifest.controls.push( 'dimensions' );
+} );
+
+const RAW_WIDGET_SCHEMAS = [ CONTAINER_SCHEMA, HEADING_SCHEMA, BUTTON_SCHEMA, IMAGE_SCHEMA, TEXT_SCHEMA, DIVIDER_SCHEMA, BANNER_SCHEMA, SHORTCODE_SCHEMA, BREADCRUMB_SCHEMA, HTML_SCHEMA, DYNAMIC_SCHEMA, CORE_BLOCK_SCHEMA ];
+
+/**
+ * Keep shared box spacing in Advanced for every widget. Widget-specific
+ * spacing controls (such as button padding or banner slide gaps) remain in
+ * their existing Style sections.
+ *
+ * @param {Object} schema Widget schema.
+ * @return {Object} Schema with shared spacing controls normalized.
+ */
+function withAdvancedWidgetSpacing( schema ) {
+	if ( schema.manifest?.widget === 'container' ) {
+		return {
+			...schema,
+			sections: schema.sections.map( ( section ) => section.id === 'spacing' ? { ...section, tab: 'advanced' } : section ),
+			controls: schema.controls.map( ( control ) => control.section === 'spacing' && [ 'padding', 'margin' ].includes( control.id ) ? { ...control, tab: 'advanced' } : control ),
+		};
+	}
+
+	const advancedSectionId = 'widget_spacing';
+	const controls = ( schema.controls || [] ).map( ( control ) => {
+		if ( schema.manifest?.widget === 'text' && control.id === 'padding' && control.section === 'blockquote' ) {
+			return { ...control, id: 'blockquote_padding' };
+		}
+		if ( control.id === 'margin' && control.tab === 'style' ) {
+			return { ...control, tab: 'advanced', section: advancedSectionId };
+		}
+		return control;
+	} );
+	const hasMargin = controls.some( ( control ) => control.id === 'margin' );
+	if ( ! hasMargin ) {
+		controls.push( {
+			id: 'margin', type: 'dimensions', label: 'Margin', tab: 'advanced', section: advancedSectionId,
+			default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true },
+			units: [ 'px', '%', 'em', 'rem', 'vw', 'vh' ], allowNegative: true,
+		} );
+	}
+	if ( ! controls.some( ( control ) => control.id === 'padding' ) ) {
+		controls.push( {
+			id: 'padding', type: 'dimensions', label: 'Padding', tab: 'advanced', section: advancedSectionId,
+			default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true },
+			units: [ 'px', '%', 'em', 'rem', 'vw', 'vh' ],
+		} );
+	}
+	const hasAdvancedSpacing = ( schema.sections || [] ).some( ( section ) => section.id === advancedSectionId );
+	const sections = ( schema.sections || [] ).map( ( section ) => {
+		if ( section.id !== 'spacing' || section.tab !== 'style' ) return section;
+		const hasStyleControls = controls.some( ( control ) => control.section === section.id && control.tab === 'style' );
+		if ( ! hasStyleControls ) return null;
+		return { ...section, title: schema.manifest?.widget === 'button' ? 'Button layout' : section.title };
+	} ).filter( Boolean );
+	if ( ! hasAdvancedSpacing ) {
+		const firstAdvancedIndex = sections.findIndex( ( section ) => section.tab === 'advanced' );
+		sections.splice( firstAdvancedIndex < 0 ? sections.length : firstAdvancedIndex, 0, {
+			id: advancedSectionId, tab: 'advanced', title: 'Spacing (Padding & Margin)', defaultOpen: true,
+		} );
+	}
+	return { ...schema, manifest: { ...schema.manifest, controls: [ ...new Set( [ ...( schema.manifest?.controls || [] ), 'dimensions' ] ) ] }, sections, controls };
+}
+
+export const WIDGET_SCHEMAS = RAW_WIDGET_SCHEMAS.map( withAdvancedWidgetSpacing );
 
 /**
  * Legacy block-type prefix. Stored documents written before the prefix

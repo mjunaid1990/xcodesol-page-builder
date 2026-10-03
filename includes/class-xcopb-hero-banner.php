@@ -9,6 +9,93 @@
 defined( 'ABSPATH' ) || exit;
 
 final class XCOPB_Hero_Banner {
+	/** Build one shared set of CSS custom properties for all banner content and controls. */
+	private static function design_style( $settings ) {
+		$padding = isset( $settings['slide_padding'] ) && is_array( $settings['slide_padding'] ) ? $settings['slide_padding'] : array();
+		$unit = in_array( $padding['unit'] ?? 'px', array( 'px', 'rem', '%' ), true ) ? $padding['unit'] : 'px';
+		$side = static function ( $key, $fallback ) use ( $padding, $unit ) {
+			$value = isset( $padding[ $key ] ) && is_numeric( $padding[ $key ] ) ? min( 500, max( 0, (float) $padding[ $key ] ) ) : $fallback;
+			return $value . $unit;
+		};
+		$arrow_y = array( 'top' => '18%', 'center' => '50%', 'bottom' => '82%' );
+		$dot_radius = array( 'circle' => '50%', 'pill' => '999px', 'square' => '0' );
+		$text_shadows = array( 'none' => 'none', 'soft' => '0 2px 10px rgba(0,0,0,.3)', 'strong' => '0 3px 18px rgba(0,0,0,.6)' );
+		$flex_align = array( 'left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end' );
+		$vars = array(
+			'--xsb-banner-slide-padding' => $side( 'top', 80 ) . ' ' . $side( 'right', 24 ) . ' ' . $side( 'bottom', 80 ) . ' ' . $side( 'left', 24 ),
+			'--xsb-banner-heading-font-family' => ! empty( $settings['heading_font_family'] ) ? $settings['heading_font_family'] : ( $settings['title_font_family'] ?? 'inherit' ),
+			'--xsb-banner-heading-size' => absint( $settings['heading_font_size'] ?? $settings['title_font_size'] ?? 48 ) . 'px',
+			'--xsb-banner-heading-weight' => absint( $settings['heading_font_weight'] ?? $settings['title_font_weight'] ?? 700 ),
+			'--xsb-banner-heading-font-style' => $settings['heading_font_style'] ?? 'normal',
+			'--xsb-banner-heading-line-height' => (float) ( $settings['heading_line_height'] ?? $settings['title_line_height'] ?? 1.15 ),
+			'--xsb-banner-heading-letter-spacing' => (float) ( $settings['heading_letter_spacing'] ?? $settings['title_letter_spacing'] ?? 0 ) . 'px',
+			'--xsb-banner-heading-transform' => $settings['heading_text_transform'] ?? $settings['title_text_transform'] ?? 'none',
+			'--xsb-banner-heading-shadow' => $text_shadows[ $settings['heading_text_shadow'] ?? 'none' ] ?? 'none',
+			'--xsb-banner-heading-color' => $settings['heading_color'] ?? $settings['title_color'] ?? '#ffffff',
+			'--xsb-banner-heading-align' => $settings['heading_alignment'] ?? $settings['align'] ?? 'center',
+			'--xsb-banner-description-font-family' => ! empty( $settings['description_font_family'] ) ? $settings['description_font_family'] : ( $settings['subtitle_font_family'] ?? 'inherit' ),
+			'--xsb-banner-description-size' => absint( $settings['description_font_size'] ?? $settings['subtitle_font_size'] ?? 18 ) . 'px',
+			'--xsb-banner-description-weight' => absint( $settings['description_font_weight'] ?? $settings['subtitle_font_weight'] ?? 400 ),
+			'--xsb-banner-description-font-style' => $settings['description_font_style'] ?? 'normal',
+			'--xsb-banner-description-line-height' => (float) ( $settings['description_line_height'] ?? $settings['subtitle_line_height'] ?? 1.5 ),
+			'--xsb-banner-description-letter-spacing' => (float) ( $settings['description_letter_spacing'] ?? $settings['subtitle_letter_spacing'] ?? 0 ) . 'px',
+			'--xsb-banner-description-transform' => $settings['description_text_transform'] ?? 'none',
+			'--xsb-banner-description-shadow' => $text_shadows[ $settings['description_text_shadow'] ?? 'none' ] ?? 'none',
+			'--xsb-banner-description-color' => $settings['description_color'] ?? $settings['subtitle_color'] ?? '#ffffff',
+			'--xsb-banner-description-align' => $settings['description_alignment'] ?? $settings['align'] ?? 'center',
+			'--xsb-banner-button-font-family' => ! empty( $settings['button_font_family'] ) ? $settings['button_font_family'] : 'inherit',
+			'--xsb-banner-button-size' => absint( $settings['button_font_size'] ?? 15 ) . 'px',
+			'--xsb-banner-button-weight' => absint( $settings['button_font_weight'] ?? 600 ),
+			'--xsb-banner-button-font-style' => $settings['button_font_style'] ?? 'normal',
+			'--xsb-banner-button-line-height' => (float) ( $settings['button_line_height'] ?? 1.2 ),
+			'--xsb-banner-button-letter-spacing' => (float) ( $settings['button_letter_spacing'] ?? 0 ) . 'px',
+			'--xsb-banner-button-transform' => $settings['button_text_transform'] ?? 'none',
+			'--xsb-banner-button-align' => $flex_align[ $settings['button_alignment'] ?? 'center' ] ?? 'center',
+			'--xsb-banner-button-text-align' => $settings['button_text_alignment'] ?? 'center',
+			'--xsb-banner-button-shadow' => $text_shadows[ $settings['button_text_shadow'] ?? 'none' ] ?? 'none',
+			'--xsb-banner-button-width' => 'full' === ( $settings['button_width'] ?? 'auto' ) ? '100%' : 'auto',
+			'--xsb-banner-button-bg' => $settings['button_bg_color'] ?? '#4f46e5',
+			'--xsb-banner-button-color' => $settings['button_text_color'] ?? '#ffffff',
+			'--xsb-banner-button-hover-bg' => $settings['button_hover_bg_color'] ?? '#4338ca',
+			'--xsb-banner-button-hover-color' => $settings['button_hover_text_color'] ?? '#ffffff',
+			'--xsb-banner-button-border-color' => $settings['button_border_color'] ?? '#ffffff',
+			'--xsb-banner-button-border-width' => absint( $settings['button_border_width'] ?? 0 ) . 'px',
+			'--xsb-banner-button-radius' => absint( $settings['button_border_radius'] ?? 0 ) . 'px',
+			'--xsb-banner-button-padding' => absint( $settings['button_padding_y'] ?? 12 ) . 'px ' . absint( $settings['button_padding_x'] ?? 24 ) . 'px',
+			'--xsb-banner-heading-gap' => absint( $settings['heading_description_gap'] ?? 12 ) . 'px',
+			'--xsb-banner-description-gap' => absint( $settings['description_button_gap'] ?? 18 ) . 'px',
+			'--xsb-banner-button-gap' => absint( $settings['button_gap'] ?? 12 ) . 'px',
+			'--xsb-banner-arrow-size' => absint( $settings['arrow_size'] ?? 48 ) . 'px',
+			'--xsb-banner-arrow-icon-size' => absint( $settings['arrow_icon_size'] ?? 24 ) . 'px',
+			'--xsb-banner-arrow-inset' => absint( $settings['arrow_inset'] ?? 18 ) . 'px',
+			'--xsb-banner-arrow-y' => $arrow_y[ $settings['arrow_position'] ?? 'center' ] ?? '50%',
+			'--xsb-banner-arrow-bg' => $settings['arrow_bg_color'] ?? '#ffffff',
+			'--xsb-banner-arrow-color' => $settings['arrow_icon_color'] ?? '#20283a',
+			'--xsb-banner-arrow-hover-bg' => $settings['arrow_hover_bg_color'] ?? '#ffffff',
+			'--xsb-banner-arrow-hover-color' => $settings['arrow_hover_icon_color'] ?? '#5148c8',
+			'--xsb-banner-arrow-border-color' => $settings['arrow_border_color'] ?? '#ffffff',
+			'--xsb-banner-arrow-border-width' => absint( $settings['arrow_border_width'] ?? 0 ) . 'px',
+			'--xsb-banner-arrow-radius' => absint( $settings['arrow_border_radius'] ?? 0 ) . 'px',
+			'--xsb-banner-pagination-offset' => absint( $settings['pagination_offset'] ?? 18 ) . 'px',
+			'--xsb-banner-pagination-align' => $flex_align[ $settings['pagination_alignment'] ?? 'center' ] ?? 'center',
+			'--xsb-banner-pagination-color' => $settings['pagination_color'] ?? '#ffffff',
+			'--xsb-banner-pagination-active' => $settings['pagination_active_color'] ?? '#ffffff',
+			'--xsb-banner-dot-size' => absint( $settings['dot_size'] ?? 8 ) . 'px',
+			'--xsb-banner-dot-active-size' => absint( $settings['dot_active_size'] ?? 22 ) . 'px',
+			'--xsb-banner-dot-gap' => absint( $settings['dot_gap'] ?? 7 ) . 'px',
+			'--xsb-banner-dot-radius' => $dot_radius[ $settings['dot_shape'] ?? 'square' ] ?? '0',
+			'--xsb-banner-progress-height' => absint( $settings['progress_height'] ?? 3 ) . 'px',
+			'--xsb-banner-progress-inset' => absint( $settings['progress_inset'] ?? 18 ) . 'px',
+			'--xsb-banner-progress-track' => $settings['progress_track_color'] ?? 'rgba(255,255,255,.3)',
+			'--xsb-banner-progress-fill' => $settings['progress_fill_color'] ?? '#ffffff',
+		);
+		$style = '';
+		foreach ( $vars as $name => $value ) {
+			$style .= $name . ':' . esc_attr( $value ) . ';';
+		}
+		return $style;
+	}
+
 	/**
 	 * Get post slides for the configured query.
 	 *
@@ -39,7 +126,7 @@ final class XCOPB_Hero_Banner {
 		$args = array(
 			'post_type'           => $post_type,
 			'post_status'         => 'publish',
-			'posts_per_page'      => min( 20, max( 1, absint( $settings['posts_count'] ?? 3 ) ) ),
+			'posts_per_page'      => min( 5, max( 1, absint( $settings['posts_count'] ?? 3 ) ) ),
 			'offset'              => min( 500, absint( $settings['posts_offset'] ?? 0 ) ),
 			'orderby'             => in_array( $settings['posts_orderby'] ?? 'date', array( 'date', 'title', 'rand', 'menu_order', 'comment_count' ), true ) ? $settings['posts_orderby'] : 'date',
 			'order'               => 'ASC' === strtoupper( $settings['posts_order'] ?? 'DESC' ) ? 'ASC' : 'DESC',
@@ -56,11 +143,15 @@ final class XCOPB_Hero_Banner {
 		$category = absint( $settings['posts_category'] ?? 0 );
 		$tag      = absint( $settings['posts_tag'] ?? 0 );
 		$author   = absint( $settings['posts_author'] ?? 0 );
-		if ( $category && 'post' === $post_type ) {
-			$args['cat'] = $category;
+		$tax_query = array();
+		if ( $category && is_object_in_taxonomy( $post_type, 'category' ) ) {
+			$tax_query[] = array( 'taxonomy' => 'category', 'field' => 'term_id', 'terms' => array( $category ) );
 		}
-		if ( $tag && 'post' === $post_type ) {
-			$args['tag_id'] = $tag;
+		if ( $tag && is_object_in_taxonomy( $post_type, 'post_tag' ) ) {
+			$tax_query[] = array( 'taxonomy' => 'post_tag', 'field' => 'term_id', 'terms' => array( $tag ) );
+		}
+		if ( $tax_query ) {
+			$args['tax_query'] = count( $tax_query ) > 1 ? array_merge( array( 'relation' => 'AND' ), $tax_query ) : $tax_query;
 		}
 		if ( $author ) {
 			$args['author'] = $author;
@@ -110,7 +201,7 @@ final class XCOPB_Hero_Banner {
 			'image_alt'  => get_post_meta( get_post_thumbnail_id( $post ), '_wp_attachment_image_alt', true ),
 			'background_type' => 'image',
 			'link'       => 'none' === $link_field ? '' : get_permalink( $post ),
-			'button_text' => __( 'Read more', 'xcodesol-page-builder' ),
+			'button_text' => 'none' === $link_field ? '' : __( 'Read more', 'xcodesol-page-builder' ),
 			'date'       => get_the_date( '', $post ),
 			'author'     => get_the_author_meta( 'display_name', $post->post_author ),
 		);
@@ -128,7 +219,7 @@ final class XCOPB_Hero_Banner {
 		}
 
 		$slides = array_values( array_filter( $slides, 'is_array' ) );
-		$enabled = ! empty( $settings['slider_enabled'] ) && count( $slides ) > 1;
+		$enabled = count( $slides ) > 1 && ( 'posts' === $mode || ! empty( $settings['slider_enabled'] ) );
 		if ( ! $enabled ) {
 			$slides = array_slice( $slides, 0, 1 );
 		}
@@ -141,7 +232,8 @@ final class XCOPB_Hero_Banner {
 		if ( $enabled ) {
 			$root_classes[] = 'xsb-banner-slider';
 		}
-		$root_attrs = ' class="' . esc_attr( implode( ' ', $root_classes ) ) . '" style="' . esc_attr( $frame_style ) . '"';
+		$root_style = $frame_style . self::design_style( $settings );
+		$root_attrs = ' class="' . esc_attr( implode( ' ', $root_classes ) ) . '" style="' . esc_attr( $root_style ) . '"';
 		if ( ! empty( $settings['css_id'] ) ) {
 			$root_attrs .= ' id="' . esc_attr( sanitize_html_class( $settings['css_id'] ) ) . '"';
 		}
@@ -153,16 +245,22 @@ final class XCOPB_Hero_Banner {
 		if ( empty( $slides ) ) {
 			$html .= '<div class="xsb-banner-empty">' . esc_html( $settings['query_empty_message'] ?? __( 'No posts found.', 'xcodesol-page-builder' ) ) . '</div>';
 		}
+		if ( $enabled ) {
+			$html .= '<div class="xsb-banner-swiper swiper"><div class="swiper-wrapper">';
+		}
 		foreach ( $slides as $index => $slide ) {
 			$html .= self::render_slide( $slide, $index, count( $slides ), $settings, $legacy_slide, $overlay_color, $overlay_opacity, $content_position, $enabled );
 		}
+		if ( $enabled ) {
+			$html .= '</div></div>';
+		}
 
 		if ( $enabled && ! empty( $settings['show_arrows'] ) ) {
-			$html .= '<button type="button" class="xsb-banner-arrow xsb-banner-arrow--previous" data-banner-prev aria-label="' . esc_attr__( 'Previous slide', 'xcodesol-page-builder' ) . '"><span aria-hidden="true">&#8592;</span></button>';
-			$html .= '<button type="button" class="xsb-banner-arrow xsb-banner-arrow--next" data-banner-next aria-label="' . esc_attr__( 'Next slide', 'xcodesol-page-builder' ) . '"><span aria-hidden="true">&#8594;</span></button>';
+			$html .= '<button type="button" class="xsb-banner-arrow xsb-banner-arrow--previous" data-banner-prev aria-label="' . esc_attr__( 'Previous slide', 'xcodesol-page-builder' ) . '">' . self::render_arrow_icon( $settings ) . '</button>';
+			$html .= '<button type="button" class="xsb-banner-arrow xsb-banner-arrow--next" data-banner-next aria-label="' . esc_attr__( 'Next slide', 'xcodesol-page-builder' ) . '">' . self::render_arrow_icon( $settings ) . '</button>';
 		}
 		if ( $enabled && 'none' !== ( $settings['pagination'] ?? 'dots' ) ) {
-			$html .= self::render_pagination( $settings['pagination'], count( $slides ) );
+			$html .= self::render_pagination( $settings['pagination'], count( $slides ), $settings );
 		}
 		if ( $enabled && ! empty( $settings['autoplay'] ) ) {
 			$html .= '<button type="button" class="xsb-banner-pause" data-banner-pause aria-label="' . esc_attr__( 'Pause slide rotation', 'xcodesol-page-builder' ) . '" aria-pressed="false"><span aria-hidden="true">&#10074;&#10074;</span></button>';
@@ -170,7 +268,7 @@ final class XCOPB_Hero_Banner {
 		$html .= '</div>';
 
 		if ( $enabled ) {
-			XCOPB_Block_Registry::add_frontend_script( self::slider_script() );
+			self::enqueue_slider_assets();
 		}
 		return $html;
 	}
@@ -233,10 +331,10 @@ final class XCOPB_Hero_Banner {
 		}
 		$link = esc_url( $slide['link'] ?? $legacy['link'] ?? '' );
 		$active = 0 === $index;
-		$classes = 'xsb-banner-slide' . ( $active ? ' is-active' : '' );
+		$classes = 'xsb-banner-slide' . ( $enabled ? ' swiper-slide' : '' ) . ( $active ? ' is-active' : '' ) . ( $link ? ' has-slide-link' : '' );
 		$position_x = $settings['content_position_x'] ?? 'center';
 		$position_y = $settings['content_position_y'] ?? 'center';
-		$slide_style .= 'display:flex;flex-direction:column;justify-content:' . esc_attr( self::flex_y( $position_y ) ) . ';align-items:' . esc_attr( self::flex_x( $position_x ) ) . ';padding:' . absint( $settings['padding_top'] ?? 80 ) . 'px ' . absint( $settings['padding_right'] ?? 24 ) . 'px ' . absint( $settings['padding_bottom'] ?? 80 ) . 'px ' . absint( $settings['padding_left'] ?? 24 ) . 'px;box-sizing:border-box;';
+		$slide_style .= 'display:flex;flex-direction:column;justify-content:' . esc_attr( self::flex_y( $position_y ) ) . ';align-items:' . esc_attr( self::flex_x( $position_x ) ) . ';padding:var(--xsb-banner-slide-padding);box-sizing:border-box;';
 		$html = '<article class="' . esc_attr( $classes ) . '" data-banner-slide role="group" aria-roledescription="slide" aria-label="' . esc_attr( sprintf( __( '%1$d of %2$d', 'xcodesol-page-builder' ), $index + 1, max( 1, $count ) ) ) . '" aria-hidden="' . ( $active ? 'false' : 'true' ) . '"' . ( $active ? '' : ' inert' ) . ' style="' . esc_attr( $slide_style ) . '">';
 		if ( 'image' === $background_type && $image ) {
 			$loading = 0 === $index ? 'eager' : 'lazy';
@@ -263,22 +361,19 @@ final class XCOPB_Hero_Banner {
 		}
 		$content_style = 'position:relative;z-index:2;box-sizing:border-box;width:100%;max-width:100%;text-align:' . esc_attr( in_array( $settings['align'] ?? 'center', array( 'left', 'center', 'right' ), true ) ? $settings['align'] : 'center' ) . ';';
 		if ( ! empty( $settings['content_box'] ) ) {
-			$content_style .= 'background:' . esc_attr( $settings['content_box_bg'] ?? 'rgba(0,0,0,.35)' ) . ';padding:' . absint( $settings['content_box_padding'] ?? 28 ) . 'px;border-radius:' . absint( $settings['content_box_radius'] ?? 16 ) . 'px;';
+			$content_style .= 'background:' . esc_attr( $settings['content_box_bg'] ?? 'rgba(0,0,0,.35)' ) . ';padding:' . absint( $settings['content_box_padding'] ?? 28 ) . 'px;border-radius:' . absint( $settings['content_box_radius'] ?? 0 ) . 'px;';
 		}
 		$html .= '<div class="xsb-banner-content" style="' . esc_attr( $content_style ) . '" data-banner-content>';
 		if ( $badge ) {
 			$html .= '<p class="xsb-banner-badge">' . esc_html( $badge ) . '</p>';
 		}
 		if ( $title ) {
-			$title_style = 'color:' . esc_attr( $settings['title_color'] ?? '#ffffff' ) . ';font-size:' . absint( $settings['title_font_size'] ?? 48 ) . 'px;font-weight:' . absint( $settings['title_font_weight'] ?? 700 ) . ';line-height:' . esc_attr( $settings['title_line_height'] ?? 1.2 ) . ';letter-spacing:' . esc_attr( (float) ( $settings['title_letter_spacing'] ?? 0 ) ) . 'px;text-transform:' . esc_attr( $settings['title_text_transform'] ?? 'none' ) . ';';
-			$html .= '<' . $title_tag . ' class="xsb-banner-title" style="' . $title_style . '">' . esc_html( $title ) . '</' . $title_tag . '>';
+			$title_motion = self::element_animation_style( $settings, 'heading_animation' );
+			$html .= '<' . $title_tag . ' class="xsb-banner-title"' . ( $title_motion ? ' style="' . esc_attr( $title_motion ) . '"' : '' ) . '>' . esc_html( $title ) . '</' . $title_tag . '>';
 		}
 		if ( $subtitle ) {
-			$subtitle_style = 'color:' . esc_attr( $settings['subtitle_color'] ?? '#ffffff' ) . ';font-size:' . absint( $settings['subtitle_font_size'] ?? 18 ) . 'px;font-weight:' . absint( $settings['subtitle_font_weight'] ?? 400 ) . ';line-height:' . esc_attr( $settings['subtitle_line_height'] ?? 1.5 ) . ';letter-spacing:' . esc_attr( (float) ( $settings['subtitle_letter_spacing'] ?? 0 ) ) . 'px;';
-			if ( ! empty( $settings['subtitle_font_family'] ) ) {
-				$subtitle_style .= 'font-family:' . esc_attr( $settings['subtitle_font_family'] ) . ';';
-			}
-			$html .= '<div class="xsb-banner-subtitle" style="' . $subtitle_style . '">' . wp_kses_post( wpautop( self::replace_tokens( $subtitle, $post ) ) ) . '</div>';
+			$description_motion = self::element_animation_style( $settings, 'description_animation' );
+			$html .= '<div class="xsb-banner-subtitle"' . ( $description_motion ? ' style="' . esc_attr( $description_motion ) . '"' : '' ) . '>' . wp_kses_post( wpautop( self::replace_tokens( $subtitle, $post ) ) ) . '</div>';
 		}
 		$buttons = isset( $slide['buttons'] ) && is_array( $slide['buttons'] ) ? array_slice( $slide['buttons'], 0, 3 ) : array();
 		if ( empty( $buttons ) && ! empty( $slide['button_text'] ?? $legacy['button_text'] ?? '' ) ) {
@@ -291,15 +386,9 @@ final class XCOPB_Hero_Banner {
 				$url = esc_url( $button['url'] ?? '' );
 				if ( ! $label || ! $url ) continue;
 				$style = in_array( $button['style'] ?? 'primary', array( 'primary', 'secondary', 'outline', 'ghost' ), true ) ? $button['style'] : 'primary';
-				$button_bg = 'primary' === $style ? ( $settings['button_bg_color'] ?? '#4f46e5' ) : ( 'secondary' === $style ? '#ffffff' : 'transparent' );
-				$button_color = 'secondary' === $style ? '#172033' : ( $settings['button_text_color'] ?? '#ffffff' );
-				$button_border = 'ghost' === $style ? 'transparent' : ( 'secondary' === $style ? '#ffffff' : ( $settings['button_border_color'] ?? '#ffffff' ) );
-				$button_style = 'background-color:' . esc_attr( $button_bg ) . ';color:' . esc_attr( $button_color ) . ';border:' . absint( $settings['button_border_width'] ?? 2 ) . 'px solid ' . esc_attr( $button_border ) . ';padding:' . absint( $settings['button_padding_y'] ?? 12 ) . 'px ' . absint( $settings['button_padding_x'] ?? 24 ) . 'px;border-radius:' . absint( $settings['button_border_radius'] ?? 4 ) . 'px;';
-				if ( ! empty( $settings['button_font_family'] ) ) {
-					$button_style .= 'font-family:' . esc_attr( $settings['button_font_family'] ) . ';';
-				}
 				$target = ! empty( $button['new_tab'] ) ? ' target="_blank" rel="noopener noreferrer' . ( ! empty( $button['nofollow'] ) ? ' nofollow' : '' ) . '"' : ( ! empty( $button['nofollow'] ) ? ' rel="nofollow"' : '' );
-				$html .= '<a class="xsb-banner-btn is-' . esc_attr( $style ) . '" href="' . $url . '" style="' . esc_attr( $button_style ) . '"' . $target . '>' . esc_html( $label ) . '</a>';
+				$button_motion = self::element_animation_style( $settings, 'button_animation' );
+				$html .= '<a class="xsb-banner-btn is-' . esc_attr( $style ) . '" href="' . $url . '"' . $target . ( $button_motion ? ' style="' . esc_attr( $button_motion ) . '"' : '' ) . '>' . esc_html( $label ) . '</a>';
 			}
 			$html .= '</div>';
 		}
@@ -311,14 +400,34 @@ final class XCOPB_Hero_Banner {
 	}
 
 	/** Generate dots, numbers, fraction or progress navigation. */
-	private static function render_pagination( $type, $count ) {
+	private static function render_arrow_icon( $settings ) {
+		$custom = $settings['arrow_custom_icon'] ?? '';
+		$custom_url = is_array( $custom ) && ! empty( $custom['url'] ) ? esc_url( $custom['url'] ) : '';
+		if ( $custom_url ) {
+			return '<img class="xsb-banner-arrow-icon is-custom" src="' . $custom_url . '" alt="" aria-hidden="true" loading="lazy" />';
+		}
+		$icons = array(
+			'chevron' => '<path d="m9 18 6-6-6-6" />',
+			'angle' => '<path d="m14 5-7 7 7 7" />',
+			'arrow' => '<path d="M5 12h14m-7-7 7 7-7 7" />',
+			'long-arrow' => '<path d="M3 12h18m-8-8 8 8-8 8" />',
+			'caret' => '<path d="m9 6 6 6-6 6" fill="currentColor" stroke="none" />',
+		);
+		$style = in_array( $settings['arrow_icon_style'] ?? 'chevron', array_keys( $icons ), true ) ? $settings['arrow_icon_style'] : 'chevron';
+		return '<svg class="xsb-banner-arrow-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $icons[ $style ] . '</svg>';
+	}
+
+	/** Generate dots, numbers, fraction or progress navigation. */
+	private static function render_pagination( $type, $count, $settings ) {
+		$position = in_array( $settings['pagination_position'] ?? 'bottom', array( 'top', 'bottom' ), true ) ? $settings['pagination_position'] : 'bottom';
+		$shape = in_array( $settings['dot_shape'] ?? 'square', array( 'circle', 'pill', 'square' ), true ) ? $settings['dot_shape'] : 'square';
 		if ( 'fraction' === $type ) {
-			return '<div class="xsb-banner-pagination is-fraction" aria-hidden="true"><span data-banner-current>1</span><span>/</span><span>' . absint( $count ) . '</span></div>';
+			return '<div class="xsb-banner-pagination is-fraction" data-position="' . esc_attr( $position ) . '" aria-hidden="true"><span data-banner-current>1</span><span>/</span><span>' . absint( $count ) . '</span></div>';
 		}
 		if ( 'progress' === $type ) {
-			return '<div class="xsb-banner-pagination is-progress" role="progressbar" aria-label="' . esc_attr__( 'Slide progress', 'xcodesol-page-builder' ) . '" aria-valuemin="1" aria-valuemax="' . absint( $count ) . '" aria-valuenow="1"><span data-banner-progress></span></div>';
+			return '<div class="xsb-banner-pagination is-progress" data-position="' . esc_attr( $position ) . '" role="progressbar" aria-label="' . esc_attr__( 'Slide progress', 'xcodesol-page-builder' ) . '" aria-valuemin="1" aria-valuemax="' . absint( $count ) . '" aria-valuenow="1"><span data-banner-progress></span></div>';
 		}
-		$html = '<div class="xsb-banner-pagination is-' . esc_attr( 'numbers' === $type ? 'numbers' : 'dots' ) . '" role="group" aria-label="' . esc_attr__( 'Choose a slide', 'xcodesol-page-builder' ) . '">';
+		$html = '<div class="xsb-banner-pagination is-' . esc_attr( 'numbers' === $type ? 'numbers' : 'dots' ) . '" data-position="' . esc_attr( $position ) . '" data-shape="' . esc_attr( $shape ) . '" role="group" aria-label="' . esc_attr__( 'Choose a slide', 'xcodesol-page-builder' ) . '">';
 		for ( $i = 0; $i < $count; $i++ ) {
 			$html .= '<button type="button" data-banner-to="' . $i . '"' . ( 0 === $i ? ' class="is-active" aria-current="true"' : '' ) . ' aria-label="' . esc_attr( sprintf( __( 'Show slide %d', 'xcodesol-page-builder' ), $i + 1 ) ) . '">' . ( 'numbers' === $type ? esc_html( (string) ( $i + 1 ) ) : '<span></span>' ) . '</button>';
 		}
@@ -328,6 +437,25 @@ final class XCOPB_Hero_Banner {
 	private static function flex_x( $value ) {
 		$map = array( 'left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end' );
 		return $map[ $value ] ?? 'center';
+	}
+
+	/** Build a safe entrance-animation style for a banner content element. */
+	private static function element_animation_style( $settings, $key ) {
+		if ( ! class_exists( 'XCOPB_Motion_Presets' ) ) {
+			return '';
+		}
+		$animation = XCOPB_Motion_Presets::normalize_id( $settings[ $key ] ?? 'none' );
+		$keyframe = XCOPB_Motion_Presets::keyframe( $animation );
+		if ( '' === $keyframe ) {
+			return '';
+		}
+		$duration = min( 5000, max( 100, absint( $settings['animation_duration'] ?? 600 ) ) );
+		$delay = min( 3000, absint( $settings['animation_delay'] ?? 0 ) );
+		$raw_easing = is_string( $settings['animation_easing'] ?? null ) ? $settings['animation_easing'] : 'ease';
+		$raw_repeat = is_scalar( $settings['animation_repeat'] ?? null ) ? (string) $settings['animation_repeat'] : '1';
+		$easing = in_array( $raw_easing, array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), true ) ? $raw_easing : 'ease';
+		$repeat = in_array( $raw_repeat, array( '1', '2', '3', 'infinite' ), true ) ? $raw_repeat : '1';
+		return sprintf( 'animation-name:%s;animation-duration:%dms;animation-delay:%dms;animation-timing-function:%s;animation-iteration-count:%s;animation-fill-mode:both', esc_attr( $keyframe ), $duration, $delay, esc_attr( $easing ), esc_attr( $repeat ) );
 	}
 
 	private static function flex_y( $value ) {
@@ -371,7 +499,24 @@ final class XCOPB_Hero_Banner {
 		return in_array( $post->post_type, $public_types, true ) ? $post : null;
 	}
 
-	private static function slider_script() {
-		return "document.querySelectorAll('.xsb-banner-slider:not([data-banner-ready])').forEach(function(root){root.dataset.bannerReady='1';var slides=Array.from(root.querySelectorAll('[data-banner-slide]'));if(slides.length<2)return;var index=0,timer=null,paused=false,reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches,startX=null;function show(next){var target=root.dataset.loop==='true'?(next+slides.length)%slides.length:Math.max(0,Math.min(slides.length-1,next));var before=new CustomEvent('xcopb:beforeRender',{cancelable:true,detail:{index:target,slide:slides[target]}});root.dispatchEvent(before);if(before.defaultPrevented)return;index=target;slides.forEach(function(slide,i){var active=i===index;slide.classList.toggle('is-active',active);slide.setAttribute('aria-hidden',active?'false':'true');if('inert'in slide)slide.inert=!active;});root.querySelectorAll('[data-banner-to]').forEach(function(button,i){button.classList.toggle('is-active',i===index);if(i===index)button.setAttribute('aria-current','true');else button.removeAttribute('aria-current');});var current=root.querySelector('[data-banner-current]');if(current)current.textContent=String(index+1);var progress=root.querySelector('[data-banner-progress]');if(progress)progress.style.width=((index+1)/slides.length*100)+'%';var bar=progress&&progress.parentElement;if(bar)bar.setAttribute('aria-valuenow',String(index+1));var change=new CustomEvent('xcopb:slidechange',{detail:{index:index,slide:slides[index]}});root.dispatchEvent(change);if(typeof root.xcopbOnSlideChange==='function')root.xcopbOnSlideChange(change.detail);}function stop(){if(timer){window.clearInterval(timer);timer=null;}}function start(){stop();if(root.dataset.autoplay==='true'&&!paused&&!reduced&&!document.hidden)timer=window.setInterval(function(){if(root.dataset.loop!=='true'&&index>=slides.length-1){stop();return;}show(index+1);},Math.max(1000,Number(root.dataset.delay)||5000));}root.addEventListener('click',function(event){var next=event.target.closest('[data-banner-next]'),previous=event.target.closest('[data-banner-prev]'),to=event.target.closest('[data-banner-to]'),pause=event.target.closest('[data-banner-pause]');if(next)show(index+1);if(previous)show(index-1);if(to)show(Number(to.dataset.bannerTo));if((next||previous||to)&&root.dataset.pauseInteraction==='true'&&root.dataset.autoplay==='true'){paused=true;stop();var pauseButton=root.querySelector('[data-banner-pause]');if(pauseButton){pauseButton.setAttribute('aria-pressed','true');pauseButton.setAttribute('aria-label','Resume slide rotation');pauseButton.querySelector('span').textContent=String.fromCharCode(9654);}}if(pause){paused=!paused;pause.setAttribute('aria-pressed',paused?'true':'false');pause.setAttribute('aria-label',paused?'Resume slide rotation':'Pause slide rotation');pause.querySelector('span').textContent=paused?String.fromCharCode(9654):String.fromCharCode(10074,10074);start();}});root.addEventListener('keydown',function(event){if(event.key==='ArrowRight'){event.preventDefault();show(index+1);}if(event.key==='ArrowLeft'){event.preventDefault();show(index-1);}});root.addEventListener('pointerdown',function(event){if(event.target.closest('a,button'))return;startX=event.clientX;});root.addEventListener('pointerup',function(event){if(startX===null)return;var delta=event.clientX-startX;startX=null;if(Math.abs(delta)>48)show(index+(delta<0?1:-1));});if(root.dataset.pauseHover==='true'){root.addEventListener('mouseenter',stop);root.addEventListener('mouseleave',start);root.addEventListener('focusin',stop);root.addEventListener('focusout',function(event){if(!root.contains(event.relatedTarget))start();});}function onVisibility(){if(!root.isConnected){stop();document.removeEventListener('visibilitychange',onVisibility);return;}start();}document.addEventListener('visibilitychange',onVisibility);var observer=new MutationObserver(function(){if(!root.isConnected){stop();document.removeEventListener('visibilitychange',onVisibility);observer.disconnect();}});observer.observe(document.documentElement,{childList:true,subtree:true});start();});";
+	private static function enqueue_slider_assets() {
+		$asset_file = XCOPB_PLUGIN_DIR . 'assets/admin/banner-slider.asset.php';
+		$asset      = file_exists( $asset_file ) ? include $asset_file : array();
+		$deps       = isset( $asset['dependencies'] ) && is_array( $asset['dependencies'] ) ? $asset['dependencies'] : array();
+		$version    = $asset['version'] ?? XCOPB_VERSION;
+		$handle     = 'xcopb-hero-banner-slider';
+
+		if ( ! wp_script_is( $handle, 'registered' ) ) {
+			wp_register_script( $handle, XCOPB_PLUGIN_URL . 'assets/admin/banner-slider.js', $deps, $version, true );
+		}
+		wp_enqueue_script( $handle );
+
+		$style_file = XCOPB_PLUGIN_DIR . 'assets/admin/banner-slider.css';
+		if ( file_exists( $style_file ) && ! wp_style_is( $handle, 'registered' ) ) {
+			wp_register_style( $handle, XCOPB_PLUGIN_URL . 'assets/admin/banner-slider.css', array(), $version );
+		}
+		if ( wp_style_is( $handle, 'registered' ) ) {
+			wp_enqueue_style( $handle );
+		}
 	}
 }

@@ -12,30 +12,31 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import { isKeySet } from './controls';
 import { categoryKeys } from './config';
+import { PANEL_SECTIONS } from '../../schemas/display-names';
 
 /** Canonical menu order + display metadata. */
 export const CATEGORY_META = {
 	typography: { label: __( 'Typography', 'xcodesol-page-builder' ), icon: 'dashicons-editor-textcolor', keywords: 'font size weight family text transform' },
 	colors: { label: __( 'Colors', 'xcodesol-page-builder' ), icon: 'dashicons-art', keywords: 'color text link accent fill background' },
-	spacing: { label: __( 'Margin & Padding', 'xcodesol-page-builder' ), icon: 'dashicons-editor-expand', keywords: 'margin padding spacing gap' },
-	border: { label: __( 'Border & Corners', 'xcodesol-page-builder' ), icon: 'dashicons-tag', keywords: 'border radius round corner width outline' },
+	spacing: { label: __( PANEL_SECTIONS.spacing, 'xcodesol-page-builder' ), icon: 'dashicons-editor-expand', keywords: 'margin padding spacing gap' },
+	border: { label: __( PANEL_SECTIONS.border, 'xcodesol-page-builder' ), icon: 'dashicons-tag', keywords: 'border radius round corner width outline' },
 	background: { label: __( 'Background', 'xcodesol-page-builder' ), icon: 'dashicons-format-image', keywords: 'background color gradient image overlay' },
-	shadow: { label: __( 'Box Shadow', 'xcodesol-page-builder' ), icon: 'dashicons-admin-appearance', keywords: 'shadow drop glow elevation' },
-	layout: { label: __( 'Layout & Align', 'xcodesol-page-builder' ), icon: 'dashicons-screenoptions', keywords: 'layout display align justify direction' },
-	dimensions: { label: __( 'Size & Dimensions', 'xcodesol-page-builder' ), icon: 'dashicons-editor-table', keywords: 'width height max-width min-height size' },
-	position: { label: __( 'Positioning', 'xcodesol-page-builder' ), icon: 'dashicons-move', keywords: 'position z-index top left right bottom' },
-	effects: { label: __( 'Effects & Motion', 'xcodesol-page-builder' ), icon: 'dashicons-star-filled', keywords: 'animation opacity transition transform effect' },
-	imageEffects: { label: __( 'Image Overlay', 'xcodesol-page-builder' ), icon: 'dashicons-format-gallery', keywords: 'overlay filter blend brightness' },
-	imageSettings: { label: __( 'Image Fit', 'xcodesol-page-builder' ), icon: 'dashicons-image-crop', keywords: 'fit cover contain position' },
-	visibility: { label: __( 'Visibility', 'xcodesol-page-builder' ), icon: 'dashicons-visibility', keywords: 'hide display show mobile tablet desktop' },
-	advanced: { label: __( 'Advanced & CSS', 'xcodesol-page-builder' ), icon: 'dashicons-admin-generic', keywords: 'class id custom css selector' },
+	shadow: { label: __( PANEL_SECTIONS.effects, 'xcodesol-page-builder' ), icon: 'dashicons-admin-appearance', keywords: 'shadow drop glow elevation' },
+	layout: { label: __( PANEL_SECTIONS.layout, 'xcodesol-page-builder' ), icon: 'dashicons-screenoptions', keywords: 'layout display align justify direction' },
+	dimensions: { label: __( PANEL_SECTIONS.layout, 'xcodesol-page-builder' ), icon: 'dashicons-editor-table', keywords: 'width height max-width min-height size' },
+	position: { label: __( PANEL_SECTIONS.advanced, 'xcodesol-page-builder' ), icon: 'dashicons-move', keywords: 'position z-index top left right bottom' },
+	effects: { label: __( PANEL_SECTIONS.effects, 'xcodesol-page-builder' ), icon: 'dashicons-star-filled', keywords: 'animation opacity transition transform effect' },
+	imageEffects: { label: __( PANEL_SECTIONS.background, 'xcodesol-page-builder' ), icon: 'dashicons-format-gallery', keywords: 'overlay filter blend brightness' },
+	imageSettings: { label: __( PANEL_SECTIONS.background, 'xcodesol-page-builder' ), icon: 'dashicons-image-crop', keywords: 'fit cover contain position' },
+	visibility: { label: __( PANEL_SECTIONS.advanced, 'xcodesol-page-builder' ), icon: 'dashicons-visibility', keywords: 'hide display show mobile tablet desktop' },
+	advanced: { label: __( PANEL_SECTIONS.advanced, 'xcodesol-page-builder' ), icon: 'dashicons-admin-generic', keywords: 'class id custom css selector' },
 };
 
 // Common styling properties (Typography, Colors, Spacing, Border, Background) first,
 // followed by structural layout, effects, and advanced.
 const ORDER = [
-	'typography', 'colors', 'spacing', 'border', 'background', 'shadow',
-	'layout', 'dimensions', 'position', 'effects', 'imageEffects', 'imageSettings',
+	'layout', 'dimensions', 'typography', 'colors', 'background', 'imageEffects', 'imageSettings', 'border', 'spacing', 'shadow', 'effects',
+	'position',
 	'visibility', 'advanced',
 ];
 

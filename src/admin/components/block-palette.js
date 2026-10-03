@@ -99,8 +99,8 @@ export const BASIC_BLOCKS = [
 export const GENERAL_BLOCKS = [
 	{
 		type: 'xcopb/gb-banner',
-		label: __( 'Hero Banner', 'xcodesol-page-builder' ),
-		defaults: { ...BANNER_DEFAULTS, slides: BANNER_DEFAULTS.slides.map( ( slide ) => ( { ...slide, title: __( 'Designed for creators', 'xcodesol-page-builder' ), subtitle: __( 'Take visual control over your website with effortless drag and drop.', 'xcodesol-page-builder' ) } ) ) },
+		label: __( 'Slider', 'xcodesol-page-builder' ),
+		defaults: { ...BANNER_DEFAULTS },
 		icon: 'dashicons-megaphone',
 		category: 'general',
 		description: __( 'Hero section with CTA and rich backgrounds.', 'xcodesol-page-builder' ),
@@ -258,7 +258,7 @@ export function getBlocksForView( viewType ) {
 const STARTER_PRESETS = [
 	{
 		id: 'hero-banner',
-		title: __( 'Hero Banner', 'xcodesol-page-builder' ),
+		title: __( 'Slider', 'xcodesol-page-builder' ),
 		desc: __( 'Eye-catching headline with CTA and description.', 'xcodesol-page-builder' ),
 		category: 'Hero',
 		blocks: [

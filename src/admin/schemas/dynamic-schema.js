@@ -70,7 +70,7 @@ export const DYNAMIC_SCHEMA = {
 		{ id: 'gap', type: 'number', label: 'Space between cards (px)', tab: 'content', section: 'content', min: 0, max: 100, default: 24, condition: archivePosts },
 		{ id: 'prev_label', type: 'text', label: 'Previous post label', tab: 'content', section: 'content', condition: postNavigation },
 		{ id: 'next_label', type: 'text', label: 'Next post label', tab: 'content', section: 'content', condition: postNavigation },
-		{ id: 'border_radius', type: 'number', label: 'Corner roundness (px)', tab: 'style', section: 'style', min: 0, max: 50, default: 8, condition: on( 'xcopb/post-featured-image', 'xcopb/post-author-box' ) },
+		{ id: 'border_radius', type: 'number', label: 'Corner roundness (px)', tab: 'style', section: 'style', min: 0, max: 50, default: 0, condition: on( 'xcopb/post-featured-image', 'xcopb/post-author-box' ) },
 		{ id: 'align', type: 'select', label: 'Alignment', tab: 'style', section: 'style', condition: commonStyle[ 0 ].condition, options: commonStyle[ 0 ].options },
 		{ id: 'color', type: 'color', label: 'Text color', tab: 'style', section: 'style', condition: commonStyle[ 1 ].condition },
 		{ id: 'font_size', type: 'number', label: 'Text size (px)', tab: 'style', section: 'style', min: 8, max: 120, condition: on( 'xcopb/post-title', 'xcopb/post-excerpt', 'xcopb/archive-title' ) },

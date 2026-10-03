@@ -30,10 +30,10 @@ if ( empty( $author_desc ) ) {
 
 $avatar = get_avatar( $author_id, 80, '', '', array( 'class' => 'xcopb-author-avatar' ) );
 
-$border_radius = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 8;
+$border_radius = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 0;
 
 ?>
-<div class="xcopb-author-box xcopb-widget" style="display:flex;gap:20px;align-items:flex-start;padding:24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:<?php echo $border_radius; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>px;box-sizing:border-box;margin:24px 0;">
+<div class="xcopb-author-box xcopb-widget" style="display:flex;gap:20px;align-items:flex-start;padding:24px;background:#f8fafc;border:<?php echo isset( $settings['border_width'] ) ? absint( $settings['border_width'] ) : 0; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>px solid #e2e8f0;border-radius:<?php echo $border_radius; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>px;box-sizing:border-box;margin:24px 0;">
 	<div class="xcopb-author-avatar-wrap" style="flex-shrink:0;">
 		<?php echo $avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	</div>

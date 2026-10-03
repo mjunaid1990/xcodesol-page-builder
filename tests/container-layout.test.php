@@ -285,7 +285,7 @@ $legacy = xsb_render_container(
 $legacy_style = xsb_root_style( $legacy );
 xsb_assert_contains( 'legacy grid template emitted', $legacy_style, array( 'grid-template-columns:repeat(12, minmax(0, 1fr))', 'display:grid' ) );
 xsb_assert_contains( 'legacy column spans emitted', $legacy, array( 'grid-column:1 / span 6', 'grid-column:7 / span 6' ) );
-xsb_assert_contains( 'legacy padding kept', $legacy_style, array( 'padding:20px 20px 20px 20px', 'border-radius:8px' ) );
+xsb_assert_contains( 'legacy padding kept and default radius removed', $legacy_style, array( 'padding:20px 20px 20px 20px', 'border-radius:0px' ) );
 xsb_assert_missing( 'legacy markup has no flow wrapper', $legacy, array( 'xsb-container-flow' ) );
 xsb_assert_contains( 'legacy children render', $legacy, array( 'data-nested="xcosb/gb-heading"' ) );
 xsb_assert( 'legacy emits no scoped stylesheet', '' === xsb_style_blocks( $legacy ), xsb_style_blocks( $legacy ) );

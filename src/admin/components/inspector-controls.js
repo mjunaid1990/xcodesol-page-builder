@@ -29,6 +29,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import heroBannerPresets from '../../../includes/data/hero-banner-presets.json';
 import { renderControl, hasControl, UnitSelect } from './controls/index';
@@ -153,7 +154,7 @@ export function CollapsibleSection( {
 	stateControls = null,
 	resetVersion = 0,
 } ) {
-	const storageKey = `xcopb_sec_${ id }`;
+	const storageKey = `xcopb_sec_v2_${ id }`;
 	const [ isOpen, setIsOpen ] = useState( () => {
 		try {
 			const saved = localStorage.getItem( storageKey );
@@ -1476,12 +1477,15 @@ export function RepeaterControl( {
 			{ items.map( ( item, i ) => (
 				<details className="xsb-repeater-item" key={ item.id || i } defaultOpen={ i === 0 }>
 					<summary className="xsb-repeater-item__summary">
-						<span>{ `${ i + 1 }. ${ item.title || item.label || label }` }</span>
+						<span className="xsb-repeater-item__heading">
+							<span className="xsb-repeater-item__index">{ String( i + 1 ).padStart( 2, '0' ) }</span>
+							<span className="xsb-repeater-item__title">{ item.title || item.label || `${ label } ${ i + 1 }` }</span>
+						</span>
 						<span className="xsb-repeater-item__actions">
-							<button type="button" title={ __( 'Move up', 'xcodesol-page-builder' ) } aria-label={ __( 'Move up', 'xcodesol-page-builder' ) } disabled={ i === 0 } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); moveItem( i, -1 ); } }><IconArrowUp width={ 12 } height={ 12 } /></button>
-							<button type="button" title={ __( 'Move down', 'xcodesol-page-builder' ) } aria-label={ __( 'Move down', 'xcodesol-page-builder' ) } disabled={ i === items.length - 1 } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); moveItem( i, 1 ); } }><IconArrowDown width={ 12 } height={ 12 } /></button>
-							<button type="button" title={ __( 'Duplicate', 'xcodesol-page-builder' ) } aria-label={ __( 'Duplicate', 'xcodesol-page-builder' ) } disabled={ !! maxItems && items.length >= maxItems } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); duplicateItem( i ); } }><IconCopy width={ 12 } height={ 12 } /></button>
-							<button type="button" title={ __( 'Delete', 'xcodesol-page-builder' ) } aria-label={ __( 'Delete', 'xcodesol-page-builder' ) } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); deleteItem( i ); } }><IconTrash width={ 12 } height={ 12 } /></button>
+							<button type="button" title={ __( 'Move up', 'xcodesol-page-builder' ) } aria-label={ `${ __( 'Move up', 'xcodesol-page-builder' ) } ${ item.title || label }` } disabled={ i === 0 } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); moveItem( i, -1 ); } }><IconArrowUp width={ 13 } height={ 13 } /></button>
+							<button type="button" title={ __( 'Move down', 'xcodesol-page-builder' ) } aria-label={ `${ __( 'Move down', 'xcodesol-page-builder' ) } ${ item.title || label }` } disabled={ i === items.length - 1 } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); moveItem( i, 1 ); } }><IconArrowDown width={ 13 } height={ 13 } /></button>
+							<button type="button" title={ __( 'Duplicate', 'xcodesol-page-builder' ) } aria-label={ `${ __( 'Duplicate', 'xcodesol-page-builder' ) } ${ item.title || label }` } disabled={ !! maxItems && items.length >= maxItems } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); duplicateItem( i ); } }><IconCopy width={ 13 } height={ 13 } /></button>
+							<button type="button" title={ __( 'Delete', 'xcodesol-page-builder' ) } aria-label={ `${ __( 'Delete', 'xcodesol-page-builder' ) } ${ item.title || label }` } onClick={ ( event ) => { event.preventDefault(); event.stopPropagation(); deleteItem( i ); } }><IconTrash width={ 13 } height={ 13 } /></button>
 						</span>
 					</summary>
 					<div className="xsb-repeater-item__body">
@@ -1544,6 +1548,74 @@ export function PopoverGroupControl( {
 	);
 }
 
+function PostTypeSelectControl( { id, label, value, onChange } ) {
+	const [ options, setOptions ] = useState( [] );
+	useEffect( () => {
+		let active = true;
+		apiFetch( { path: '/xcopb/v1/hero-query-options?kind=post_types' } )
+			.then( ( items ) => { if ( active && Array.isArray( items ) ) setOptions( items ); } )
+			.catch( () => { if ( active ) setOptions( [] ); } );
+		return () => { active = false; };
+	}, [] );
+	return <div className="xsb-control-field"><label className="xsb-control-label" htmlFor={ id }>{ label }</label><select id={ id } className="xsb-select-input" value={ value || 'post' } onChange={ ( event ) => onChange( event.target.value ) }>{ options.map( ( item ) => <option key={ item.id } value={ item.id }>{ item.label }</option> ) }</select></div>;
+}
+
+function SearchableQueryChoice( { id, label, kind, value, onChange, postType = 'post', multiple = false } ) {
+	const selectedIds = multiple ? String( value || '' ).split( ',' ).map( ( item ) => item.trim() ).filter( Boolean ) : ( value && String( value ) !== '0' ? [ String( value ) ] : [] );
+	const [ selected, setSelected ] = useState( [] );
+	const [ search, setSearch ] = useState( '' );
+	const [ results, setResults ] = useState( [] );
+	const [ loading, setLoading ] = useState( false );
+	const [ focused, setFocused ] = useState( false );
+	const requestId = useRef( 0 );
+
+	useEffect( () => {
+		let active = true;
+		if ( ! selectedIds.length ) { setSelected( [] ); return undefined; }
+		const ids = selectedIds.join( ',' );
+		apiFetch( { path: `/xcopb/v1/hero-query-options?kind=${ kind }&post_type=${ encodeURIComponent( postType ) }&ids=${ encodeURIComponent( ids ) }` } )
+			.then( ( items ) => { if ( active && Array.isArray( items ) ) setSelected( items ); } )
+			.catch( () => { if ( active ) setSelected( [] ); } );
+		return () => { active = false; };
+	}, [ kind, postType, selectedIds.join( ',' ) ] );
+
+	useEffect( () => {
+		const term = search.trim();
+		if ( term.length < 3 ) { setResults( [] ); setLoading( false ); return undefined; }
+		const currentRequest = ++requestId.current;
+		const timer = setTimeout( () => {
+			setLoading( true );
+			apiFetch( { path: `/xcopb/v1/hero-query-options?kind=${ kind }&post_type=${ encodeURIComponent( postType ) }&search=${ encodeURIComponent( term ) }` } )
+				.then( ( items ) => { if ( requestId.current === currentRequest ) setResults( Array.isArray( items ) ? items : [] ); } )
+				.catch( () => { if ( requestId.current === currentRequest ) setResults( [] ); } )
+				.finally( () => { if ( requestId.current === currentRequest ) setLoading( false ); } );
+		}, 250 );
+		return () => clearTimeout( timer );
+	}, [ kind, postType, search ] );
+
+	const select = ( option ) => {
+		const next = multiple
+			? [ ...selected.filter( ( item ) => String( item.id ) !== String( option.id ) ), option ]
+			: [ option ];
+		setSelected( next );
+		setSearch( '' );
+		setResults( [] );
+		setFocused( false );
+		onChange( multiple ? next.map( ( item ) => item.id ).join( ',' ) : option.id );
+	};
+	const remove = ( option ) => {
+		const next = selected.filter( ( item ) => String( item.id ) !== String( option.id ) );
+		setSelected( next );
+		onChange( multiple ? next.map( ( item ) => item.id ).join( ',' ) : 0 );
+	};
+
+	return <div className="xsb-control-field xsb-query-search"><label className="xsb-control-label" htmlFor={ id }>{ label }</label>
+		<div className="xsb-query-search__selected">{ selected.map( ( item ) => <span className="xsb-query-search__chip" key={ item.id }>{ item.label }<button type="button" aria-label={ __( 'Remove selection', 'xcodesol-page-builder' ) } onClick={ () => remove( item ) }>×</button></span> ) }</div>
+		{ ( multiple || ! selected.length ) && <input id={ id } className="xsb-text-input" type="search" value={ search } placeholder={ __( 'Type at least 3 characters to search', 'xcodesol-page-builder' ) } autoComplete="off" onFocus={ () => setFocused( true ) } onBlur={ () => setTimeout( () => setFocused( false ), 150 ) } onChange={ ( event ) => setSearch( event.target.value ) } /> }
+		{ focused && search.trim().length >= 3 && <div className="xsb-query-search__results" role="listbox" aria-label={ label }>{ loading ? <div className="xsb-query-search__empty">{ __( 'Searching…', 'xcodesol-page-builder' ) }</div> : results.length ? results.map( ( option ) => <button type="button" role="option" aria-selected="false" key={ option.id } onMouseDown={ ( event ) => event.preventDefault() } onClick={ () => select( option ) }>{ option.label }{ kind === 'posts' && <small>ID { option.id }</small> }</button> ) : <div className="xsb-query-search__empty">{ __( 'No matching results', 'xcodesol-page-builder' ) }</div> }</div> }
+	</div>;
+}
+
 /**
  * 19. Dynamic Control Renderer: Dispatches control definitions to component.
  */
@@ -1583,6 +1655,9 @@ export function DynamicControlRenderer( {
 
 	// Resolve the cascading value for the current device/state.
 	let val = settings[ storeKey ];
+	if ( val === undefined && control.id === 'blockquote_padding' ) {
+		val = settings.padding;
+	}
 	let isOverridden = false;
 
 	if ( val === undefined && control.responsive && activeDevice !== 'desktop' && ! stateScoped ) {
@@ -1613,6 +1688,10 @@ export function DynamicControlRenderer( {
 	}
 
 	const handleValueChange = ( nextVal ) => {
+		if ( control.id === 'padding' && blockType === 'xcopb/gb-text' && typeof settings.padding === 'number' && settings.blockquote_padding === undefined ) {
+			onUpdate( { padding: nextVal, blockquote_padding: settings.padding } );
+			return;
+		}
 		// Content width and max width describe one choice in the inspector:
 		// changing modes should immediately update both the control value and
 		// the canvas, rather than leaving a stale boxed width behind.
@@ -1623,7 +1702,6 @@ export function DynamicControlRenderer( {
 			} );
 			return;
 		}
-
 		if ( stateScoped ) {
 			onUpdate( storeKey, nextVal );
 			return;
@@ -1723,7 +1801,13 @@ export function DynamicControlRenderer( {
 					onRemoveColumn: () => changeColumnCount( -1 ),
 			  }
 			: control.type === 'animation'
-				? { ...control, duration: settings.animation_duration ?? 600, delay: settings.animation_delay ?? 0, easing: settings.animation_easing || 'ease' }
+			? {
+					...control,
+					duration: settings.animation_duration ?? 600,
+					delay: settings.animation_delay ?? 0,
+					easing: settings.animation_easing || 'ease',
+					repeat: settings.animation_repeat || '1',
+				}
 				: control.type === 'media' && control.id === 'url'
 					? ( () => {
 						const source = settings.image_source || 'upload';
@@ -1750,7 +1834,16 @@ export function DynamicControlRenderer( {
 	const useRichTextEditor = control.type === 'textarea' && (
 		control.richText || ( control.id === 'content' && [ 'xcopb/gb-text', 'xcosb/gb-text' ].includes( blockType ) )
 	);
-	if ( hasControl( control.type ) && ! useRichTextEditor ) {
+	if ( control.type === 'post-type-select' ) {
+		return <div className="xsb-schema-control"><div className="xsb-schema-control__field"><PostTypeSelectControl id={ control.id } label={ control.label } value={ val } onChange={ handleValueChange } /></div>{ control.help && <p className="xsb-schema-control__help">{ control.help }</p> }</div>;
+	}
+	if ( control.type === 'term-search' || control.type === 'post-search-multiple' ) {
+		return <div className="xsb-schema-control"><div className="xsb-schema-control__field"><SearchableQueryChoice id={ control.id } label={ control.label } kind={ control.queryKind } value={ val } onChange={ handleValueChange } postType={ settings.posts_post_type || 'post' } multiple={ control.type === 'post-search-multiple' } /></div>{ control.help && <p className="xsb-schema-control__help">{ control.help }</p> }</div>;
+	}
+	// Repeaters with an item schema need the schema-aware editor below. The
+	// generic control registry repeater only renders a flat list and would drop
+	// the slide fields and their defaults.
+	if ( hasControl( control.type ) && control.type !== 'repeater' && ! useRichTextEditor ) {
 		return <div className="xsb-schema-control"><div className="xsb-schema-control__field">{ renderControl(
 			control.type,
 			{
@@ -1890,7 +1983,8 @@ export function SchemaInspectorRenderer( {
 	const evaluateCondition = ( condition ) => {
 		if ( ! condition ) return true;
 		return Object.entries( condition ).every( ( [ key, expected ] ) => {
-			const current = key === 'type' ? blockType : ( key in context ? context[ key ] : settings[ key ] );
+			const rawCurrent = key === 'type' ? blockType : ( key in context ? context[ key ] : settings[ key ] );
+			const current = rawCurrent;
 			if ( typeof expected === 'function' ) return !! expected( current, settings, context );
 			if ( Array.isArray( expected ) ) {
 				return expected.includes( current );
@@ -1904,34 +1998,36 @@ export function SchemaInspectorRenderer( {
 	const resultTabs = matchingControls ? [ ...new Set( matchingControls.map( control => control.tab ) ) ] : [ activeTab ];
 	const currentSections = schema.sections.filter( section => resultTabs.includes( section.tab ) );
 	const hasSearchMatch = ! normalizedQuery || matchingControls.length > 0;
+	const visibleSections = currentSections.flatMap( ( section ) => {
+		if ( ! evaluateCondition( section.condition ) ) return [];
+
+		const sectionControls = schema.controls.filter(
+			( control ) => control.section === section.id && evaluateCondition( control.condition )
+		);
+		const filteredControls = normalizedQuery
+			? sectionControls.filter( ( control ) =>
+				String( control.label || control.id || '' ).toLowerCase().includes( normalizedQuery )
+			)
+			: sectionControls;
+		const visibleControls = section.stateful && ( sectionStates?.[ section.id ] || 'default' ) !== 'default'
+			? filteredControls.filter( ( control ) => ( sectionStates[ section.id ] === 'focus' ? control.supportsFocus : control.supportsHover ) )
+			: filteredControls;
+
+		return visibleControls.length ? [ { section, sectionControls, visibleControls } ] : [];
+	} );
+	const firstVisibleSectionId = visibleSections[ 0 ]?.section.id;
 
 	return (
 		<div className="xsb-schema-inspector-wrap">
 			{ ! hasSearchMatch && <p className="xsb-inspector-search-empty">{ __( 'No settings match your search.', 'xcodesol-page-builder' ) }</p> }
-			{ currentSections.map( ( section ) => {
-				if ( ! evaluateCondition( section.condition ) ) return null;
-
-				const sectionControls = schema.controls.filter(
-					( c ) => c.section === section.id && evaluateCondition( c.condition )
-				);
-
-				const filteredControls = normalizedQuery
-					? sectionControls.filter( ( c ) =>
-							String( c.label || c.id || '' ).toLowerCase().includes( normalizedQuery )
-					  )
-					: sectionControls;
-				const visibleControls = section.stateful && ( sectionStates?.[ section.id ] || 'default' ) !== 'default'
-					? filteredControls.filter( control => ( sectionStates[ section.id ] === 'focus' ? control.supportsFocus : control.supportsHover ) )
-					: filteredControls;
-
-				if ( visibleControls.length === 0 ) return null;
+			{ visibleSections.map( ( { section, sectionControls, visibleControls } ) => {
 
 				return (
 					<CollapsibleSection
 						key={ section.id }
-						id={ section.id }
+						id={ `${ blockType }-${ section.tab }-${ section.id }` }
 						title={ section.title || section.label }
-						defaultOpen={ section.defaultOpen }
+						defaultOpen={ section.id === firstVisibleSectionId }
 						resetVersion={ resetVersion }
 							onReset={ () => {
 							const patch = {};

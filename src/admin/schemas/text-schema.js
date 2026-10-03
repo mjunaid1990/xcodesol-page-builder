@@ -13,7 +13,6 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import motionCatalog from '../../../includes/data/motion-presets.json';
 import { DYNAMIC_CONTENT_OPTIONS } from '../lib/dynamic-content';
 
 export const manifest = {
@@ -86,11 +85,6 @@ export const TEXT_SCHEMA = {
 		{ id: 'border_radius', type: 'number', label: 'Corner roundness (px)', tab: 'style', section: 'blockquote', min: 0, max: 100, default: 0 },
 		{ id: 'padding', type: 'number', label: 'Inner spacing (px)', tab: 'style', section: 'blockquote', min: 0, max: 100, default: 0 },
 		{ id: 'margin', type: 'dimensions', label: 'Outer spacing', tab: 'style', section: 'spacing', default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px' }, units: [ 'px', 'rem', '%' ], allowNegative: true },
-		{ id: 'animation', type: 'animation', label: 'Entrance effect', tab: 'advanced', section: 'attributes', default: 'none', options: motionCatalog.map( ( item ) => ( { value: item.value, label: __( item.label, 'xcodesol-page-builder' ) } ) ) },
-		{ id: 'animation_duration', type: 'number', label: 'Effect duration (ms)', tab: 'advanced', section: 'attributes', min: 100, max: 5000, default: 600, condition: { animation: motionCatalog.map( ( item ) => item.value ) } },
-		{ id: 'animation_delay', type: 'number', label: 'Effect delay (ms)', tab: 'advanced', section: 'attributes', min: 0, max: 3000, default: 0, condition: { animation: motionCatalog.map( ( item ) => item.value ) } },
-		{ id: 'animation_easing', type: 'select', label: 'Effect timing', tab: 'advanced', section: 'attributes', default: 'ease', options: [ 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ].map( ( value ) => ( { value, label: value } ) ), condition: { animation: motionCatalog.map( ( item ) => item.value ) } },
-		{ id: 'animation_repeat', type: 'select', label: 'Effect repeat', tab: 'advanced', section: 'attributes', default: '1', options: [ { value: '1', label: 'Once' }, { value: '2', label: '2 times' }, { value: '3', label: '3 times' }, { value: 'infinite', label: 'Loop' } ], condition: { animation: motionCatalog.map( ( item ) => item.value ) } },
 		{ id: 'hide_desktop', type: 'toggle', label: 'Hide on desktop', tab: 'advanced', section: 'visibility', default: false },
 		{ id: 'hide_tablet', type: 'toggle', label: 'Hide on tablet', tab: 'advanced', section: 'visibility', default: false },
 		{ id: 'hide_mobile', type: 'toggle', label: 'Hide on mobile', tab: 'advanced', section: 'visibility', default: false },

@@ -17,7 +17,7 @@ if ( empty( $post_id ) && isset( $context['post_id'] ) ) {
 $has_thumbnail = $post_id && has_post_thumbnail( $post_id );
 $size          = ! empty( $settings['size'] ) ? $settings['size'] : 'full';
 $align         = ! empty( $settings['align'] ) ? $settings['align'] : 'center';
-$border_radius = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 8;
+$border_radius = isset( $settings['border_radius'] ) ? absint( $settings['border_radius'] ) : 0;
 $link_to_post  = ! empty( $settings['link_to_post'] );
 
 $wrap_styles = array(

@@ -37,7 +37,7 @@ $grid_style = sprintf(
 				$post_id   = get_the_ID();
 				$permalink = get_permalink();
 				?>
-				<article id="post-<?php the_ID(); ?>" <?php post_class( 'xcopb-post-card' ); ?> style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;">
+				<article id="post-<?php the_ID(); ?>" <?php post_class( 'xcopb-post-card' ); ?> style="background:#ffffff;border:0;border-radius:0;overflow:hidden;display:flex;flex-direction:column;">
 					<?php if ( $show_image && has_post_thumbnail() ) : ?>
 						<div class="xcopb-post-card-thumb" style="aspect-ratio:16/9;overflow:hidden;background:#f1f5f9;">
 							<a href="<?php echo esc_url( $permalink ); ?>" style="display:block;width:100%;height:100%;">

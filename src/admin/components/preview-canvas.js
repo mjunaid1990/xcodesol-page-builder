@@ -23,7 +23,7 @@ import { columnCount, resolveColumnWidths, resolveColumnLines } from '../lib/col
 import { resolveBackgroundMedia, resolveImageWidgetMedia, resolveImageFilter } from '../lib/background-media';
 import { resolveDynamicPreview } from '../lib/dynamic-content';
 import BannerPreview from './banner-preview';
-import { resolveTextWidgetStyle, resolveButtonWidgetStyle, resolveDividerWidgetStyles } from '../lib/widget-styles';
+import { resolveTextWidgetStyle, resolveMotionStyle, resolveButtonWidgetStyle, resolveDividerWidgetStyles } from '../lib/widget-styles';
 import { effectiveForDevice } from '../styles/responsive';
 import StylePopover, { hasStylePopover, SHADOW_VALUES } from './style-popover';
 import { IconPlus, IconLayoutFlex, IconLayoutGrid, IconCopy, IconTrash } from './icons';
@@ -332,7 +332,7 @@ function marginInlineCss(settings) {
 }
 
 /**
- * Apply the shared Style-tab spacing values to a widget's editor wrapper.
+ * Apply the shared Advanced-tab spacing values to a widget's editor wrapper.
  * Dimensions stay as authored and legacy numeric values remain supported.
  *
  * @param {Object} settings Block settings.
@@ -781,7 +781,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				height: settings.height ? `${ Number( settings.height ) }px` : 'auto',
 				objectFit: settings.object_fit || 'cover',
 				objectPosition: settings.object_position || 'center center',
-				borderRadius: `${Number(settings.border_radius) || 8}px`,
+				borderRadius: `${Number(settings.border_radius) || 0}px`,
 				display: 'inline-block',
 				...chromeInlineCss(settings),
 			};
@@ -835,9 +835,9 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/post-author-box': {
 			return (
-				<div className="xsb-bp xcopb-bp-author-box" style={{ width: '100%', padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: `${Number(settings.border_radius) || 8}px`, display: 'flex', gap: '16px', alignItems: 'center', boxSizing: 'border-box' }}>
+				<div className="xsb-bp xcopb-bp-author-box" style={{ width: '100%', padding: '20px', background: '#f8fafc', border: 'none', borderRadius: `${Number(settings.border_radius) || 0}px`, display: 'flex', gap: '16px', alignItems: 'center', boxSizing: 'border-box' }}>
 					<div className="xsb-bp-label-chip">{__('Author Box', 'xcodesol-page-builder')}</div>
-					<div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+					<div style={{ width: '64px', height: '64px', borderRadius: '0', background: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
 						<span className="dashicons dashicons-admin-users" style={{ fontSize: '32px', width: '32px', height: '32px' }} aria-hidden="true" />
 					</div>
 					<div>
@@ -849,7 +849,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/post-navigation': {
 			return (
-				<div className="xsb-bp xcopb-bp-post-nav" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+				<div className="xsb-bp xcopb-bp-post-nav" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '16px 0', border: 'none' }}>
 					<div className="xsb-bp-label-chip">{__('Post Navigation', 'xcodesol-page-builder')}</div>
 					<span style={{ color: '#2563eb', fontWeight: 600 }}>← {settings.prev_label || __('Previous Post', 'xcodesol-page-builder')}</span>
 					<span style={{ color: '#2563eb', fontWeight: 600 }}>{settings.next_label || __('Next Post', 'xcodesol-page-builder')} →</span>
@@ -858,7 +858,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/post-comments': {
 			return (
-				<div className="xsb-bp xcopb-bp-comments" style={{ width: '100%', padding: '20px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px' }}>
+				<div className="xsb-bp xcopb-bp-comments" style={{ width: '100%', padding: '20px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '0' }}>
 					<div className="xsb-bp-label-chip">{__('Comments Area', 'xcodesol-page-builder')}</div>
 					<h4 style={{ margin: '0 0 10px', fontSize: '16px' }}>{__('3 Comments', 'xcodesol-page-builder')}</h4>
 					<p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>{__('Comments list and comment form placeholder.', 'xcodesol-page-builder')}</p>
@@ -895,7 +895,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 					<div className="xsb-bp-label-chip">{__('Archive Posts Grid', 'xcodesol-page-builder')}</div>
 					<div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${Number(settings.gap) || 20}px` }}>
 						{[1, 2, 3, 4, 5, 6].slice(0, cols).map((item) => (
-							<div key={item} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+							<div key={item} style={{ background: '#ffffff', border: 'none', borderRadius: '0', overflow: 'hidden' }}>
 								{settings.show_image !== false && <div style={{ height: '120px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 									<span className="dashicons dashicons-format-image" style={{ color: '#94a3b8' }} />
 								</div>}
@@ -947,8 +947,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 				fontFamily: settings.font_family || undefined,
 				textTransform: settings.text_transform || undefined,
 				textDecoration: settings.text_decoration || undefined,
-				animation: settings.animation && settings.animation !== 'none' ? `xsb-motion-${ settings.animation } ${ Number( settings.animation_duration ) || 600 }ms ${ settings.animation_easing || 'ease' } ${ settings.animation_repeat || '1' } both` : undefined,
-				animationDelay: settings.animation && settings.animation !== 'none' ? `${ Number( settings.animation_delay ) || 0 }ms` : undefined,
+				...resolveMotionStyle( settings ),
 				textShadow: settings.text_shadow || undefined,
 				wordBreak: settings.word_break === 'break-word' ? 'break-word' : undefined,
 				...( Number( settings.text_overflow_lines ) > 0 ? { display: '-webkit-box', WebkitLineClamp: Number( settings.text_overflow_lines ), WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {} ),
@@ -1078,10 +1077,10 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 		}
 		case 'xcopb/gb-shortcode': {
 			return (
-				<div className="xsb-bp xcopb-bp-shortcode" style={{ padding: '16px', background: '#f8fafc', border: '1px dashed #94a3b8', borderRadius: '6px' }}>
+				<div className="xsb-bp xcopb-bp-shortcode" style={{ padding: '16px', background: '#f8fafc', border: '1px dashed #94a3b8', borderRadius: '0' }}>
 					<div className="xsb-bp-label-chip">{__('Shortcode', 'xcodesol-page-builder')}</div>
 					{settings.title && <strong style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#334155' }}>{settings.title}</strong>}
-					<code style={{ display: 'block', background: '#e2e8f0', padding: '6px 10px', borderRadius: '4px', fontSize: '13px', color: '#0f172a' }}>
+					<code style={{ display: 'block', background: '#e2e8f0', padding: '6px 10px', borderRadius: '0', fontSize: '13px', color: '#0f172a' }}>
 						{settings.shortcode || '[your_shortcode]'}
 					</code>
 				</div>
@@ -1182,7 +1181,7 @@ function renderBlockBody(block, settings, meta, device = 'desktop', canvasAction
 			return (
 				<div className="xsb-bp sp-tabs" style={{ ...textCss, ...chromeCss }}>
 					<div className="xsb-bp-label-chip">{__('Product Data Tabs', 'xcodesol-page-builder')}</div>
-					<div className="xsb-dummy-tabs" style={{ border: '1px solid var(--xsb-line)', borderRadius: settings.border_radius ? `${settings.border_radius}px` : '8px', overflow: 'hidden', background: settings.background || '#ffffff' }}>
+					<div className="xsb-dummy-tabs" style={{ border: 'none', borderRadius: settings.border_radius ? `${settings.border_radius}px` : '0', overflow: 'hidden', background: settings.background || '#ffffff' }}>
 						<div className="xsb-dummy-tabs-nav" style={{ display: 'flex', flexDirection: isNarrow ? 'column' : 'row', borderBottom: '1px solid var(--xsb-line)', background: 'var(--xsb-canvas)' }}>
 							<button type="button" style={{ padding: '10px 16px', background: '#fff', border: 'none', borderBottom: isNarrow ? '1px solid var(--xsb-line)' : '2px solid var(--xsb-blue)', borderLeft: isNarrow ? '3px solid var(--xsb-blue)' : 'none', fontWeight: 600, fontSize: '13px', cursor: 'default', textAlign: 'left' }}>{__('Description', 'xcodesol-page-builder')}</button>
 							<button type="button" style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: isNarrow ? '1px solid var(--xsb-line)' : 'none', color: '#6b7280', fontSize: '13px', cursor: 'default', textAlign: 'left' }}>{__('Additional information', 'xcodesol-page-builder')}</button>
@@ -2236,6 +2235,7 @@ function NestedBlock({
 		...widgetSpacing,
 		...positionInlineCss(bodySettings),
 		...transformInlineCss(bodySettings),
+		...resolveMotionStyle( bodySettings ),
 		...(placementStyle || {}),
 	};
 
@@ -2661,7 +2661,7 @@ function containerHoverDecls( settings = {} ) {
 	const radius = val( 'hover_border_radius' );
 	if ( radius !== null && typeof radius === 'object' ) {
 		const u = radius.unit || 'px';
-		decls.push( `border-radius:${ radius.top ?? 8 }${ u } ${ radius.right ?? 8 }${ u } ${ radius.bottom ?? 8 }${ u } ${ radius.left ?? 8 }${ u }` );
+		decls.push( `border-radius:${ radius.top ?? 0 }${ u } ${ radius.right ?? 0 }${ u } ${ radius.bottom ?? 0 }${ u } ${ radius.left ?? 0 }${ u }` );
 	} else if ( radius !== null ) {
 		decls.push( `border-radius:${ Number( radius ) }px` );
 	}
@@ -3175,7 +3175,7 @@ function ContainerBlock({
 	let resolvedRadius = viewSettings.border_radius ? `${viewSettings.border_radius}px` : undefined;
 	if ( typeof viewSettings.border_radius === 'object' && viewSettings.border_radius !== null ) {
 		const ru = viewSettings.border_radius.unit || 'px';
-		resolvedRadius = `${viewSettings.border_radius.top ?? 8}${ru} ${viewSettings.border_radius.right ?? 8}${ru} ${viewSettings.border_radius.bottom ?? 8}${ru} ${viewSettings.border_radius.left ?? 8}${ru}`;
+		resolvedRadius = `${viewSettings.border_radius.top ?? 0}${ru} ${viewSettings.border_radius.right ?? 0}${ru} ${viewSettings.border_radius.bottom ?? 0}${ru} ${viewSettings.border_radius.left ?? 0}${ru}`;
 	}
 
 	// Resolve background (color, gradient, image)
@@ -3416,13 +3416,7 @@ function ContainerBlock({
 		}
 	}
 
-	const anim = viewSettings.animation || 'none';
-	if (anim !== 'none') {
-		// Keyframes are namespaced (xsb-fade-in, xsb-slide-up, ...).
-		containerStyle.animation = `xsb-motion-${anim} ${Number(viewSettings.animation_duration) || 600}ms ${viewSettings.animation_easing || 'ease'} ${viewSettings.animation_repeat || '1'} both`;
-		containerStyle.animationDelay = `${Number(viewSettings.animation_delay) || 0}ms`;
-		containerStyle.animationIterationCount = viewSettings.animation_repeat || '1';
-	}
+	Object.assign( containerStyle, resolveMotionStyle( viewSettings ) );
 
 	const hoverAnimClass = ( viewSettings.hover_animation && viewSettings.hover_animation !== 'none' )
 		? ` xsb-hover-${ viewSettings.hover_animation }`
@@ -3947,6 +3941,7 @@ function BlockPreview({
 		transition,
 		...positionInlineCss(bodySettings),
 		...transformInlineCss(bodySettings),
+		...resolveMotionStyle( bodySettings ),
 	};
 
 	// A Sale Badge with a corner placement overlays the card root on the live
@@ -4288,7 +4283,7 @@ function PreviewCanvas({
 								])}
 							>
 								<span className="xsb-starter-pill-icon">⚡</span>
-								<span>{__('Hero Banner', 'xcodesol-page-builder')}</span>
+								<span>{__('Slider', 'xcodesol-page-builder')}</span>
 							</button>
 							<button
 								type="button"

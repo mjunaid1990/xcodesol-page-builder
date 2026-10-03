@@ -11,6 +11,8 @@
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import ResetButton from '../reset-button';
+import { panelLabel } from '../../schemas/display-names';
+import { MOTION_OPTIONS } from '../../lib/motion-controls';
 
 /* ------------------------------------------------------------------ *
  * Shared option sets
@@ -32,10 +34,7 @@ export const SHADOW_VALUES = {
 
 export const ANIMATION_OPTIONS = [
 	{ label: __( 'None', 'xcodesol-page-builder' ), value: 'none' },
-	{ label: __( 'Fade in', 'xcodesol-page-builder' ), value: 'fade-in' },
-	{ label: __( 'Slide up', 'xcodesol-page-builder' ), value: 'slide-up' },
-	{ label: __( 'Slide down', 'xcodesol-page-builder' ), value: 'slide-down' },
-	{ label: __( 'Zoom in', 'xcodesol-page-builder' ), value: 'zoom-in' },
+	...MOTION_OPTIONS.filter( ( option ) => option.value !== 'none' ),
 ];
 
 /**
@@ -188,11 +187,12 @@ export function hasStyleClipboard() {
  * @param {string}   props.status      'custom' | 'inherit' | ''.
  */
 export function PropertyRow( { label, children, custom, onReset, help, status } ) {
+	const displayLabel = panelLabel( label );
 	return (
 		<div className={ `xsb-style-property${ custom ? ' xsb-style-property--custom' : '' }${ ! custom ? ' xsb-style-property--inherited' : '' }` }>
 			<div className="xsb-style-property__main">
 				<label className="xsb-style-property__label">
-					{ label }
+					{ displayLabel }
 					{ status ? (
 						<span className="xsb-style-property__status">{ status }</span>
 					) : (

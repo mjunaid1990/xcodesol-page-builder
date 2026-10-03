@@ -86,6 +86,7 @@ final class Xcodesol_Page_Builder {
 	private function load_dependencies() {
 		require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-registrar.php';
 		require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-sanitizer.php';
+		require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-svg-upload.php';
 		require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-motion-presets.php';
 		require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-style-engine.php';
 		require_once XCOPB_PLUGIN_DIR . 'includes/class-xcopb-conditions.php';
@@ -115,6 +116,7 @@ final class Xcodesol_Page_Builder {
 	 * Plugin initialization.
 	 */
 	public function init() {
+		XCOPB_SVG_Upload::init();
 		XCOPB_Registrar::instance();
 		XCOPB_Conditions::instance();
 		XCOPB_Block_Registry::instance()->register_defaults();

@@ -28,7 +28,7 @@ $line_height = isset( $settings['line_height'] ) && '' !== $settings['line_heigh
 $font_family = ! empty( $settings['font_family'] ) ? $settings['font_family'] : '';
 $letter_spacing = isset( $settings['letter_spacing'] ) ? (float) $settings['letter_spacing'] : null;
 $text_transform = ! empty( $settings['text_transform'] ) ? $settings['text_transform'] : '';
-$animation = isset( $settings['animation'] ) ? sanitize_key( $settings['animation'] ) : 'none';
+$animation = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' ) : ( is_string( $settings['animation'] ?? null ) ? sanitize_key( $settings['animation'] ) : 'none' );
 $motion_id = 'none' !== $animation && class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::keyframe( $animation ) : '';
 
 $allowed_tags = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'p' );

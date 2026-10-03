@@ -27,6 +27,7 @@ export default function MediaPickerControl( {
 	} = config;
 	const normalizedTypes = Array.isArray( allowedTypes ) ? allowedTypes : [ allowedTypes ];
 	const isVideo = normalizedTypes.includes( 'video' );
+	const isSvg = normalizedTypes.includes( 'image/svg+xml' );
 
 	const mediaUrl = typeof value === 'object' && value !== null ? ( value.url || '' ) : ( value || '' );
 	const isDynamicImage = normalizedTypes.includes( 'image' ) && imageSource !== 'upload';
@@ -127,7 +128,7 @@ export default function MediaPickerControl( {
 						onClick={ openMediaFrame }
 					>
 						<span className="dashicons dashicons-upload" aria-hidden="true" />
-						<span>{ isVideo ? __( 'Choose Video', 'xcodesol-page-builder' ) : __( 'Choose Image', 'xcodesol-page-builder' ) }</span>
+						<span>{ isVideo ? __( 'Choose Video', 'xcodesol-page-builder' ) : ( isSvg ? __( 'Choose SVG', 'xcodesol-page-builder' ) : __( 'Choose Image', 'xcodesol-page-builder' ) ) }</span>
 					</button>
 				) }
 			</div>

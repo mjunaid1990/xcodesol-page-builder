@@ -63,6 +63,7 @@ import { manifestFor, schemaFor } from '../schemas';
 import GradientControl from './controls/gradient';
 import MediaPickerControl from './controls/media';
 import SpacingBoxControl from './controls/spacing-box';
+import { MOTION_OPTIONS } from '../lib/motion-controls';
 
 const BLOCK_NAMES = {
 	'xcopb/gb-container': __( 'Container', 'xcodesol-page-builder' ),
@@ -71,7 +72,8 @@ const BLOCK_NAMES = {
 	'xcopb/gb-image': __( 'Image', 'xcodesol-page-builder' ),
 	'xcopb/gb-button': __( 'Button', 'xcodesol-page-builder' ),
 	'xcopb/gb-divider': __( 'Divider', 'xcodesol-page-builder' ),
-	'xcopb/gb-banner': __( 'Hero Banner', 'xcodesol-page-builder' ),
+	'xcopb/gb-banner': __( 'Slider', 'xcodesol-page-builder' ),
+	'xcosb/gb-banner': __( 'Slider', 'xcodesol-page-builder' ),
 	'xcopb/gb-shortcode': __( 'Shortcode', 'xcodesol-page-builder' ),
 	'xcopb/gb-breadcrumb': __( 'Breadcrumbs', 'xcodesol-page-builder' ),
 	'xcopb/gb-text-widget': __( 'HTML Widget', 'xcodesol-page-builder' ),
@@ -100,6 +102,64 @@ function getBlockIcon( type ) {
 	if ( type.includes( 'breadcrumb' ) ) return <IconWidgetBreadcrumb width={ 16 } height={ 16 } />;
 	if ( type.includes( 'loop' ) || type.includes( 'product' ) ) return <IconWidgetProduct width={ 16 } height={ 16 } />;
 	return <IconWidgetContainer width={ 16 } height={ 16 } />;
+}
+
+function MotionSettingsPanel( { blockType, instanceId, settings = {}, onChange } ) {
+	const isBanner = [ 'xcopb/gb-banner', 'xcosb/gb-banner' ].includes( blockType );
+	const MotionSelect = ( { setting, label } ) => (
+		<div className="xsb-control-field">
+			<label className="xsb-control-label" htmlFor={ `motion-${ setting }` }>{ label }</label>
+			<select id={ `motion-${ setting }` } className="xsb-select-input" value={ typeof settings[ setting ] === 'string' ? settings[ setting ] : 'none' } onChange={ ( event ) => onChange( setting, event.target.value ) }>
+				<option value="none">{ __( 'No animation', 'xcodesol-page-builder' ) }</option>
+				{ MOTION_OPTIONS.filter( ( option ) => option.value !== 'none' ).map( ( option ) => <option key={ option.value } value={ option.value }>{ option.label }</option> ) }
+			</select>
+		</div>
+	);
+
+	return (
+		<CollapsibleSection
+			id={ `motion-settings-${ blockType }-${ instanceId }` }
+			title={ __( 'Animations', 'xcodesol-page-builder' ) }
+			defaultOpen={ false }
+			onReset={ () => {
+				onChange( {
+					...( isBanner
+						? { heading_animation: 'none', description_animation: 'none', button_animation: 'none' }
+						: { animation: 'none' } ),
+					animation_duration: 600,
+					animation_delay: 0,
+					animation_easing: 'ease',
+					animation_repeat: '1',
+				} );
+			} }
+		>
+			{ isBanner ? (
+				<>
+					<MotionSelect setting="heading_animation" label={ __( 'Heading', 'xcodesol-page-builder' ) } />
+					<MotionSelect setting="description_animation" label={ __( 'Description', 'xcodesol-page-builder' ) } />
+					<MotionSelect setting="button_animation" label={ __( 'Button', 'xcodesol-page-builder' ) } />
+					{ [ 'heading_animation', 'description_animation', 'button_animation' ].some( ( key ) => settings[ key ] && settings[ key ] !== 'none' ) && (
+						<>
+							<NumberScrubberControl label={ __( 'Duration', 'xcodesol-page-builder' ) } value={ settings.animation_duration ?? 600 } onChange={ ( value ) => onChange( 'animation_duration', value ) } min={ 100 } max={ 5000 } unit="ms" />
+							<NumberScrubberControl label={ __( 'Delay', 'xcodesol-page-builder' ) } value={ settings.animation_delay ?? 0 } onChange={ ( value ) => onChange( 'animation_delay', value ) } min={ 0 } max={ 3000 } unit="ms" />
+						</>
+					) }
+				</>
+			) : (
+				<>
+					<MotionSelect setting="animation" label={ __( 'Animation', 'xcodesol-page-builder' ) } />
+					{ typeof settings.animation === 'string' && settings.animation !== 'none' && (
+						<>
+							<NumberScrubberControl label={ __( 'Duration', 'xcodesol-page-builder' ) } value={ settings.animation_duration ?? 600 } onChange={ ( value ) => onChange( 'animation_duration', value ) } min={ 100 } max={ 5000 } unit="ms" />
+							<NumberScrubberControl label={ __( 'Delay', 'xcodesol-page-builder' ) } value={ settings.animation_delay ?? 0 } onChange={ ( value ) => onChange( 'animation_delay', value ) } min={ 0 } max={ 3000 } unit="ms" />
+							<div className="xsb-control-field"><label className="xsb-control-label" htmlFor="motion-timing">{ __( 'Timing', 'xcodesol-page-builder' ) }</label><select id="motion-timing" className="xsb-select-input" value={ settings.animation_easing || 'ease' } onChange={ ( event ) => onChange( 'animation_easing', event.target.value ) }>{ [ 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ].map( ( value ) => <option key={ value } value={ value }>{ value.replace( /-/g, ' ' ) }</option> ) }</select></div>
+							<div className="xsb-control-field"><label className="xsb-control-label" htmlFor="motion-repeat">{ __( 'Repeat', 'xcodesol-page-builder' ) }</label><select id="motion-repeat" className="xsb-select-input" value={ settings.animation_repeat || '1' } onChange={ ( event ) => onChange( 'animation_repeat', event.target.value ) }><option value="1">{ __( 'Once', 'xcodesol-page-builder' ) }</option><option value="2">2 { __( 'times', 'xcodesol-page-builder' ) }</option><option value="3">3 { __( 'times', 'xcodesol-page-builder' ) }</option><option value="infinite">{ __( 'Loop', 'xcodesol-page-builder' ) }</option></select></div>
+						</>
+					) }
+				</>
+			) }
+		</CollapsibleSection>
+	);
 }
 
 function TemplateRulesView( { viewOptions, viewType, setViewType, rules } ) {
@@ -208,7 +268,7 @@ function PageSettingsView( { title, setTitle, settings = {}, setSettings, pageTe
 					<ToggleControl label={ __( 'Hide Title', 'xcodesol-page-builder' ) } checked={ !! settings.hide_title } onChange={ ( value ) => update( 'hide_title', value ) } />
 				</div>
 			</CollapsibleSection>
-			<CollapsibleSection id="page-layout-settings" title={ __( 'Page Layout', 'xcodesol-page-builder' ) } defaultOpen={ true }>
+		<CollapsibleSection id="page-layout-settings" title={ __( 'Page Layout', 'xcodesol-page-builder' ) }>
 				<WPSelectControl
 					label={ __( 'Layout', 'xcodesol-page-builder' ) }
 					value={ settings.page_template || '' }
@@ -315,6 +375,26 @@ function SiteSettingsView( { settings = {}, setSettings, fontOptions = [] } ) {
 function BlockAdvancedTab( { settings = {}, onChange } ) {
 	return (
 		<div className="xsb-inspector-advanced">
+			<CollapsibleSection
+				id="adv-spacing"
+				title={ __( 'Spacing (Padding & Margin)', 'xcodesol-page-builder' ) }
+				defaultOpen={ true }
+				onReset={ () => {
+					onChange( 'padding', 0 );
+					onChange( 'margin', 0 );
+				} }
+			>
+				<SpacingBoxControl
+					config={ { id: 'advanced-padding', label: __( 'Padding', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } }
+					value={ typeof settings.padding === 'object' ? settings.padding : { top: Number( settings.padding ) || 0, right: Number( settings.padding ) || 0, bottom: Number( settings.padding ) || 0, left: Number( settings.padding ) || 0 } }
+					onChange={ ( value ) => onChange( 'padding', value ) }
+				/>
+				<SpacingBoxControl
+					config={ { id: 'advanced-margin', label: __( 'Margin', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], allowNegative: true, default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } }
+					value={ typeof settings.margin === 'object' ? settings.margin : { top: Number( settings.margin ) || 0, right: Number( settings.margin ) || 0, bottom: Number( settings.margin ) || 0, left: Number( settings.margin ) || 0 } }
+					onChange={ ( value ) => onChange( 'margin', value ) }
+				/>
+			</CollapsibleSection>
 			<CollapsibleSection
 				id="adv-classes"
 				title={ __( 'Attributes & Classes', 'xcodesol-page-builder' ) }
@@ -686,16 +766,12 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 	const isImage = block.type === 'xcopb/gb-image';
 	const isContainer = block.type === 'xcopb/gb-container';
 	const isText = block.type === 'xcopb/gb-text';
+	const hasAlignmentSection = isHeading || isButton || isImage || isBanner || isText;
 
 	const activeColor = settings.bg_color || settings.background || settings.text_color || settings.color;
 	const colorHint = activeColor ? (
 		<span className="xsb-hint-swatch" style={ { background: activeColor } } />
 	) : null;
-
-	const paddingVal = settings.padding;
-	const spacingHint = typeof paddingVal === 'object'
-		? `${ paddingVal.top ?? 0 } / ${ paddingVal.right ?? 0 } / ${ paddingVal.bottom ?? 0 } / ${ paddingVal.left ?? 0 }`
-		: `${ paddingVal ?? 0 }px`;
 
 	return (
 		<div className="xsb-inspector-style-flow">
@@ -703,11 +779,11 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 			{ isButton && <ButtonLivePreview settings={ settings } /> }
 
 			{/* ALIGNMENT SECTION (Open by default if first) */}
-			{ ( isHeading || isButton || isImage || isBanner || isText ) && (
-				<CollapsibleSection
-					id="style-alignment"
-					title={ __( 'Alignment', 'xcodesol-page-builder' ) }
-					defaultOpen={ true }
+			{ hasAlignmentSection && (
+			<CollapsibleSection
+				id="style-alignment"
+				title={ __( 'Alignment', 'xcodesol-page-builder' ) }
+				defaultOpen={ true }
 					hint={ settings.align ? settings.align.charAt( 0 ).toUpperCase() + settings.align.slice( 1 ) : 'Left' }
 					onReset={ () => onChange( 'align', 'left' ) }
 				>
@@ -760,7 +836,7 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 			<CollapsibleSection
 				id="style-colors"
 				title={ __( 'Colors', 'xcodesol-page-builder' ) }
-				defaultOpen={ isContainer }
+				defaultOpen={ ! hasAlignmentSection }
 				hint={ colorHint }
 				onReset={ () => {
 					onChange( 'bg_color', '' );
@@ -822,53 +898,6 @@ function BlockStyleInspector( { block, onChange, device = 'desktop', onDeviceCha
 						/>
 					</div>
 				) }
-			</CollapsibleSection>
-
-			{/* SPACING: VISUAL BOX-MODEL */}
-			<CollapsibleSection
-				id="style-spacing"
-				title={ __( 'Spacing', 'xcodesol-page-builder' ) }
-				hint={ spacingHint }
-				onReset={ () => {
-					onChange( 'padding', 0 );
-					onChange( 'margin', 0 );
-				} }
-			>
-				{ isContainer && (
-					<div className="xsb-control-field">
-						<NumberScrubberControl
-							label={ __( 'Column Gap', 'xcodesol-page-builder' ) }
-							value={ settings.gap ?? 20 }
-							onChange={ ( val ) => onChange( 'gap', val ) }
-							min={ 0 }
-							max={ 100 }
-							unit="px"
-							units={ [ 'px', 'rem', '%' ] }
-						/>
-					</div>
-				) }
-
-				<SpacingBoxControl
-					config={ { id: 'block-padding', label: __( 'Padding', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } }
-					value={ typeof settings.padding === 'object' ? settings.padding : {
-						top: Number( settings.padding ) || 0,
-						right: Number( settings.padding ) || 0,
-						bottom: Number( settings.padding ) || 0,
-						left: Number( settings.padding ) || 0,
-					} }
-					onChange={ ( val ) => onChange( 'padding', val ) }
-				/>
-
-				<SpacingBoxControl
-					config={ { id: 'block-margin', label: __( 'Margin', 'xcodesol-page-builder' ), units: [ 'px', '%', 'rem', 'em' ], allowNegative: true, default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true } } }
-					value={ typeof settings.margin === 'object' ? settings.margin : {
-						top: Number( settings.margin ) || 0,
-						right: Number( settings.margin ) || 0,
-						bottom: Number( settings.margin ) || 0,
-						left: Number( settings.margin ) || 0,
-					} }
-					onChange={ ( val ) => onChange( 'margin', val ) }
-				/>
 			</CollapsibleSection>
 
 			{/* BORDER & CORNERS */}
@@ -1503,13 +1532,13 @@ export default function Inspector( {
 						) }
 
 						{ tab === 'advanced' && (
-							<BlockAdvancedTab
-								settings={ block.settings || {} }
-								onChange={ updateSetting }
-							/>
+							<>
+								<BlockAdvancedTab settings={ block.settings || {} } onChange={ updateSetting } />
+							</>
 						) }
 					</>
 				) }
+				{ tab === 'advanced' && <MotionSettingsPanel blockType={ block.type } instanceId={ block.id || `block-${ selectedIndex }` } settings={ block.settings || {} } onChange={ updateSetting } /> }
 			</div>
 
 			{/* Always-visible panel footer */}
@@ -1523,6 +1552,9 @@ export default function Inspector( {
 							blockSchema.controls.filter( control => control.tab === tab ).forEach( control => {
 								[ control.id, `hover_${ control.id }`, `focus_${ control.id }`, `hover_${ control.id }_tablet`, `hover_${ control.id }_mobile`, `focus_${ control.id }_tablet`, `focus_${ control.id }_mobile`, ...[ 'tablet', 'mobile' ].map( deviceName => `${ deviceName }_${ control.id }` ) ].forEach( key => { delete nextSettings[ key ]; } );
 							} );
+							if ( tab === 'advanced' ) {
+								[ 'animation', 'animation_duration', 'animation_delay', 'animation_easing', 'animation_repeat', 'heading_animation', 'description_animation', 'button_animation' ].forEach( key => { delete nextSettings[ key ]; } );
+							}
 							updateSetting( nextSettings );
 							setSectionStates( {} );
 							setSchemaResetVersion( version => version + 1 );
@@ -1534,8 +1566,6 @@ export default function Inspector( {
 								text_color: undefined,
 								color: undefined,
 								background: undefined,
-								padding: undefined,
-								margin: undefined,
 								border_radius: undefined,
 								align: undefined,
 								font_size: undefined,
@@ -1543,6 +1573,8 @@ export default function Inspector( {
 						} else if ( tab === 'advanced' ) {
 							updateSetting( {
 								margin: undefined,
+								padding: undefined,
+								widget_padding: undefined,
 								position: undefined,
 								z_index: undefined,
 								rotate: undefined,
@@ -1552,6 +1584,11 @@ export default function Inspector( {
 								animation: undefined,
 								animation_duration: undefined,
 								animation_delay: undefined,
+								animation_easing: undefined,
+								animation_repeat: undefined,
+								heading_animation: undefined,
+								description_animation: undefined,
+								button_animation: undefined,
 								hover_animation: undefined,
 								hide_desktop: false,
 								hide_tablet: false,

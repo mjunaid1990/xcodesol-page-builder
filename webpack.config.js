@@ -15,6 +15,7 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		builder: path.resolve( __dirname, 'src', 'admin', 'index.js' ),
+		'banner-slider': path.resolve( __dirname, 'src', 'frontend', 'banner-slider.js' ),
 	},
 	output: {
 		filename: '[name].js',

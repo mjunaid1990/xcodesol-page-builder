@@ -6,6 +6,7 @@
  */
 
 import { renderControl } from './index';
+import { orderPanelSections, panelControlConfig, panelSectionTitle } from '../../schemas/display-names';
 
 /**
  * Checks whether a condition object is satisfied by the current values map.
@@ -42,12 +43,12 @@ export default function SchemaRenderer( {
 	} = schema;
 
 	// Filter sections if tab or sectionId is provided
-	const activeSections = sections.filter( ( sec ) => {
+	const activeSections = orderPanelSections( sections.filter( ( sec ) => {
 		if ( tab && sec.tab !== tab ) return false;
 		if ( sectionId && sec.id !== sectionId ) return false;
 		if ( sec.condition && ! checkCondition( sec.condition, values ) ) return false;
 		return true;
-	} );
+	} ), tab );
 
 	return (
 		<div className="xsb-schema-renderer">
@@ -67,7 +68,7 @@ export default function SchemaRenderer( {
 					<div key={ sec.id } className="xsb-schema-section" id={ `xsb-sec-${ sec.id }` }>
 						{ sec.title && (
 							<div className="xsb-schema-section-title">
-								<span>{ sec.title }</span>
+								<span>{ panelSectionTitle( sec ) }</span>
 							</div>
 						) }
 						<div className="xsb-schema-section-controls">
@@ -79,7 +80,7 @@ export default function SchemaRenderer( {
 										{ renderControl(
 											ctrl.type,
 											{
-												config: ctrl,
+											config: panelControlConfig( ctrl ),
 												value: val,
 												onChange: ( newVal ) => onChange( ctrl.id, newVal ),
 												device,

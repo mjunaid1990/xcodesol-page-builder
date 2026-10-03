@@ -97,20 +97,20 @@ if ( ! empty( $settings['bg_type'] ) && 'gradient' === $settings['bg_type'] && !
 if ( isset( $settings['border_radius'] ) && is_array( $settings['border_radius'] ) ) {
 	$ru         = isset( $settings['border_radius']['unit'] ) ? $settings['border_radius']['unit'] : 'px';
 	$xsb_radius = sprintf( '%d%s %d%s %d%s %d%s',
-		isset( $settings['border_radius']['top'] ) ? (int) $settings['border_radius']['top'] : 8, $ru,
-		isset( $settings['border_radius']['right'] ) ? (int) $settings['border_radius']['right'] : 8, $ru,
-		isset( $settings['border_radius']['bottom'] ) ? (int) $settings['border_radius']['bottom'] : 8, $ru,
-		isset( $settings['border_radius']['left'] ) ? (int) $settings['border_radius']['left'] : 8, $ru
+		isset( $settings['border_radius']['top'] ) ? (int) $settings['border_radius']['top'] : 0, $ru,
+		isset( $settings['border_radius']['right'] ) ? (int) $settings['border_radius']['right'] : 0, $ru,
+		isset( $settings['border_radius']['bottom'] ) ? (int) $settings['border_radius']['bottom'] : 0, $ru,
+		isset( $settings['border_radius']['left'] ) ? (int) $settings['border_radius']['left'] : 0, $ru
 	);
 } else {
-	$xsb_radius = ( isset( $settings['border_radius'] ) ? max( 0, absint( $settings['border_radius'] ) ) : 8 ) . 'px';
+	$xsb_radius = ( isset( $settings['border_radius'] ) ? max( 0, absint( $settings['border_radius'] ) ) : 0 ) . 'px';
 }
 
 $xsb_shadow   = isset( $settings['box_shadow'] ) ? $settings['box_shadow'] : 'none';
-$xsb_border_w = isset( $settings['border_width'] ) ? ( is_array( $settings['border_width'] ) ? 1 : max( 0, absint( $settings['border_width'] ) ) ) : 0;
+$xsb_border_w = isset( $settings['border_width'] ) ? ( is_array( $settings['border_width'] ) ? 0 : max( 0, absint( $settings['border_width'] ) ) ) : 0;
 $xsb_border_s = ! empty( $settings['border_style'] ) ? $settings['border_style'] : 'solid';
 $xsb_border_c = ! empty( $settings['border_color'] ) ? $settings['border_color'] : '';
-$xsb_anim     = isset( $settings['animation'] ) ? $settings['animation'] : 'none';
+$xsb_anim     = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' ) : ( is_string( $settings['animation'] ?? null ) ? sanitize_key( $settings['animation'] ) : 'none' );
 $xsb_anim_ms  = isset( $settings['animation_duration'] ) ? absint( $settings['animation_duration'] ) : 600;
 $xsb_anim_delay = isset( $settings['animation_delay'] ) ? absint( $settings['animation_delay'] ) : 0;
 
@@ -605,10 +605,10 @@ if ( ! empty( $settings['border_width'] ) && is_array( $settings['border_width']
 		'border-style:%s;border-color:%s;border-width:%dpx %dpx %dpx %dpx;',
 		esc_attr( $xsb_border_s ),
 		esc_attr( $xsb_border_c ? $xsb_border_c : '#000000' ),
-		(int) ( $bw['top'] ?? 1 ),
-		(int) ( $bw['right'] ?? 1 ),
-		(int) ( $bw['bottom'] ?? 1 ),
-		(int) ( $bw['left'] ?? 1 )
+		(int) ( $bw['top'] ?? 0 ),
+		(int) ( $bw['right'] ?? 0 ),
+		(int) ( $bw['bottom'] ?? 0 ),
+		(int) ( $bw['left'] ?? 0 )
 	);
 } elseif ( $xsb_border_w > 0 ) {
 	$xsb_style .= 'border:' . $xsb_border_w . 'px ' . esc_attr( $xsb_border_s ) . ' ' . esc_attr( $xsb_border_c ? $xsb_border_c : '#000000' ) . ';';
@@ -779,10 +779,10 @@ if ( is_array( $xsb_hover_bw ) ) {
 	$xsb_hover_decls[] = 'border-color:' . esc_attr( $xsb_hover_get( 'hover_border_color' ) ? $xsb_hover_get( 'hover_border_color' ) : '#000000' );
 	$xsb_hover_decls[] = sprintf(
 		'border-width:%dpx %dpx %dpx %dpx',
-		(int) ( $xsb_hover_bw['top'] ?? 1 ),
-		(int) ( $xsb_hover_bw['right'] ?? 1 ),
-		(int) ( $xsb_hover_bw['bottom'] ?? 1 ),
-		(int) ( $xsb_hover_bw['left'] ?? 1 )
+		(int) ( $xsb_hover_bw['top'] ?? 0 ),
+		(int) ( $xsb_hover_bw['right'] ?? 0 ),
+		(int) ( $xsb_hover_bw['bottom'] ?? 0 ),
+		(int) ( $xsb_hover_bw['left'] ?? 0 )
 	);
 } elseif ( null !== $xsb_hover_bw && (float) $xsb_hover_bw > 0 ) {
 	$xsb_hover_decls[] = 'border:' . (float) $xsb_hover_bw . 'px ' . esc_attr( $xsb_hover_get( 'hover_border_style' ) ? $xsb_hover_get( 'hover_border_style' ) : 'solid' ) . ' ' . esc_attr( $xsb_hover_get( 'hover_border_color' ) ? $xsb_hover_get( 'hover_border_color' ) : '#000000' );
@@ -795,10 +795,10 @@ if ( is_array( $xsb_hover_radius ) ) {
 	$hru = isset( $xsb_hover_radius['unit'] ) ? preg_replace( '/[^a-z%]/', '', (string) $xsb_hover_radius['unit'] ) : 'px';
 	$xsb_hover_decls[] = sprintf(
 		'border-radius:%d%s %d%s %d%s %d%s',
-		(int) ( $xsb_hover_radius['top'] ?? 8 ), $hru,
-		(int) ( $xsb_hover_radius['right'] ?? 8 ), $hru,
-		(int) ( $xsb_hover_radius['bottom'] ?? 8 ), $hru,
-		(int) ( $xsb_hover_radius['left'] ?? 8 ), $hru
+		(int) ( $xsb_hover_radius['top'] ?? 0 ), $hru,
+		(int) ( $xsb_hover_radius['right'] ?? 0 ), $hru,
+		(int) ( $xsb_hover_radius['bottom'] ?? 0 ), $hru,
+		(int) ( $xsb_hover_radius['left'] ?? 0 ), $hru
 	);
 } elseif ( null !== $xsb_hover_radius ) {
 	$xsb_hover_decls[] = 'border-radius:' . (float) $xsb_hover_radius . 'px';

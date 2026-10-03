@@ -6,7 +6,6 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import motionCatalog from '../../../includes/data/motion-presets.json';
 
 export const manifest = {
 	widget: 'container',
@@ -46,8 +45,6 @@ export const manifest = {
 		'textarea',
 	],
 };
-
-const MOTION_OPTIONS = motionCatalog.map( ( preset ) => ( { value: preset.value, label: __( preset.label, 'xcodesol-page-builder' ) } ) );
 
 export const CONTAINER_SCHEMA = {
 	type: 'xcopb/gb-container',
@@ -1051,7 +1048,7 @@ export const CONTAINER_SCHEMA = {
 			label: __( 'Border Width', 'xcodesol-page-builder' ),
 			tab: 'style',
 			section: 'border',
-			default: { top: 1, right: 1, bottom: 1, left: 1, unit: 'px', isLinked: true },
+			default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true },
 			units: [ 'px' ],
 			condition: { border_style: [ 'solid', 'dashed', 'dotted', 'double' ] },
 			selectors: {
@@ -1077,7 +1074,7 @@ export const CONTAINER_SCHEMA = {
 			label: __( 'Border Radius (Corners)', 'xcodesol-page-builder' ),
 			tab: 'style',
 			section: 'border',
-			default: { top: 8, right: 8, bottom: 8, left: 8, unit: 'px', isLinked: true },
+			default: { top: 0, right: 0, bottom: 0, left: 0, unit: 'px', isLinked: true },
 			units: [ 'px', '%' ],
 			selectors: {
 				'{{WRAPPER}}': 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
@@ -1334,49 +1331,6 @@ export const CONTAINER_SCHEMA = {
 		// =========================================================================
 		// 15. ADVANCED > MOTION EFFECTS
 		// =========================================================================
-		{
-			id: 'animation',
-			type: 'animation',
-			label: __( 'Entrance Animation', 'xcodesol-page-builder' ),
-			tab: 'advanced',
-			section: 'motion',
-			default: 'none',
-			options: MOTION_OPTIONS,
-		},
-		{
-			id: 'animation_duration',
-			type: 'number',
-			label: __( 'Animation Duration (ms)', 'xcodesol-page-builder' ),
-			tab: 'advanced',
-			section: 'motion',
-			default: 600,
-			min: 100,
-			max: 5000,
-			step: 50,
-			condition: { animation: [ 'fade-in', 'fade-in-up', 'fade-in-down', 'fade-in-left', 'fade-in-right', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'zoom-in', 'zoom-out', 'bounce-in', 'flip-in-x', 'flip-in-y', 'rotate-in', 'roll-in', 'blur-in', 'bounce' ] },
-		},
-		{
-			id: 'animation_delay',
-			type: 'number',
-			label: __( 'Animation Delay (ms)', 'xcodesol-page-builder' ),
-			tab: 'advanced',
-			section: 'motion',
-			default: 0,
-			min: 0,
-			max: 3000,
-			step: 50,
-			condition: { animation: [ 'fade-in', 'fade-in-up', 'fade-in-down', 'fade-in-left', 'fade-in-right', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'zoom-in', 'zoom-out', 'bounce-in', 'flip-in-x', 'flip-in-y', 'rotate-in', 'roll-in', 'blur-in', 'bounce' ] },
-		},
-		{
-			id: 'animation_easing', type: 'select', label: __( 'Timing', 'xcodesol-page-builder' ), tab: 'advanced', section: 'motion', default: 'ease',
-			options: [ 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ].map( ( value ) => ( { value, label: value.replace( /-/g, ' ' ).replace( /^./, ( char ) => char.toUpperCase() ) } ) ),
-			condition: { animation: MOTION_OPTIONS.map( ( option ) => option.value ) },
-		},
-		{
-			id: 'animation_repeat', type: 'select', label: __( 'Repeat', 'xcodesol-page-builder' ), tab: 'advanced', section: 'motion', default: '1',
-			options: [ { value: '1', label: __( 'Once', 'xcodesol-page-builder' ) }, { value: '2', label: '2 times' }, { value: '3', label: '3 times' }, { value: 'infinite', label: __( 'Loop', 'xcodesol-page-builder' ) } ],
-			condition: { animation: MOTION_OPTIONS.map( ( option ) => option.value ) },
-		},
 		{
 			id: 'hover_animation',
 			type: 'select',

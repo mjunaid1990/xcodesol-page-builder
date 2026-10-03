@@ -16,7 +16,7 @@ $prev_label = ! empty( $settings['prev_label'] ) ? $settings['prev_label'] : __(
 $next_label = ! empty( $settings['next_label'] ) ? $settings['next_label'] : __( 'Next Post', 'xcodesol-page-builder' );
 
 ?>
-<nav class="xcopb-post-navigation xcopb-widget" style="display:flex;justify-content:space-between;align-items:center;padding:20px 0;margin:30px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;width:100%;">
+<nav class="xcopb-post-navigation xcopb-widget" style="display:flex;justify-content:space-between;align-items:center;padding:20px 0;margin:30px 0;border:0;width:100%;">
 	<div class="xcopb-nav-prev" style="text-align:left;">
 		<?php if ( ! empty( $prev_post ) ) : ?>
 			<span style="font-size:12px;text-transform:uppercase;color:#94a3b8;display:block;margin-bottom:4px;">&larr; <?php echo esc_html( $prev_label ); ?></span>

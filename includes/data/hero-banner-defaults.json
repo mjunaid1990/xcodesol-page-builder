@@ -19,20 +19,30 @@
 	"slides": [
 		{
 			"id": "hero-slide-1",
-			"type": "custom",
-			"badge": "Welcome",
-			"title": "Designed for creators",
+			"badge": "",
+			"title": "Slide 1 Heading",
 			"title_tag": "h1",
-			"subtitle": "Build modern, responsive web experiences with complete visual freedom.",
+			"subtitle": "Add your slide content here.",
 			"image": "",
 			"mobile_image": "",
-			"background_type": "color",
-			"background_color": "#2563eb",
-			"button_text": "Get started",
-			"link": "#"
+			"background_type": "inherit",
+			"background_color": "",
+			"buttons": []
+		},
+		{
+			"id": "hero-slide-2",
+			"badge": "",
+			"title": "Slide 2 Heading",
+			"title_tag": "h1",
+			"subtitle": "Add your slide content here.",
+			"image": "",
+			"mobile_image": "",
+			"background_type": "inherit",
+			"background_color": "",
+			"buttons": []
 		}
 	],
-	"slider_enabled": false,
+	"slider_enabled": true,
 	"loop": true,
 	"transition": "slide",
 	"autoplay": false,
@@ -74,7 +84,7 @@
 	"show_button": true,
 	"title_text_transform": "none",
 	"content_box": false,
-	"border_radius": 12,
+	"border_radius": 0,
 	"hide_desktop": false,
 	"hide_tablet": false,
 	"hide_mobile": false

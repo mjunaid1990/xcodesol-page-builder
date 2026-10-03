@@ -738,7 +738,7 @@ registerWidget( 'xcosb/cd-sku', {
 /* -------------------------- General blocks ----------------------- */
 
 registerWidget( 'xcosb/gb-banner', {
-	label: __( 'Banner', 'xcodesol-page-builder' ),
+	label: __( 'Slider', 'xcodesol-page-builder' ),
 	elements: [
 		{
 			id: 'container',

@@ -399,6 +399,7 @@ class XCOPB_Block_Registry {
 		}
 
 		$html = call_user_func( $handler['callback'], $merged_block, $context );
+		$html = self::apply_animation_root( $html, $settings );
 
 		$html = self::apply_advanced( $html, $settings );
 
@@ -1550,6 +1551,44 @@ class XCOPB_Block_Registry {
 		return substr_replace( $html, $new_tag, $pos, strlen( $tag ) );
 	}
 
+	/** Apply the shared entrance animation to the root element of any widget. */
+	public static function apply_animation_root( $html, $settings ) {
+		if ( '' === $html || ! is_array( $settings ) || ! class_exists( 'XCOPB_Motion_Presets' ) ) {
+			return $html;
+		}
+		$animation = XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' );
+		$keyframe = XCOPB_Motion_Presets::keyframe( $animation );
+		if ( '' === $keyframe ) {
+			return $html;
+		}
+
+		$duration = min( 5000, max( 100, absint( $settings['animation_duration'] ?? 600 ) ) );
+		$delay = min( 3000, absint( $settings['animation_delay'] ?? 0 ) );
+		$raw_easing = is_string( $settings['animation_easing'] ?? null ) ? $settings['animation_easing'] : 'ease';
+		$raw_repeat = is_scalar( $settings['animation_repeat'] ?? null ) ? (string) $settings['animation_repeat'] : '1';
+		$easing = in_array( $raw_easing, array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), true ) ? $raw_easing : 'ease';
+		$repeat = in_array( $raw_repeat, array( '1', '2', '3', 'infinite' ), true ) ? $raw_repeat : '1';
+		$addition = sprintf( 'animation-name:%s;animation-duration:%dms;animation-delay:%dms;animation-timing-function:%s;animation-iteration-count:%s;animation-fill-mode:both', esc_attr( $keyframe ), $duration, $delay, esc_attr( $easing ), esc_attr( $repeat ) );
+
+		$pos = strpos( $html, '<' );
+		$end = false === $pos ? false : strpos( $html, '>', $pos );
+		if ( false === $end ) {
+			return $html;
+		}
+		$tag = substr( $html, $pos, $end - $pos + 1 );
+		if ( ! preg_match( '/^<[a-zA-Z][a-zA-Z0-9:-]*([\s>])/', $tag ) ) {
+			return $html;
+		}
+		if ( preg_match( '/\sstyle="([^"]*)"/i', $tag, $match ) ) {
+			$new_tag = str_replace( $match[0], ' style="' . $match[1] . ( '' !== $match[1] ? ';' : '' ) . $addition . '"', $tag );
+		} elseif ( preg_match( "/\\sstyle='([^']*)'/i", $tag, $match ) ) {
+			$new_tag = str_replace( $match[0], " style='" . $match[1] . ( '' !== $match[1] ? ';' : '' ) . $addition . "'", $tag );
+		} else {
+			$new_tag = substr( $tag, 0, -1 ) . ' style="' . $addition . '">';
+		}
+		return substr_replace( $html, $new_tag, $pos, strlen( $tag ) );
+	}
+
 	/**
 	 * Selector variants for one inner element: the element may be the token
 	 * holder itself, a descendant of it, or a following sibling (when an
@@ -2169,7 +2208,7 @@ class XCOPB_Block_Registry {
 			'padding'       => 20,
 			'align'         => 'stretch',
 			'background'    => '',
-			'border_radius' => 8,
+			'border_radius' => 0,
 			'box_shadow'    => 'none',
 			'border_width'  => 0,
 			'border_style'  => 'solid',
@@ -2302,7 +2341,7 @@ class XCOPB_Block_Registry {
 
 		$this->register_block( 'xcopb/post-featured-image', function ( $block, $context ) {
 			return $this->render_block_file( XCOPB_PLUGIN_DIR . 'blocks/single-post/featured-image.php', $block, $context );
-		}, array( 'size' => 'full', 'align' => 'center', 'border_radius' => 8 ) );
+		}, array( 'size' => 'full', 'align' => 'center', 'border_radius' => 0 ) );
 
 		$this->register_block( 'xcopb/post-meta', function ( $block, $context ) {
 			return $this->render_block_file( XCOPB_PLUGIN_DIR . 'blocks/single-post/meta.php', $block, $context );
@@ -2314,7 +2353,7 @@ class XCOPB_Block_Registry {
 
 		$this->register_block( 'xcopb/post-author-box', function ( $block, $context ) {
 			return $this->render_block_file( XCOPB_PLUGIN_DIR . 'blocks/single-post/author-box.php', $block, $context );
-		}, array( 'border_radius' => 8 ) );
+		}, array( 'border_radius' => 0, 'border_width' => 0 ) );
 
 		$this->register_block( 'xcopb/post-navigation', function ( $block, $context ) {
 			return $this->render_block_file( XCOPB_PLUGIN_DIR . 'blocks/single-post/navigation.php', $block, $context );

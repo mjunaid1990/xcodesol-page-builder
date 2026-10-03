@@ -29,7 +29,6 @@ import {
 	BORDER_STYLE_OPTIONS,
 	TRANSFORM_OPTIONS,
 	SHADOW_OPTIONS,
-	ANIMATION_OPTIONS,
 	RADIUS_PRESETS,
 	isKeySet,
 	readKey,
@@ -370,7 +369,7 @@ function BannerBackgroundFields( { settings, onChange } ) {
 				/>
 			</StyleGroup>
 			{ 'gradient' === bgType ? (
-				<StyleGroup title={ __( 'Gradient', 'xcodesol-page-builder' ) } defaultOpen>
+				<StyleGroup title={ __( 'Gradient', 'xcodesol-page-builder' ) }>
 					<KeyedSelect settings={ settings } onChange={ onChange } setKey="gradient_type" label={ __( 'Gradient type', 'xcodesol-page-builder' ) } options={ [
 						{ label: __( 'Linear', 'xcodesol-page-builder' ), value: 'linear' },
 						{ label: __( 'Radial', 'xcodesol-page-builder' ), value: 'radial' },
@@ -410,12 +409,12 @@ function BannerBackgroundFields( { settings, onChange } ) {
 					<KeyedColor settings={ settings } onChange={ onChange } setKey="gradient_color_b" label={ __( 'Second color', 'xcodesol-page-builder' ) } />
 				</StyleGroup>
 			) : (
-				<StyleGroup title={ __( 'Color', 'xcodesol-page-builder' ) } defaultOpen>
+				<StyleGroup title={ __( 'Color', 'xcodesol-page-builder' ) }>
 					<KeyedColor settings={ settings } onChange={ onChange } setKey="bg_color" label={ __( 'Background color', 'xcodesol-page-builder' ) } />
 				</StyleGroup>
 			) }
 			{ withImage && (
-				<StyleGroup title={ __( 'Image', 'xcodesol-page-builder' ) } defaultOpen>
+				<StyleGroup title={ __( 'Image', 'xcodesol-page-builder' ) }>
 					<MediaUploader
 						label={ __( 'Background image', 'xcodesol-page-builder' ) }
 						mediaType="image"
@@ -447,7 +446,7 @@ function BannerBackgroundFields( { settings, onChange } ) {
 				</StyleGroup>
 			) }
 			{ 'video' === bgType && (
-				<StyleGroup title={ __( 'Video', 'xcodesol-page-builder' ) } defaultOpen>
+				<StyleGroup title={ __( 'Video', 'xcodesol-page-builder' ) }>
 					<MediaUploader
 						label={ __( 'Background video (MP4)', 'xcodesol-page-builder' ) }
 						mediaType="video"
@@ -469,7 +468,7 @@ function BannerBackgroundFields( { settings, onChange } ) {
 				</StyleGroup>
 			) }
 			{ withOverlay && (
-				<StyleGroup title={ __( 'Overlay', 'xcodesol-page-builder' ) } defaultOpen>
+				<StyleGroup title={ __( 'Overlay', 'xcodesol-page-builder' ) }>
 					<KeyedColor settings={ settings } onChange={ onChange } setKey="overlay_color" label={ __( 'Overlay color', 'xcodesol-page-builder' ) } css />
 					<KeyedNumber settings={ settings } onChange={ onChange } setKey="overlay_opacity" label={ __( 'Overlay opacity', 'xcodesol-page-builder' ) } suffix="%" min={ 0 } max={ 100 } help={ __( 'The overlay always sits behind the banner text.', 'xcodesol-page-builder' ) } />
 				</StyleGroup>
@@ -629,7 +628,7 @@ export function renderBorderCategory( { settings, onChange, cfg } ) {
 export function renderShadowCategory( { settings, onChange, cfg } ) {
 	const setKey = ( cfg.shadow && cfg.shadow.setKey ) || 'box_shadow';
 	return (
-		<StyleGroup title={ __( 'Box shadow', 'xcodesol-page-builder' ) } defaultOpen>
+			<StyleGroup title={ __( 'Box shadow', 'xcodesol-page-builder' ) }>
 			<KeyedPreset settings={ settings } onChange={ onChange } setKey={ setKey } label={ __( 'Shadow', 'xcodesol-page-builder' ) } presets={ SHADOW_OPTIONS } />
 			<p className="xsb-field-help">{ __( 'Shadows are subtle by default — pick a stronger preset for floating cards.', 'xcodesol-page-builder' ) }</p>
 		</StyleGroup>
@@ -637,38 +636,15 @@ export function renderShadowCategory( { settings, onChange, cfg } ) {
 }
 
 /* ------------------------------------------------------------------ *
- * Effects (entrance animation)
+ * Effects (transform)
  * ------------------------------------------------------------------ */
 
 /**
- * cfg.effects: { animationSetKey, durationSetKey, delaySetKey }
+ * Entrance animations are edited in the inspector's Advanced tab. Keep the
+ * style popover's Effects category focused on transforms.
  */
 export function renderEffectsCategory( { settings, onChange, cfg } ) {
-	const ef = cfg.effects || {};
-	const animKey = ef.animationSetKey || 'animation';
-	const durationKey = ef.durationSetKey || 'animation_duration';
-	const delayKey = ef.delaySetKey || 'animation_delay';
-	const current = settings ? settings[ animKey ] : 'none';
-
-	return (
-		<>
-			<StyleGroup title={ __( 'Entrance animation', 'xcodesol-page-builder' ) } defaultOpen>
-				<KeyedPreset settings={ settings } onChange={ onChange } setKey={ animKey } label={ __( 'Animation', 'xcodesol-page-builder' ) } presets={ ANIMATION_OPTIONS } />
-				{ current && current !== 'none' && (
-					<>
-						<KeyedNumber settings={ settings } onChange={ onChange } setKey={ durationKey } label={ __( 'Duration', 'xcodesol-page-builder' ) } suffix={ __( 'ms', 'xcodesol-page-builder' ) } min={ 100 } max={ 3000 } step={ 50 } />
-						<KeyedNumber settings={ settings } onChange={ onChange } setKey={ delayKey } label={ __( 'Delay', 'xcodesol-page-builder' ) } suffix={ __( 'ms', 'xcodesol-page-builder' ) } min={ 0 } max={ 3000 } step={ 50 } />
-					</>
-				) }
-			</StyleGroup>
-
-			<TransformAnimCategory
-				settings={ settings }
-				onChange={ onChange }
-				cfg={ cfg }
-			/>
-		</>
-	);
+	return <TransformAnimCategory settings={ settings } onChange={ onChange } cfg={ cfg } />;
 }
 
 /**
@@ -707,7 +683,7 @@ export function renderTransformCategory( { settings, onChange, cfg } ) {
 	const typeVal = settings ? settings[ typeKey ] : 'none';
 
 	return (
-		<StyleGroup title={ __( 'CSS transform', 'xcodesol-page-builder' ) } defaultOpen>
+		<StyleGroup title={ __( 'CSS transform', 'xcodesol-page-builder' ) }>
 			<KeyedSelect
 				settings={ settings }
 				onChange={ onChange }
@@ -1033,7 +1009,7 @@ export function renderAdvancedCategory( { settings, onChange, cfg } ) {
 
 	return (
 		<div className="xsb-advanced-category">
-			<StyleGroup title={ __( 'Custom class & ID', 'xcodesol-page-builder' ) } defaultOpen>
+			<StyleGroup title={ __( 'Custom class & ID', 'xcodesol-page-builder' ) }>
 				<PropertyRow
 					label={ __( 'CSS class', 'xcodesol-page-builder' ) }
 					custom={ isKeySet( settings, classKey ) }

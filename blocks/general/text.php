@@ -38,7 +38,7 @@ $border_radius = isset( $settings['border_radius'] ) ? max( 0, absint( $settings
 $padding       = isset( $settings['padding'] ) ? min( 100, absint( $settings['padding'] ) ) : 0;
 $background_color = isset( $settings['background_color'] ) && class_exists( 'XCOPB_Sanitizer' ) ? XCOPB_Sanitizer::sanitize_color( $settings['background_color'] ) : '';
 $opacity = isset( $settings['opacity'] ) && is_numeric( $settings['opacity'] ) ? min( 100, max( 0, (float) $settings['opacity'] ) ) / 100 : 1;
-$animation     = isset( $settings['animation'] ) ? $settings['animation'] : 'none';
+$animation     = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::normalize_id( $settings['animation'] ?? 'none' ) : ( is_string( $settings['animation'] ?? null ) ? sanitize_key( $settings['animation'] ) : 'none' );
 $anim_duration = isset( $settings['animation_duration'] ) ? absint( $settings['animation_duration'] ) : 600;
 $anim_delay    = isset( $settings['animation_delay'] ) ? absint( $settings['animation_delay'] ) : 0;
 

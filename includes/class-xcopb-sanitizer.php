@@ -574,7 +574,6 @@ class XCOPB_Sanitizer {
 		if ( ! is_array( $settings ) ) {
 			return array();
 		}
-
 		$clean = array();
 
 		// Layout mode
@@ -600,7 +599,8 @@ class XCOPB_Sanitizer {
 		}
 		if ( isset( $settings['animation'] ) ) {
 			$motion_ids = class_exists( 'XCOPB_Motion_Presets' ) ? XCOPB_Motion_Presets::ids() : array( 'none', 'fade-in', 'slide-up', 'slide-down', 'zoom-in' );
-			$clean['animation'] = in_array( $settings['animation'], $motion_ids, true ) ? $settings['animation'] : 'none';
+			$animation = is_string( $settings['animation'] ) ? $settings['animation'] : '';
+			$clean['animation'] = in_array( $animation, $motion_ids, true ) ? $animation : 'none';
 		}
 		if ( isset( $settings['animation_duration'] ) ) {
 			$clean['animation_duration'] = (int) self::sanitize_number( $settings['animation_duration'], 100, 5000, 600 );

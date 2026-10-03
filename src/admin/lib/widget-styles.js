@@ -11,7 +11,22 @@ export const SHADOW_PRESETS = {
 	strong: '0 18px 50px rgba(0,0,0,.28)',
 };
 
+export function resolveMotionStyle( settings = {}, animationKey = 'animation' ) {
+	const animation = typeof settings[ animationKey ] === 'string' ? settings[ animationKey ] : 'none';
+	if ( ! animation || animation === 'none' ) return {};
+
+	return {
+		animationName: `xsb-motion-${ animation }`,
+		animationDuration: `${ Number( settings.animation_duration ) || 600 }ms`,
+		animationDelay: `${ Number( settings.animation_delay ) || 0 }ms`,
+		animationTimingFunction: settings.animation_easing || 'ease',
+		animationIterationCount: settings.animation_repeat || '1',
+		animationFillMode: 'both',
+	};
+}
+
 export function resolveTextWidgetStyle( settings = {} ) {
+	const motionStyle = resolveMotionStyle( settings );
 	const style = {
 		textAlign: settings.align || 'left',
 		color: settings.color || undefined,
@@ -31,8 +46,8 @@ export function resolveTextWidgetStyle( settings = {} ) {
 		border: Number( settings.border_width ) > 0 ? `${ Math.min( 20, Number( settings.border_width ) ) }px ${ settings.border_style || 'solid' } ${ settings.border_color || settings.blockquote_color || '#000' }` : undefined,
 		borderLeft: settings.blockquote_color ? `${ Math.max( 2, Number( settings.border_width ) || 0 ) }px solid ${ settings.blockquote_color }` : undefined,
 		borderRadius: Number( settings.border_radius ) > 0 ? `${ Math.min( 100, Number( settings.border_radius ) ) }px` : undefined,
-		padding: Number( settings.padding ) > 0 ? `${ Math.min( 100, Number( settings.padding ) ) }px` : undefined,
-		boxSizing: Number( settings.padding ) > 0 || Number( settings.border_width ) > 0 ? 'border-box' : undefined,
+		padding: Number( settings.blockquote_padding ?? ( typeof settings.padding === 'number' ? settings.padding : 0 ) ) > 0 ? `${ Math.min( 100, Number( settings.blockquote_padding ?? settings.padding ) ) }px` : undefined,
+		boxSizing: Number( settings.blockquote_padding ?? ( typeof settings.padding === 'number' ? settings.padding : 0 ) ) > 0 || Number( settings.border_width ) > 0 ? 'border-box' : undefined,
 		wordBreak: settings.word_break === 'keep-all' ? 'keep-all' : undefined,
 		overflowWrap: settings.word_break === 'break-word' ? 'anywhere' : undefined,
 		'--xsb-text-link-color': settings.link_color || undefined,
@@ -42,11 +57,7 @@ export function resolveTextWidgetStyle( settings = {} ) {
 		style.columns = Number( settings.text_columns );
 		style.columnGap = `${ Number( settings.column_gap ) || 24 }px`;
 	}
-	if ( settings.animation && settings.animation !== 'none' ) {
-		style.animation = `xsb-motion-${ settings.animation } ${ Number( settings.animation_duration ) || 600 }ms ${ settings.animation_easing || 'ease' } ${ settings.animation_repeat || '1' } both`;
-		style.animationDelay = `${ Number( settings.animation_delay ) || 0 }ms`;
-	}
-	return style;
+	return { ...style, ...motionStyle };
 }
 
 export function resolveButtonWidgetStyle( settings = {}, buttonBackground = '' ) {
